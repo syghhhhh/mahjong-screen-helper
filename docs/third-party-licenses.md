@@ -8,5 +8,6 @@
 | --- | --- | --- |
 | `serde` / `serde_json` | 校准配置序列化 | MIT OR Apache-2.0 |
 | `windows-capture` | Windows Graphics Capture 采集 | MIT |
+| `png` | 读取本机 PNG 识牌模板 | MIT OR Apache-2.0 |
 
 间接依赖的精确版本由 `Cargo.lock` 固定。发布打包任务应从锁文件生成完整 SBOM 与许可清单，并检查所有随包分发的模型、牌图、字体和其他资产；目前没有引入第三方模型或牌图。参考项目只用于架构调研，未复制其代码。

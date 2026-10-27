@@ -1,3 +1,3 @@
 [workspace]
-members = ["crates/riichi-core", "crates/screen-capture"]
+members = ["crates/riichi-core", "crates/screen-capture", "crates/vision-core"]
 resolver = "2"

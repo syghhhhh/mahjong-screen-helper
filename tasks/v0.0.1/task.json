@@ -99,7 +99,7 @@
     {
       "id": "V001-003",
       "title": "实现手牌与行动按钮视觉识别",
-      "status": "planned",
+      "status": "in_progress",
       "depends_on": [
         "V001-002"
       ],
