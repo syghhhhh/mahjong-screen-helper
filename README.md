@@ -15,6 +15,7 @@ Windows 雀魂网页版四人日麻只读屏幕辅助程序。v0.0.1 正在开�
 - [开发和测试流程](docs/development-workflow.md)
 - [第三方依赖与许可证](docs/third-party-licenses.md)
 - [本机视觉模板包格式](docs/vision-template-pack.md)
+- [轻量模型与原生 ONNX 实验](docs/vision-model-research.md)
 
 在 Windows PowerShell 中运行：
 
