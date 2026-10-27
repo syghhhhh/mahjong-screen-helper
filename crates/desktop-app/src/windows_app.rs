@@ -145,6 +145,7 @@ const WM_NCHITTEST: u32 = 0x0084;
 const HTCAPTION: isize = 2;
 const HTBOTTOMRIGHT: isize = 17;
 const MOD_NOREPEAT: u32 = 0x4000;
+const VK_F7: u32 = 0x76;
 const VK_F8: u32 = 0x77;
 const VK_F9: u32 = 0x78;
 const VK_F10: u32 = 0x79;
@@ -182,6 +183,7 @@ enum AppAction {
     Correct,
     Learn,
     Refresh,
+    NewRound,
     Hide,
     Quit,
 }
@@ -283,7 +285,7 @@ pub fn run(smoke: bool) -> Result<(), String> {
             WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL,
             12,
             128,
-            350,
+            245,
             25,
             window,
             101,
@@ -361,6 +363,7 @@ pub fn run(smoke: bool) -> Result<(), String> {
         let show_hotkey = RegisterHotKey(window, 2, MOD_NOREPEAT, VK_F9) != 0;
         RegisterHotKey(window, 1, MOD_NOREPEAT, VK_F8);
         RegisterHotKey(window, 3, MOD_NOREPEAT, VK_F10);
+        RegisterHotKey(window, 4, MOD_NOREPEAT, VK_F7);
         APP.with(|cell| {
             if let Some(state) = cell.borrow_mut().as_mut() {
                 state.show_hotkey = show_hotkey;
@@ -462,6 +465,7 @@ unsafe extern "system" fn window_proc(
                 1 => run_action(AppAction::Pause),
                 2 => run_action(AppAction::Hide),
                 3 => run_action(AppAction::Refresh),
+                4 => run_action(AppAction::NewRound),
                 _ => {}
             }
             unsafe {
@@ -479,7 +483,7 @@ unsafe extern "system" fn window_proc(
             unsafe {
                 KillTimer(window, 1);
                 KillTimer(window, 2);
-                for id in 1..=3 {
+                for id in 1..=4 {
                     UnregisterHotKey(window, id);
                 }
                 PostQuitMessage(0);
@@ -492,6 +496,9 @@ unsafe extern "system" fn window_proc(
 }
 
 fn click_action(x: i32, y: i32) -> Option<AppAction> {
+    if (268..356).contains(&x) && (128..153).contains(&y) {
+        return Some(AppAction::NewRound);
+    }
     if (370..458).contains(&x) && (128..153).contains(&y) {
         return Some(AppAction::Learn);
     }
@@ -552,6 +559,11 @@ fn run_action(action: AppAction) {
         AppAction::Refresh => APP.with(|cell| {
             if let Some(state) = cell.borrow_mut().as_mut() {
                 state.refresh();
+            }
+        }),
+        AppAction::NewRound => APP.with(|cell| {
+            if let Some(state) = cell.borrow_mut().as_mut() {
+                state.new_round();
             }
         }),
         AppAction::Hide => toggle_hidden(),
@@ -938,6 +950,34 @@ impl AppState {
         }
     }
 
+    fn new_round(&mut self) {
+        let empty = wide("");
+        unsafe {
+            SetWindowTextW(self.edit, empty.as_ptr());
+        }
+        self.manual_tracker.round_end();
+        self.manual_override = false;
+        self.last_images.clear();
+        self.last_output = if let Some(runtime) = self.runtime.as_mut() {
+            runtime.end_round();
+            Some(if runtime.is_paused() {
+                PipelineOutput::Paused
+            } else {
+                PipelineOutput::Waiting
+            })
+        } else {
+            None
+        };
+        self.status = if self.runtime.as_ref().is_some_and(RuntimeEngine::is_paused) {
+            "新局状态已重置；识别仍暂停"
+        } else if self.runtime.is_some() {
+            "新局状态已重置，正在确认三帧"
+        } else {
+            "新局状态已重置，可输入新手牌或开始识别"
+        }
+        .into();
+    }
+
     fn correct_hand(&mut self) {
         let mut buffer = [0u16; 256];
         let count = unsafe { GetWindowTextW(self.edit, buffer.as_mut_ptr(), buffer.len() as i32) };
@@ -1057,6 +1097,17 @@ fn paint(window: isize) {
     fill(
         dc,
         Rect {
+            left: 268,
+            top: 128,
+            right: 356,
+            bottom: 153,
+        },
+        color(43, 63, 88),
+    );
+    draw_text(dc, 290, 132, "新局", color(231, 239, 248));
+    fill(
+        dc,
+        Rect {
             left: 370,
             top: 128,
             right: 458,
@@ -1165,7 +1216,7 @@ fn paint(window: isize) {
             dc,
             12,
             area.bottom - 22,
-            "F8 暂停   F9 显示/隐藏   F10 重识别",
+            "F7 新局  F8 暂停  F9 显示/隐藏  F10 重识别",
             color(140, 158, 180),
         );
     });

@@ -333,6 +333,166 @@ fn pixels_after_confirmed_riichi_keep_legal_kan_waits_and_suppress_discards() {
 }
 
 #[test]
+fn ending_a_round_clears_riichi_public_tiles_offers_and_cached_advice() {
+    let bank = bank();
+    let mut engine = RuntimeEngine::new(bank.clone(), vec![], MatchConfig::default(), 1).unwrap();
+    let mut declaration = hand_tiles();
+    declaration.push(Tile::from_code("9p").unwrap());
+    engine.process(
+        100,
+        &scene(&bank, &declaration),
+        Some(&action_scene(&bank, ActionLabel::Riichi)),
+    );
+    engine.tracker_mut().confirm_riichi().unwrap();
+    engine.set_offer(Some((
+        Tile::from_code("7z").unwrap(),
+        game_state::ClaimSource::Left,
+    )));
+    let mut visible = [0; 34];
+    visible[0] = 2;
+    engine
+        .set_public_tiles(visible, vec![Tile::from_code("1m").unwrap()])
+        .unwrap();
+    assert_eq!(engine.end_round(), StateEvent::RoundEnd);
+    assert!(!engine.tracker().riichi_declared());
+    assert_eq!(engine.tracker().phase(), Phase::RoundEnded);
+    assert_eq!(engine.tracker().open_melds(), 0);
+    // Frame numbering may restart. Old public counts and riichi must not
+    // suppress a fresh hand, nor can an old offer make a new pon possible.
+    let new_hand: Vec<_> = [
+        "1m", "1m", "1m", "1m", "2m", "3m", "4m", "5m", "6m", "2p", "3p", "4p", "7z", "7z",
+    ]
+    .into_iter()
+    .map(|code| Tile::from_code(code).unwrap())
+    .collect();
+    // Four 1m are valid only if the previous round's two visible 1m were cleared.
+    match engine.process(1, &scene(&bank, &new_hand), None) {
+        PipelineOutput::Ready { discards, .. } => assert!(!discards.is_empty()),
+        other => panic!("expected fresh advice after round end, got {other:?}"),
+    }
+    let after_discard: Vec<_> = new_hand
+        .iter()
+        .copied()
+        .filter(|tile| tile.index() != 5)
+        .collect();
+    engine.process(2, &scene(&bank, &after_discard), None);
+    match engine.process(
+        3,
+        &scene(&bank, &after_discard),
+        Some(&action_scene(&bank, ActionLabel::Pon)),
+    ) {
+        PipelineOutput::Ready { actions, .. } => assert!(actions.is_empty()),
+        other => panic!("expected an unknown offer after round end, got {other:?}"),
+    }
+    engine.set_paused(true);
+    engine.end_round();
+    assert!(engine.is_paused());
+    assert_eq!(
+        engine.process(1, &scene(&bank, &declaration), None),
+        PipelineOutput::Paused
+    );
+}
+
+#[test]
+fn stable_cleared_table_with_reset_indicators_starts_a_fresh_round() {
+    let bank = bank();
+    let mut engine = RuntimeEngine::new(bank.clone(), vec![], MatchConfig::default(), 3).unwrap();
+    let mut declaration = hand_tiles();
+    declaration.push(Tile::from_code("9p").unwrap());
+    let empty = RgbImage::new(60, 60, vec![38; 60 * 60 * 3]).unwrap();
+    let river = public_scene(&bank, Tile::from_code("4m").unwrap(), false);
+    let old_dora = public_scene(&bank, Tile::from_code("1m").unwrap(), false);
+    let old = PublicImages {
+        river: &river,
+        own_melds: &empty,
+        opponent_melds: [&empty; 3],
+        dora: &old_dora,
+    };
+    let riichi = action_scene(&bank, ActionLabel::Riichi);
+    for frame in 1..=3 {
+        engine.process_with_public(frame, &scene(&bank, &declaration), Some(&riichi), &old);
+    }
+    engine.tracker_mut().confirm_riichi().unwrap();
+    let new_dora = public_scene(&bank, Tile::from_code("6m").unwrap(), false);
+    let new = PublicImages {
+        river: &empty,
+        own_melds: &empty,
+        opponent_melds: [&empty; 3],
+        dora: &new_dora,
+    };
+    assert_eq!(
+        engine.process_with_public(4, &empty, None, &old),
+        PipelineOutput::Uncertain
+    );
+    assert!(engine.tracker().riichi_declared());
+    let next_hand: Vec<_> = [
+        "1m", "1m", "1m", "1m", "2m", "3m", "4m", "5m", "6m", "2p", "3p", "4p", "7z", "7z",
+    ]
+    .into_iter()
+    .map(|code| Tile::from_code(code).unwrap())
+    .collect();
+    for frame in 5..=6 {
+        assert_eq!(
+            engine.process_with_public(frame, &scene(&bank, &next_hand), None, &new),
+            PipelineOutput::Waiting
+        );
+        assert!(engine.tracker().riichi_declared());
+    }
+    match engine.process_with_public(7, &scene(&bank, &next_hand), None, &new) {
+        PipelineOutput::Ready {
+            discards, events, ..
+        } => {
+            assert!(!discards.is_empty());
+            assert!(events.contains(&StateEvent::RoundEnd));
+        }
+        other => panic!("expected a fresh round, got {other:?}"),
+    }
+    assert!(!engine.tracker().riichi_declared());
+}
+
+#[test]
+fn an_impossible_fresh_table_does_not_erase_previous_riichi() {
+    let bank = bank();
+    let mut engine = RuntimeEngine::new(bank.clone(), vec![], MatchConfig::default(), 1).unwrap();
+    let empty = RgbImage::new(60, 60, vec![38; 60 * 60 * 3]).unwrap();
+    let river = public_scene(&bank, Tile::from_code("4m").unwrap(), false);
+    let old_dora = public_scene(&bank, Tile::from_code("6m").unwrap(), false);
+    let old = PublicImages {
+        river: &river,
+        own_melds: &empty,
+        opponent_melds: [&empty; 3],
+        dora: &old_dora,
+    };
+    let mut declaration = hand_tiles();
+    declaration.push(Tile::from_code("9p").unwrap());
+    engine.process_with_public(
+        1,
+        &scene(&bank, &declaration),
+        Some(&action_scene(&bank, ActionLabel::Riichi)),
+        &old,
+    );
+    engine.tracker_mut().confirm_riichi().unwrap();
+    let bad: Vec<_> = [
+        "1m", "1m", "1m", "1m", "2m", "3m", "4m", "5m", "6m", "2p", "3p", "4p", "7z", "7z",
+    ]
+    .into_iter()
+    .map(|code| Tile::from_code(code).unwrap())
+    .collect();
+    let new_dora = public_scene(&bank, Tile::from_code("1m").unwrap(), false);
+    let new = PublicImages {
+        river: &empty,
+        own_melds: &empty,
+        opponent_melds: [&empty; 3],
+        dora: &new_dora,
+    };
+    assert_eq!(
+        engine.process_with_public(2, &scene(&bank, &bad), None, &new),
+        PipelineOutput::Uncertain
+    );
+    assert!(engine.tracker().riichi_declared());
+}
+
+#[test]
 fn public_tiles_reduce_ukeire_and_impossible_combined_counts_stop_output() {
     let bank = bank();
     let mut hand = hand_tiles();

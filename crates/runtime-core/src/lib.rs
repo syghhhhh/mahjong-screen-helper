@@ -7,6 +7,8 @@ use vision_core::{
     StabilityFilter, TemplateBank, VisionError, VisionSnapshot, detect_hand_slots,
 };
 
+mod lifecycle;
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum PipelineOutput {
     Paused,
@@ -41,6 +43,8 @@ pub struct RuntimeEngine {
     cached_discards: Option<(Vec<Tile>, Vec<Recommendation>)>,
     recommendation_calculations: u64,
     last_public: Option<PublicSnapshot>,
+    /// Last accepted round evidence survives transition animations and pauses.
+    round_baseline: Option<(PublicSnapshot, Vec<Tile>)>,
     paused: bool,
 }
 
@@ -62,6 +66,7 @@ impl RuntimeEngine {
             cached_discards: None,
             recommendation_calculations: 0,
             last_public: None,
+            round_baseline: None,
             paused: false,
         })
     }
@@ -95,6 +100,17 @@ impl RuntimeEngine {
         self.cached_discards = None;
         self.offered = None;
         self.last_public = None;
+    }
+    /// End the current round and discard every piece of round-specific evidence.
+    /// Capture/calibration and pause state belong to the session and are retained.
+    pub fn end_round(&mut self) -> StateEvent {
+        let event = self.tracker.round_end();
+        self.filter = StabilityFilter::new(self.stable_frames).expect("validated frame count");
+        self.cached_discards = None;
+        self.offered = None;
+        self.last_public = None;
+        self.round_baseline = None;
+        event
     }
     pub fn set_offer(&mut self, offered: Option<(Tile, ClaimSource)>) {
         self.offered = offered;
@@ -172,6 +188,12 @@ impl RuntimeEngine {
                     confidence: snapshot.confidence,
                 };
                 let result = if let Some(public) = &snapshot.public_info {
+                    let round_ended =
+                        self.round_baseline
+                            .as_ref()
+                            .is_some_and(|(previous, hand)| {
+                                lifecycle::fresh_round(previous, public, hand, &snapshot.hand)
+                            });
                     if self.last_public.as_ref() != Some(public) {
                         self.cached_discards = None;
                     }
@@ -190,18 +212,41 @@ impl RuntimeEngine {
                         Some((tile, source))
                     });
                     self.last_public = Some(public.clone());
-                    self.tracker.observe_table(
-                        observation,
-                        visible,
-                        public.dora_indicators.clone(),
-                        public.own_meld_tiles.clone(),
-                    )
+                    if round_ended {
+                        // A reset must not erase the old round until the whole
+                        // incoming hand/public combination is physically valid.
+                        let mut staged = self.tracker.clone();
+                        staged.round_end();
+                        let mut result = staged.observe_table(
+                            observation,
+                            visible,
+                            public.dora_indicators.clone(),
+                            public.own_meld_tiles.clone(),
+                        );
+                        if result.phase == Phase::Uncertain {
+                            self.tracker.mark_uncertain();
+                        } else {
+                            self.tracker = staged;
+                            result.events.insert(0, StateEvent::RoundEnd);
+                        }
+                        result
+                    } else {
+                        self.tracker.observe_table(
+                            observation,
+                            visible,
+                            public.dora_indicators.clone(),
+                            public.own_meld_tiles.clone(),
+                        )
+                    }
                 } else {
                     self.tracker.observe(observation)
                 };
                 if result.phase == Phase::Uncertain {
                     self.cached_discards = None;
                     return PipelineOutput::Uncertain;
+                }
+                if let Some(public) = &snapshot.public_info {
+                    self.round_baseline = Some((public.clone(), snapshot.hand.clone()));
                 }
                 let mut discards = if let Some((cached_hand, cached)) = &self.cached_discards {
                     if *cached_hand == snapshot.hand {
