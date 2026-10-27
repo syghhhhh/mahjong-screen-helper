@@ -394,14 +394,33 @@
           "pdb_sha256": "a5fe53f583a3fd2c105d3dc46b81285891176e63dbf2f597f82e5ef921f3ee02",
           "environment": { "os": "Windows 11 10.0.26200", "architecture": "x64", "rustc": "1.93.1" },
           "completed_at": "2026-10-27T20:43:30.8721206Z"
+        },
+        {
+          "source_sha": "12db20f6f69278c0c51e58d19a2c93315fa1aff1",
+          "source_dirty": false,
+          "test_run": "all-add896cdaad741b38996799197b1cbf7",
+          "command": "scripts/test-all.ps1 -Version v0.0.1",
+          "failed_checks": ["scripts/test-version.ps1", "tests/regression/overlay-integration.test.ps1"],
+          "exit_code": 1,
+          "natural_failures": [
+            { "target": "riichi-core/tests/concurrency.rs", "exit_code": 101, "reason": "subtraction overflow at riichi-core/src/lib.rs:154" },
+            { "target": "runtime-core/tests/pipeline.rs", "native_exit_code": "0xc0000005", "reason": "stack-overflow message followed by access violation" }
+          ],
+          "summary": ".local-test-data/runs/all-add896cdaad741b38996799197b1cbf7/all-tests.json",
+          "log": ".local-test-data/runs/all-add896cdaad741b38996799197b1cbf7/all-tests.log",
+          "preserved_artifacts": ".local-test-data/runs/concurrency-natural-failure-541a286eb6b44cab876631f7a94c35bc/",
+          "concurrency_exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
+          "concurrency_pdb_sha256": "e13dc703c17f03ee86fc45e92005e5fab9a95d0cf775b27fe4fd51e065082d0b",
+          "environment": { "os": "Windows 11 10.0.26200", "architecture": "x64", "rustc": "1.93.1" },
+          "completed_at": "2026-10-27T20:50:20.3468100Z"
         }
       ]
     },
     {
       "id": "V001-010",
       "title": "修复 PowerShell 5 测试日志混合编码",
-      "status": "self_tested",
-      "depends_on": ["V001-001"],
+      "status": "blocked",
+      "depends_on": ["V001-001", "V001-009"],
       "scope": ["process", "testing"],
       "acceptance_criteria": [
         "版本及全项目测试日志统一写入 UTF-8，保留中文和非 ASCII 字符",
@@ -415,7 +434,10 @@
       "affected_tests": ["tests/regression/runner-logging.test.ps1", "tests/regression/repository-process.test.ps1"],
       "regression_profile": "full",
       "local_evidence_required": [],
-      "evidence": null
+      "evidence": null,
+      "last_verified_stage": "self_tested",
+      "blocked_reason": "Logging-specific tests passed and full-run logs are strict UTF-8, but the full regression failed in rule concurrency and runtime integration. V001-009 must resolve the native failures before the success gate can complete this task.",
+      "blocking_run": "all-add896cdaad741b38996799197b1cbf7"
     }
   ],
   "release_gate": {

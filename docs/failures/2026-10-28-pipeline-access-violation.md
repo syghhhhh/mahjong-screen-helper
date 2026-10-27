@@ -85,3 +85,13 @@ cargo test -p runtime-core --test pipeline --locked --no-run --target-dir .local
 原始摘要/日志保持原样；本机 `state-access-violation-d54ba5e3b41c4956a1915b8395ad70af` 保存 exe、PDB、完整控制台副本和失败 JSON。exe SHA-256 为 `a05c91da902bfb70f5da479215990e0591a28307e5caacd74263da7f5cfb76cb`，PDB 为 `a5fe53f583a3fd2c105d3dc46b81285891176e63dbf2f597f82e5ef921f3ee02`。V001-009 置为 `failed` 并追加失败历史，原 V001-006 失败不删除；这些结果不能证明两进程故障一定同因。
 
 这次日志还暴露了独立流程缺陷：PowerShell 5 的 UTF-8 命令头与 `Tee-Object` 默认 UTF-16 内容混入同一日志，原文件 93,818 字节中有 46,155 个 NUL 字节，直接文本检索漏掉失败行。另存的原控制台为正常 UTF-8，可确认上面的自然退出。原日志不转换；新增 V001-010 专门修复两个入口的逐行编码并测试失败传播，不把日志修正当作原生故障修复。
+
+## 新并行契约在正常完整测试中捕获故障
+
+日志修正提交 `12db20f6f69278c0c51e58d19a2c93315fa1aff1` 的干净完整运行 `all-add896cdaad741b38996799197b1cbf7` 在 `2026-10-27T20:50:20.3468100Z` 结束：10 项中 8 项通过、2 项失败，无跳过，未附加调试器或改变线程/堆默认值。
+
+- 嵌套版本套件中的新 `concurrency.rs` 契约自然失败：工作线程在规则 `lib.rs:154` 减法溢出，外层 scoped thread 报告子线程 panic，测试进程退出 101。这证明新契约能够在实际完整运行中暴露故障，之前 10 次通过不再被误用为排除证据。
+- `overlay-integration` 的原 pipeline 进程报告栈溢出，随后自然退出 `0xc0000005`。原 exe/PDB 与最初保存的哈希相同。
+- 两个日志契约脚本通过。完整日志 46,697 字节，严格 UTF-8 解码成功，NUL 字节数为 0，可直接检索到两处失败；日志修正有效，原生问题未修复。
+
+本机 `concurrency-natural-failure-541a286eb6b44cab876631f7a94c35bc` 保存两个 exe/PDB、完整控制台及失败 JSON。规则契约 exe SHA-256 为 `7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4`，PDB 为 `e13dc703c17f03ee86fc45e92005e5fab9a95d0cf775b27fe4fd51e065082d0b`。V001-009 保持 `failed` 并追加本次失败；V001-010 保留 `self_tested` 阶段信息，状态为依赖 V001-009 的 `blocked`，完整回归未通过前不执行成功门禁。不再重复运行本提交以取得一次绿色结果。
