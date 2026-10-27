@@ -6,24 +6,71 @@
     {
       "id": "V001-001",
       "title": "建立自动化开发与测试闸门基线",
-      "status": "implemented",
+      "status": "succeed",
       "depends_on": [],
-      "scope": ["process", "testing"],
-      "acceptance_criteria": ["流程、版本文档及任务文件存在", "结构校验、版本测试及回归测试可运行", "门禁拒绝错误状态、缺失证据和失败测试"],
-      "version_tests": ["tests/version/v0.0.1/process-contract.test.ps1"],
-      "affected_tests": ["tests/version/v0.0.1/process-contract.test.ps1", "tests/regression/repository-process.test.ps1"],
+      "scope": [
+        "process",
+        "testing"
+      ],
+      "acceptance_criteria": [
+        "流程、版本文档及任务文件存在",
+        "结构校验、版本测试及回归测试可运行",
+        "门禁拒绝错误状态、缺失证据和失败测试"
+      ],
+      "version_tests": [
+        "tests/version/v0.0.1/process-contract.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/version/v0.0.1/process-contract.test.ps1",
+        "tests/regression/repository-process.test.ps1"
+      ],
       "regression_profile": "full",
-      "evidence": null
+      "evidence": {
+        "source_sha": "4dc047b194cf6bd92a035669ea653c968afdc32b",
+        "version_test_run": "gate-version-v0.0.1-5d6a6f73ba4c4b57b091de5b5e607005",
+        "regression_test_run": "gate-all-8ab413020b244e7f95d3f3dca2467a67",
+        "commands": [
+          "scripts/test-version.ps1 -Version v0.0.1 -RunId gate-version-v0.0.1-5d6a6f73ba4c4b57b091de5b5e607005",
+          "scripts/test-all.ps1 -Version v0.0.1 -RunId gate-all-8ab413020b244e7f95d3f3dca2467a67"
+        ],
+        "logs": [
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-version-v0.0.1-5d6a6f73ba4c4b57b091de5b5e607005\\version-tests.log",
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-all-8ab413020b244e7f95d3f3dca2467a67\\all-tests.log"
+        ],
+        "summaries": [
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-version-v0.0.1-5d6a6f73ba4c4b57b091de5b5e607005\\version-tests.json",
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-all-8ab413020b244e7f95d3f3dca2467a67\\all-tests.json"
+        ],
+        "fixture_hashes": [],
+        "environment": {
+          "os": "Microsoft Windows NT 10.0.26200.0",
+          "architecture": "X64"
+        },
+        "completed_at": "2026-10-27T08:48:11.3486424Z"
+      }
     },
     {
       "id": "V001-002",
       "title": "实现窗口采集与首次区域校准",
       "status": "planned",
-      "depends_on": ["V001-001"],
-      "scope": ["capture", "calibration"],
-      "acceptance_criteria": ["只读捕获目标窗口的校准区域", "窗口移动、缩放和 DPI 变化后坐标正确", "默认不保存原始截图"],
-      "version_tests": ["tests/version/v0.0.1/capture-calibration.test.ps1"],
-      "affected_tests": ["tests/regression/capture-calibration.test.ps1"],
+      "depends_on": [
+        "V001-001"
+      ],
+      "scope": [
+        "capture",
+        "calibration"
+      ],
+      "acceptance_criteria": [
+        "只读捕获目标窗口的校准区域",
+        "窗口移动、缩放和 DPI 变化后坐标正确",
+        "默认不保存原始截图"
+      ],
+      "version_tests": [
+        "tests/version/v0.0.1/capture-calibration.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/regression/capture-calibration.test.ps1"
+      ],
       "regression_profile": "full",
       "evidence": null
     },
@@ -31,11 +78,23 @@
       "id": "V001-003",
       "title": "实现手牌与行动按钮视觉识别",
       "status": "planned",
-      "depends_on": ["V001-002"],
-      "scope": ["vision"],
-      "acceptance_criteria": ["识别默认雀魂四麻手牌与吃碰杠立直按钮", "低置信度和不稳定帧不提交确定性结果", "合成 fixture 与本机真实截图均有测试证据"],
-      "version_tests": ["tests/version/v0.0.1/vision.test.ps1"],
-      "affected_tests": ["tests/regression/vision.test.ps1"],
+      "depends_on": [
+        "V001-002"
+      ],
+      "scope": [
+        "vision"
+      ],
+      "acceptance_criteria": [
+        "识别默认雀魂四麻手牌与吃碰杠立直按钮",
+        "低置信度和不稳定帧不提交确定性结果",
+        "合成 fixture 与本机真实截图均有测试证据"
+      ],
+      "version_tests": [
+        "tests/version/v0.0.1/vision.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/regression/vision.test.ps1"
+      ],
       "regression_profile": "full",
       "evidence": null
     },
@@ -43,11 +102,23 @@
       "id": "V001-004",
       "title": "实现四麻牌效与 Top-3 推荐",
       "status": "planned",
-      "depends_on": ["V001-001"],
-      "scope": ["rules"],
-      "acceptance_criteria": ["普通形、七对子和国士向听正确", "有效牌扣除可见牌且推荐切牌来自手牌", "输出 Top-3、置信度和理由"],
-      "version_tests": ["tests/version/v0.0.1/rules.test.ps1"],
-      "affected_tests": ["tests/regression/rules.test.ps1"],
+      "depends_on": [
+        "V001-001"
+      ],
+      "scope": [
+        "rules"
+      ],
+      "acceptance_criteria": [
+        "普通形、七对子和国士向听正确",
+        "有效牌扣除可见牌且推荐切牌来自手牌",
+        "输出 Top-3、置信度和理由"
+      ],
+      "version_tests": [
+        "tests/version/v0.0.1/rules.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/regression/rules.test.ps1"
+      ],
       "regression_profile": "full",
       "evidence": null
     },
@@ -55,11 +126,25 @@
       "id": "V001-005",
       "title": "实现局面状态与吃碰杠立直建议",
       "status": "planned",
-      "depends_on": ["V001-003", "V001-004"],
-      "scope": ["state", "actions"],
-      "acceptance_criteria": ["摸切、鸣牌、立直和局终事件可追踪", "动作建议展示前后向听与有效牌变化", "不确定状态暂停推荐且允许纠错"],
-      "version_tests": ["tests/version/v0.0.1/state-actions.test.ps1"],
-      "affected_tests": ["tests/regression/state-actions.test.ps1"],
+      "depends_on": [
+        "V001-003",
+        "V001-004"
+      ],
+      "scope": [
+        "state",
+        "actions"
+      ],
+      "acceptance_criteria": [
+        "摸切、鸣牌、立直和局终事件可追踪",
+        "动作建议展示前后向听与有效牌变化",
+        "不确定状态暂停推荐且允许纠错"
+      ],
+      "version_tests": [
+        "tests/version/v0.0.1/state-actions.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/regression/state-actions.test.ps1"
+      ],
       "regression_profile": "full",
       "evidence": null
     },
@@ -67,11 +152,24 @@
       "id": "V001-006",
       "title": "实现透明浮窗与实时集成",
       "status": "planned",
-      "depends_on": ["V001-005"],
-      "scope": ["overlay", "integration"],
-      "acceptance_criteria": ["浮窗显示手牌、Top-3、动作建议与置信度", "支持拖动、缩放、暂停、隐藏、重新识别和手动纠错", "稳定画面到更新目标低于 250 ms"],
-      "version_tests": ["tests/version/v0.0.1/overlay-integration.test.ps1"],
-      "affected_tests": ["tests/regression/overlay-integration.test.ps1"],
+      "depends_on": [
+        "V001-005"
+      ],
+      "scope": [
+        "overlay",
+        "integration"
+      ],
+      "acceptance_criteria": [
+        "浮窗显示手牌、Top-3、动作建议与置信度",
+        "支持拖动、缩放、暂停、隐藏、重新识别和手动纠错",
+        "稳定画面到更新目标低于 250 ms"
+      ],
+      "version_tests": [
+        "tests/version/v0.0.1/overlay-integration.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/regression/overlay-integration.test.ps1"
+      ],
       "regression_profile": "full",
       "evidence": null
     },
@@ -79,11 +177,24 @@
       "id": "V001-007",
       "title": "构建和验证 Windows x64 便携包",
       "status": "planned",
-      "depends_on": ["V001-006"],
-      "scope": ["packaging", "performance"],
-      "acceptance_criteria": ["无需开发环境即可解压双击运行", "打包冒烟、冷启动、内存与 30 分钟持续运行有证据", "默认离线且不上传截图"],
-      "version_tests": ["tests/version/v0.0.1/packaging-performance.test.ps1"],
-      "affected_tests": ["tests/regression/packaging-performance.test.ps1"],
+      "depends_on": [
+        "V001-006"
+      ],
+      "scope": [
+        "packaging",
+        "performance"
+      ],
+      "acceptance_criteria": [
+        "无需开发环境即可解压双击运行",
+        "打包冒烟、冷启动、内存与 30 分钟持续运行有证据",
+        "默认离线且不上传截图"
+      ],
+      "version_tests": [
+        "tests/version/v0.0.1/packaging-performance.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/regression/packaging-performance.test.ps1"
+      ],
       "regression_profile": "full",
       "evidence": null
     }
