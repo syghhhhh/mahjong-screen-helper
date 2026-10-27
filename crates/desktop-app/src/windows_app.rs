@@ -739,7 +739,11 @@ impl AppState {
         let bank = match TemplateBank::load_dir(&self.pack_path) {
             Ok(bank) => bank,
             Err(_) => {
-                self.status = "本机模板包不完整；仍可在下方输入手牌手动计算".into();
+                let progress = TemplateBank::progress_dir(&self.pack_path);
+                self.status = format!(
+                    "本机模板：牌图 {}/37、按钮 {}/5；可点击学习模板",
+                    progress.tiles, progress.actions
+                );
                 return;
             }
         };

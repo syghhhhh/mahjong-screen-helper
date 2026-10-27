@@ -335,6 +335,7 @@ fn loads_only_a_complete_local_template_pack() {
     let _ = fs::remove_dir_all(&root);
     fs::create_dir_all(root.join("tiles")).unwrap();
     fs::create_dir_all(root.join("actions")).unwrap();
+    assert_eq!(TemplateBank::progress_dir(&root).tiles, 0);
     assert!(TemplateBank::load_dir(&root).is_err());
     for suit in ['m', 'p', 's'] {
         for number in 0..=9 {
@@ -358,6 +359,8 @@ fn loads_only_a_complete_local_template_pack() {
         );
     }
     let loaded = TemplateBank::load_dir(&root).unwrap();
+    assert_eq!(TemplateBank::progress_dir(&root).tiles, 37);
+    assert_eq!(TemplateBank::progress_dir(&root).actions, 5);
     assert_eq!(loaded.tile_templates().len(), 37);
     assert_eq!(loaded.action_templates().len(), 5);
     assert_eq!(
@@ -365,6 +368,7 @@ fn loads_only_a_complete_local_template_pack() {
         picture(1, true)
     );
     fs::remove_file(root.join("actions").join("kan.png")).unwrap();
+    assert_eq!(TemplateBank::progress_dir(&root).actions, 4);
     assert!(TemplateBank::load_dir(&root).is_err());
     fs::remove_dir_all(root).unwrap();
 }

@@ -330,7 +330,37 @@ pub struct TemplateBank {
     tile_descriptors: Vec<TileDescriptor>,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct TemplatePackProgress {
+    pub tiles: usize,
+    pub actions: usize,
+}
+
 impl TemplateBank {
+    pub fn progress_dir(path: &Path) -> TemplatePackProgress {
+        let mut tiles = 0;
+        for suit in ['m', 'p', 's'] {
+            for number in 0..=9 {
+                let code = format!("{number}{suit}");
+                if RgbImage::read_png(&path.join("tiles").join(format!("{code}.png"))).is_ok() {
+                    tiles += 1;
+                }
+            }
+        }
+        for number in 1..=7 {
+            if RgbImage::read_png(&path.join("tiles").join(format!("{number}z.png"))).is_ok() {
+                tiles += 1;
+            }
+        }
+        let actions = ["none", "chi", "pon", "kan", "riichi"]
+            .iter()
+            .filter(|name| {
+                RgbImage::read_png(&path.join("actions").join(format!("{name}.png"))).is_ok()
+            })
+            .count();
+        TemplatePackProgress { tiles, actions }
+    }
+
     pub fn tile_templates(&self) -> &[(Tile, RgbImage)] {
         &self.tile_templates
     }
