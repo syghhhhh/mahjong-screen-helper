@@ -61,3 +61,11 @@ cargo run -p runtime-core --example inspect_model_pipeline --release --locked -j
 ```
 
 命令运行三帧，输出等待、拒识或局面与 Top-3。可省略全部六张公共牌图片，但那样只验证手牌链路；按钮输入始终缺席。它不捕获窗口、不验证浮窗、不模拟真实时序，处理耗时不能代替 250 ms 端到端验收。
+
+公共牌可单独检查：
+
+```powershell
+cargo run -p vision-core --example inspect_model_board --release --locked -j 1 -- <清单JSON> <公共区域RGB> <宽> <高>
+```
+
+该命令使用实际原生后端，输出整组是否被接受、候选边界、每个方向的标签或拒识原因。逐候选诊断仅用于解释整组失败，不能把部分接受当成完整公共牌结果。尺寸与 RGB 长度约束沿用上面的诊断约定；日志留在本机。

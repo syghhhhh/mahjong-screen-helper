@@ -161,3 +161,11 @@ tensor 文件为 1–256 个连续的 little-endian `[1,3,48,32]` float32 输入
 然而 `8e44684` 的 [CI 40535547611](https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40535547611) 中，独立 `package-smoke` 失败，其他四项通过。失败发生在动态 CRT 负例的原因验证；实际便携 exe 的 DLL 审计已通过。服务器原始日志保存在 `.local-test-data/runs/ci-8e44684-package-failure/ci-8e44684-package-job.log`。本机改用与独立检查相同的 PowerShell 7 宿主后也复现，记录为 `hybrid-recognition-tdd-1f15ef9/pwsh-package-reproduction.log`；该次负例子进程的原始错误显示找不到 `Get-FileHash`，而不是发现 VC runtime，因此测试正确地拒绝假成功。
 
 把 `Start-Process` 子调用改为与版本测试一致的直接 `powershell.exe` 调用，并检查非零退出码和明确的 VC runtime 原因后，两种 PowerShell 宿主均可工作；修复后的本机 PowerShell 7 记录为同目录 `pwsh-package-fixed.log`。CI 增加始终收集负例日志的步骤，只允许 `version-<GUID>/import-control/expected-rejection.log`，不扩大到任意包内文件；微型仓库回归同时验证有/无 runs 目录时，截图、模型、exe 及相邻同名日志都不会上传。新提交仍须重新通过全部 required checks，不能用本机成功覆盖已失败的服务器运行。
+
+后续 `ce88a94` 的打包步骤已完成所有检查，却因 GitHub pwsh 包装器继承预期负例的退出码而失败；本机用相同包装器复现 1，全部断言之后显式成功退出后为 0。该轮回归另有一次错误维度 fixture 的非预期返回值，原始日志保留在 `ci-ce88a94-failure/`。`b8e7104658d81a2d6bd3784734d20e60f0f8c444` 增加具体 fixture/实际错误诊断而保留原断言，本机版本 8 项、回归 9 项及 [CI 40539478406](https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40539478406) 五项全部通过。120 次独立本机进程也未复现；这仍不证明已经找到原生返回差异的根因，后续若再失败应使用新增诊断追查。
+
+## 真实牌河的光晕分割
+
+旧公开牌河图上的白板与五索被浅绿色光晕连接：原候选 `[283,65,50,40]` 混入下一张牌。公共亮色分割排除已有高亮判定的绿色像素后，白板边界为 `[283,65,42,21]`，相邻五索保持独立。新增原创合成图先复现连牌失败，再验证四种旋转、完整牌面尺寸、共享光晕歧义拒绝及单独高亮保留；原始失败记录为 `ci-ce88a94-failure/highlight-initial-failure.log`。
+
+人工标注 `tests/fixtures/manifests/public-board-v1.json` 在首次实际模型牌河推理前复核，包括放大旋转检查九筒、九万与五索。原图与 RGB 只保存在本机，仓库仅保留来源、SHA-256、边界与牌码。`inspect_model_board` 按实际门槛逐方向输出结果，整组仍沿用现有严格判定。该来源参与过模板和分割开发，不能列为独立最终验收集。

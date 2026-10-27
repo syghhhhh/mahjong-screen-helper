@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0",
+  "truth_revision": "2026-10-28-public-river-review",
+  "raw_images_in_repository": false,
+  "source_url": "https://haisousa.hatenadiary.jp/entry/2025/09/05/170000",
+  "original_sha256": "2b7d2334a3f317e4587ec5d24fc992c4b6d77bf1e50086e83f6bc9ea4c2042de",
+  "local_file": ".local-test-data/screenshots/public-river-roi.rgb",
+  "sha256": "dac09e276a326383e51b8039e4d9a751e2f67f87526496c75a3f56ea30ead734",
+  "width": 350,
+  "height": 250,
+  "review": "Labels visually reviewed before the optional model's first public-region probe. Rotated enlarged crops confirm 9p, 9m and 5s. This old public source informed glow segmentation and is development evidence, not an independent accuracy holdout.",
+  "geometry_review": "Original detector region [283,65,50,40] joined the blank face to its neighbor through a pale green glow. Physical faces were reviewed separately. Rectangles below describe pale face bounds, not full three-dimensional tile bodies.",
+  "faces": [
+    {"id": "river-00", "rect": [175, 12, 30, 32], "tile": "1m"},
+    {"id": "river-01", "rect": [240, 12, 30, 31], "tile": "2z"},
+    {"id": "river-02", "rect": [207, 13, 30, 32], "tile": "1z"},
+    {"id": "river-03", "rect": [20, 42, 42, 21], "tile": "9p"},
+    {"id": "river-04", "rect": [18, 64, 43, 22], "tile": "9m"},
+    {"id": "river-05", "rect": [283, 65, 42, 21], "tile": "5z"},
+    {"id": "river-06", "rect": [14, 86, 44, 23], "tile": "1z"},
+    {"id": "river-07", "rect": [284, 88, 43, 22], "tile": "5s"},
+    {"id": "river-08", "rect": [11, 110, 44, 29], "tile": "2m"},
+    {"id": "river-09", "rect": [286, 111, 45, 24], "tile": "4z"},
+    {"id": "river-10", "rect": [289, 135, 47, 25], "tile": "2z"},
+    {"id": "river-11", "rect": [291, 161, 46, 30], "tile": "1p"},
+    {"id": "river-12", "rect": [207, 193, 35, 40], "tile": "5m"},
+    {"id": "river-13", "rect": [134, 194, 34, 39], "tile": "1z"},
+    {"id": "river-14", "rect": [170, 194, 35, 39], "tile": "1s"},
+    {"id": "river-15", "rect": [59, 195, 36, 40], "tile": "1p"},
+    {"id": "river-16", "rect": [97, 195, 35, 39], "tile": "2z"},
+    {"id": "river-17", "rect": [244, 195, 35, 40], "tile": "7p"}
+  ]
+}

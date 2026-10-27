@@ -90,6 +90,17 @@ pub struct PublicSnapshot {
     pub offered: Option<(Tile, RelativeSeat)>,
 }
 
+fn green_highlight(pixel: &[u8]) -> bool {
+    let (r, g, b) = (pixel[0] as u16, pixel[1] as u16, pixel[2] as u16);
+    g >= 140 && g >= r + 20 && g >= b + 10
+}
+
+fn public_face_pixel(pixel: &[u8]) -> bool {
+    // Bright offer glows can also pass is_pale. Do not let them connect two
+    // adjacent faces or enlarge a blank face into the next tile's glyph.
+    is_pale(pixel) && !green_highlight(pixel)
+}
+
 /// Locate separated pale tile faces in a tightly calibrated public-information region.
 /// This does not prove that every tile on a real table has been detected.
 pub fn detect_public_slots(image: &RgbImage) -> Vec<Rect> {
@@ -100,7 +111,7 @@ pub fn detect_public_slots(image: &RgbImage) -> Vec<Rect> {
     let height = image.height as usize;
     let mut pending = Vec::new();
     for start in 0..count {
-        if visited[start] || !is_pale(&image.rgb[start * 3..start * 3 + 3]) {
+        if visited[start] || !public_face_pixel(&image.rgb[start * 3..start * 3 + 3]) {
             continue;
         }
         visited[start] = true;
@@ -125,7 +136,9 @@ pub fn detect_public_slots(image: &RgbImage) -> Vec<Rect> {
             .into_iter()
             .flatten()
             {
-                if !visited[neighbor] && is_pale(&image.rgb[neighbor * 3..neighbor * 3 + 3]) {
+                if !visited[neighbor]
+                    && public_face_pixel(&image.rgb[neighbor * 3..neighbor * 3 + 3])
+                {
                     visited[neighbor] = true;
                     pending.push(neighbor);
                 }
@@ -402,13 +415,8 @@ fn green_border(image: &RgbImage, rect: Rect) -> f32 {
                 continue;
             }
             let at = ((y * image.width + x) * 3) as usize;
-            let (r, g, b) = (
-                image.rgb[at] as u16,
-                image.rgb[at + 1] as u16,
-                image.rgb[at + 2] as u16,
-            );
             samples += 1;
-            if g >= 140 && g >= r + 20 && g >= b + 10 {
+            if green_highlight(&image.rgb[at..at + 3]) {
                 green += 1;
             }
         }

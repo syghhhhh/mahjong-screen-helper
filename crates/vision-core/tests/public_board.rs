@@ -103,6 +103,51 @@ fn reads_scattered_rotated_tiles_and_only_one_highlighted_opponent_offer() {
 }
 
 #[test]
+fn pale_green_offer_glow_does_not_join_or_expand_adjacent_tile_faces() {
+    let mut image = RgbImage::new(80, 100, vec![38; 80 * 100 * 3]).unwrap();
+    paste(&mut image, &art(0), 20, 10, true);
+    paste(&mut image, &art(1), 20, 38, false);
+    // A bright, washed-out glow passes the neutral pale-face threshold. It
+    // touches both faces, unlike the saturated green used by older fixtures.
+    for pixel in image.pixels_mut().chunks_exact_mut(3) {
+        if pixel == [70, 225, 100] {
+            pixel.copy_from_slice(&[190, 235, 205]);
+        }
+    }
+    for rotation in Rotation::ALL {
+        let scene = image.rotated(rotation);
+        let slots = detect_public_slots(&scene);
+        assert_eq!(slots.len(), 2, "{rotation:?}: {slots:?}");
+        assert!(slots.iter().all(|r| r.width * r.height == 18 * 26));
+        let read = bank().recognize_public_tiles(&scene, MatchConfig::default());
+        let tiles = read
+            .tiles
+            .expect("separated original faces should classify");
+        assert_eq!(tiles.len(), 2);
+        for code in ["1m", "2p"] {
+            assert!(
+                tiles
+                    .iter()
+                    .any(|t| t.tile == Tile::from_code(code).unwrap())
+            );
+        }
+        // The shared glow is ambiguous as an offer and must stay rejected.
+        assert!(read.offered.is_none());
+    }
+
+    let mut isolated = RgbImage::new(180, 160, vec![38; 180 * 160 * 3]).unwrap();
+    paste(&mut isolated, &art(0), 140, 70, true);
+    for pixel in isolated.pixels_mut().chunks_exact_mut(3) {
+        if pixel == [70, 225, 100] {
+            pixel.copy_from_slice(&[190, 235, 205]);
+        }
+    }
+    let read = bank().recognize_public_tiles(&isolated, MatchConfig::default());
+    assert_eq!(read.tiles.unwrap().len(), 1);
+    assert_eq!(read.offered.unwrap().tile, Tile::from_code("1m").unwrap());
+}
+
+#[test]
 fn rejects_unknown_tiles_and_impossible_public_counts() {
     let bank = bank();
     let mut image = RgbImage::new(160, 50, vec![38; 160 * 50 * 3]).unwrap();
