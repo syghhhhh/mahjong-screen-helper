@@ -2,7 +2,7 @@
 //! Usage: cargo run -p vision-core --example inspect_tiles -- path width height tiles-dir
 
 use riichi_core::Tile;
-use std::{env, fs};
+use std::{env, fs, time::Instant};
 use vision_core::{ActionLabel, MatchConfig, RgbImage, TemplateBank, detect_hand_slots};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -30,6 +30,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let placeholder = RgbImage::new(1, 1, vec![0, 0, 0])?;
     let bank = TemplateBank::new(templates, vec![(ActionLabel::None, placeholder)])?;
     let slots = detect_hand_slots(&image);
+    let started = Instant::now();
     let diagnostic = bank.recognize_hand(
         &image,
         &slots,
@@ -38,7 +39,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             min_margin: 0.0,
         },
     )?;
+    let candidate_elapsed = started.elapsed();
+    let started = Instant::now();
     let accepted = bank.recognize_hand(&image, &slots, MatchConfig::default())?;
+    let accepted_elapsed = started.elapsed();
     println!("detected {} tile candidates", slots.len());
     if let Some(tiles) = diagnostic.tiles {
         let codes: Vec<_> = tiles.iter().map(|tile| tile_code(*tile)).collect();
@@ -50,6 +54,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         accepted.tiles.is_some()
     );
     println!("uncertain slots: {:?}", accepted.uncertain_slots);
+    println!("candidate matching: {} ms", candidate_elapsed.as_millis());
+    println!("thresholded matching: {} ms", accepted_elapsed.as_millis());
     Ok(())
 }
 

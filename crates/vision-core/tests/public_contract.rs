@@ -226,6 +226,43 @@ fn scans_action_region_without_fixed_button_coordinates() {
 }
 
 #[test]
+fn does_not_confuse_button_background_with_an_action() {
+    let width = 80u32;
+    let height = 40u32;
+    let mut pixels = vec![0u8; (width * height * 3) as usize];
+    for chunk in pixels.chunks_exact_mut(3) {
+        chunk.copy_from_slice(&[35, 75, 125]);
+    }
+    for y in 10..30 {
+        for x in 24..56 {
+            let offset = ((y * width + x) * 3) as usize;
+            pixels[offset..offset + 3].copy_from_slice(&[230, 220, 100]);
+        }
+    }
+    let template = RgbImage::new(width, height, pixels).unwrap();
+    let bank = TemplateBank::new(
+        vec![(Tile::from_code("1m").unwrap(), picture(1, false))],
+        vec![(ActionLabel::Pon, template.clone())],
+    )
+    .unwrap();
+    let mut background = vec![0u8; (220 * 80 * 3) as usize];
+    for chunk in background.chunks_exact_mut(3) {
+        chunk.copy_from_slice(&[35, 75, 125]);
+    }
+    let blank = RgbImage::new(220, 80, background.clone()).unwrap();
+    assert_eq!(
+        bank.scan_actions(&blank, MatchConfig::default()).actions,
+        Some(vec![])
+    );
+    paste(&mut background, 220, &template, 90, 20, 1);
+    let scene = RgbImage::new(220, 80, background).unwrap();
+    assert_eq!(
+        bank.scan_actions(&scene, MatchConfig::default()).actions,
+        Some(vec![ActionLabel::Pon])
+    );
+}
+
+#[test]
 fn requires_three_distinct_consecutive_stable_frames() {
     let hand = vec![Tile::from_code("1m").unwrap(); 13];
     let snapshot = VisionSnapshot {

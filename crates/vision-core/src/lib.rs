@@ -454,7 +454,12 @@ impl TemplateBank {
                     height: 1,
                 },
             );
-            for scale in [80u32, 100, 125] {
+            let scales: &[u32] = if template.width < 32 || template.height < 32 {
+                &[80, 100, 125]
+            } else {
+                &[50, 60, 70, 80, 100, 125]
+            };
+            for &scale in scales {
                 let width = (template.width * scale / 100).max(1);
                 let height = (template.height * scale / 100).max(1);
                 if width > image.width || height > image.height {
@@ -528,9 +533,22 @@ fn scan_positions(max: u32, step: u32) -> Vec<u32> {
 }
 
 fn sampled_similarity(image: &RgbImage, rect: Rect, template: &RgbImage) -> f32 {
-    const GRID_WIDTH: u32 = 16;
-    const GRID_HEIGHT: u32 = 12;
+    const GRID_WIDTH: u32 = 32;
+    const GRID_HEIGHT: u32 = 20;
     let mut squared = 0.0f64;
+    let mut weight_sum = 0.0f64;
+    let corners = [
+        0,
+        (template.width - 1) * 3,
+        (template.height - 1) * template.width * 3,
+        (template.width * template.height - 1) * 3,
+    ];
+    let mut background = [0.0f64; 3];
+    for corner in corners {
+        for (channel, value) in background.iter_mut().enumerate() {
+            *value += template.rgb[corner as usize + channel] as f64 / 4.0;
+        }
+    }
     for gy in 0..GRID_HEIGHT {
         let image_y =
             rect.y + ((gy * 2 + 1) * rect.height / (GRID_HEIGHT * 2)).min(rect.height - 1);
@@ -543,13 +561,19 @@ fn sampled_similarity(image: &RgbImage, rect: Rect, template: &RgbImage) -> f32 
                 ((gx * 2 + 1) * template.width / (GRID_WIDTH * 2)).min(template.width - 1);
             let a = ((image_y * image.width + image_x) * 3) as usize;
             let b = ((template_y * template.width + template_x) * 3) as usize;
+            let foreground = (0..3)
+                .map(|channel| (template.rgb[b + channel] as f64 - background[channel]).abs())
+                .sum::<f64>()
+                / (3.0 * 255.0);
+            let weight = 1.0 + 20.0 * foreground * foreground;
             for channel in 0..3 {
                 let delta = image.rgb[a + channel] as f64 - template.rgb[b + channel] as f64;
-                squared += delta * delta;
+                squared += weight * delta * delta;
             }
+            weight_sum += weight;
         }
     }
-    (1.0 - (squared / (GRID_WIDTH as f64 * GRID_HEIGHT as f64 * 3.0 * 255.0 * 255.0)).sqrt()) as f32
+    (1.0 - (squared / (weight_sum * 3.0 * 255.0 * 255.0)).sqrt()) as f32
 }
 
 fn overlap(a: Rect, b: Rect) -> f32 {
