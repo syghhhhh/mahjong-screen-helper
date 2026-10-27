@@ -29,3 +29,7 @@
 状态测试还覆盖赤五、已有一组暗杠后的第二次暗杠、观察到非法杠后进入不确定状态，以及断线或纠错后不复用旧摸牌证据。运行时合成像素测试覆盖确认立直、摸牌、合法暗杠、公共牌更新和补牌，检查立直标志保留且不输出自由切牌建议。
 
 这些测试不证明立直声明、杠按钮或暗杠背面在真实雀魂界面上已经可靠识别；这些视觉验收仍保留在版本任务中。
+
+## 固定提交验证
+
+提交 `fd69bba809da0af2e47a2bd5aeae224863d571df` 在本机 Windows 11 x64 上通过版本测试 8 项和全项目回归 9 项，无失败或跳过；状态契约测试 16 例、运行时图像链路测试 7 例均通过。工作区 Clippy 严格检查也通过。本机版本摘要为 `.local-test-data/runs/version-v0.0.1-5dd7c02a59bb4dba8d90ea5f0e1d22f9/version-tests.json`，回归摘要为 `.local-test-data/runs/all-a0d1e45ec8374e7bb9a5474296149392/all-tests.json`。初始实现缺失时的失败记录保留在 `.local-test-data/runs/riichi-kan-tdd-d6d31f4/initial-failure.txt`，未用成功重跑覆盖。
