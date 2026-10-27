@@ -337,6 +337,46 @@
       "regression_profile": "full",
       "local_evidence_required": ["live-public-table-recognition", "live-public-table-integration"],
       "evidence": null
+    },
+    {
+      "id": "V001-009",
+      "title": "定位并修复原生并行规则计算异常",
+      "status": "in_progress",
+      "depends_on": ["V001-004"],
+      "scope": ["rules", "integration", "testing"],
+      "acceptance_criteria": [
+        "保留原访问异常、诊断 panic、最小规则复现和对应构建哈希",
+        "确认可检验的原因并验证修复，不以有限次重跑通过代替根因分析",
+        "独立手牌并行计算保持已知向听值、合法切牌、固定排名和确定性",
+        "默认线程与堆设置下完成版本测试、完整回归及本机故障修复对照",
+        "不串行化正式测试，不屏蔽异常，不放宽原断言"
+      ],
+      "version_tests": [
+        "tests/version/v0.0.1/rules.test.ps1",
+        "tests/version/v0.0.1/overlay-integration.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/regression/rules.test.ps1",
+        "tests/regression/overlay-integration.test.ps1"
+      ],
+      "regression_profile": "full",
+      "local_evidence_required": ["native-parallel-resolution"],
+      "evidence": null,
+      "diagnostic_history": [
+        {
+          "source_sha": "01ea22ee99c2a07306b6e5039b04c1c44d242426",
+          "source_dirty": false,
+          "kind": "rule-only-reproduction-and-frame-pointer-diagnostic",
+          "status": "unresolved",
+          "original_rule_libtest_summary": ".local-test-data/runs/core-test-harness-7d6a1a894678419aa7a76d0f9ac54bf9/debug-results.json",
+          "original_rule_std_threads_summary": ".local-test-data/runs/core-ten-threads-318444b8e4f845289c8ab88d6d2a751b/debug-results.json",
+          "alternate_compiler_summary": ".local-test-data/runs/core-stable-static-67a2d599f95f43a49d068979a9191d3a/debug-results.json",
+          "dynamic_crt_summary": ".local-test-data/runs/core-1.93.1-dynamic-aa5d0999a2454ba1be508514b4b959e5/debug-results.json",
+          "frame_pointer_panic_summary": ".local-test-data/runs/pipeline-frame-panic-513edf103f3a4c05bfd6effa5945bf3c/debug-results.json",
+          "limitations": "First-AV diagnostic captures intentionally terminate the child. Independent compiler, CRT and C++ controls change code and timing; they do not establish a root cause.",
+          "record": "docs/failures/2026-10-28-pipeline-access-violation.md"
+        }
+      ]
     }
   ],
   "release_gate": {
