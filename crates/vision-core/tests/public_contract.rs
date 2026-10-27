@@ -263,6 +263,47 @@ fn does_not_confuse_button_background_with_an_action() {
 }
 
 #[test]
+fn dark_honor_glyph_beats_a_closer_red_shape() {
+    fn tile_with_glyph(left: u32, ink: [u8; 3]) -> RgbImage {
+        let mut pixels = vec![245u8; (60 * 90 * 3) as usize];
+        for y in 25..65 {
+            for x in left..left + 24 {
+                let offset = ((y * 60 + x) * 3) as usize;
+                pixels[offset..offset + 3].copy_from_slice(&ink);
+            }
+        }
+        RgbImage::new(60, 90, pixels).unwrap()
+    }
+    let black = Tile::from_code("1z").unwrap();
+    let red = Tile::from_code("7z").unwrap();
+    let bank = TemplateBank::new(
+        vec![
+            (black, tile_with_glyph(12, [30, 30, 30])),
+            (red, tile_with_glyph(16, [210, 40, 40])),
+        ],
+        vec![(ActionLabel::None, picture(1, false))],
+    )
+    .unwrap();
+    let input = tile_with_glyph(16, [30, 30, 30]);
+    let read = bank
+        .recognize_hand(
+            &input,
+            &[Rect {
+                x: 0,
+                y: 0,
+                width: 60,
+                height: 90,
+            }],
+            MatchConfig {
+                min_confidence: 0.0,
+                min_margin: 0.0,
+            },
+        )
+        .unwrap();
+    assert_eq!(read.tiles, Some(vec![black]));
+}
+
+#[test]
 fn requires_three_distinct_consecutive_stable_frames() {
     let hand = vec![Tile::from_code("1m").unwrap(); 13];
     let snapshot = VisionSnapshot {

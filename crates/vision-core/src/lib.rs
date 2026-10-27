@@ -712,6 +712,7 @@ fn best_match<T: Copy + Eq>(
 struct TileDescriptor {
     full: Vec<[u8; 3]>,
     upper: Vec<[u8; 3]>,
+    red_ink: f32,
 }
 
 impl TileDescriptor {
@@ -719,6 +720,7 @@ impl TileDescriptor {
         Self {
             full: box_region(image, 0, 100, 0, 100),
             upper: box_region(image, 12, 83, 19, 48),
+            red_ink: red_ink_ratio(image),
         }
     }
 
@@ -733,8 +735,26 @@ impl TileDescriptor {
             }
             (1.0 - (squared / (a.len() as f64 * 3.0 * 255.0 * 255.0)).sqrt()) as f32
         }
-        score(&self.full, &other.full) * 0.55 + score(&self.upper, &other.upper) * 0.45
+        (score(&self.full, &other.full) * 0.60 + score(&self.upper, &other.upper) * 0.40
+            - (self.red_ink - other.red_ink).abs() * 0.10)
+            .max(0.0)
     }
+}
+
+fn red_ink_ratio(image: &RgbImage) -> f32 {
+    let mut red = 0.0f32;
+    let mut ink = 0u32;
+    for y in image.height / 10..image.height * 9 / 10 {
+        for x in image.width / 10..image.width * 9 / 10 {
+            let offset = ((y * image.width + x) * 3) as usize;
+            let pixel = &image.rgb[offset..offset + 3];
+            if *pixel.iter().min().unwrap_or(&255) < 175 {
+                red += (pixel[0] as f32 - pixel[1].max(pixel[2]) as f32).max(0.0) / 255.0;
+                ink += 1;
+            }
+        }
+    }
+    if ink == 0 { 0.0 } else { red / ink as f32 }
 }
 
 fn box_region(
@@ -775,10 +795,16 @@ fn box_pixel(
     let right = (image.width * right_percent / 100).max(left + 1);
     let top = image.height * top_percent / 100;
     let bottom = (image.height * bottom_percent / 100).max(top + 1);
-    let x0 = left + (right - left) * gx / 36;
-    let x1 = (left + (right - left) * (gx + 1) / 36).max(x0 + 1);
-    let y0 = top + (bottom - top) * gy / 56;
-    let y1 = (top + (bottom - top) * (gy + 1) / 56).max(y0 + 1);
+    let x_scale = (right - left) as f64 / 36.0;
+    let y_scale = (bottom - top) as f64 / 56.0;
+    let x_center = left as f64 + (gx as f64 + 0.5) * x_scale;
+    let y_center = top as f64 + (gy as f64 + 0.5) * y_scale;
+    let x_support = x_scale.max(1.0) * 0.5;
+    let y_support = y_scale.max(1.0) * 0.5;
+    let x0 = (x_center - x_support + 0.5).floor() as u32;
+    let x1 = ((x_center + x_support + 0.5).floor() as u32).max(x0 + 1);
+    let y0 = (y_center - y_support + 0.5).floor() as u32;
+    let y1 = ((y_center + y_support + 0.5).floor() as u32).max(y0 + 1);
     let mut rgb = [0u32; 3];
     let mut count = 0u32;
     for y in y0..y1.min(image.height) {
