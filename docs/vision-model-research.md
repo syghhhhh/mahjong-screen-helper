@@ -62,3 +62,11 @@ tensor 文件为 1–256 个连续的 little-endian `[1,3,48,32]` float32 输入
 后续本机实验只增加自行生成的字形和鸟形变化，没有加入游戏截图训练。字体为 [Noto CJK](https://github.com/notofonts/noto-cjk) 提交 `f8d157532fbfaeda587e826d4cd5b21a49186f7c` 的简体 Sans/Serif Regular，许可证 OFL-1.1；字体文件仅用于本机生成合成图片。[OFL FAQ](https://openfontlicense.org/ofl-faq/)说明字体生成的图形不因此受字体本身的分发许可约束。
 
 实验 `.local-test-data/runs/local-permissive-cnn-c4085215b2ce49558fcbffba9bbc4392/` 保持同一小网络，用修订后的统一真值检查三张已知手牌，最高类别为 41/41；第二张图最低分仍只有约 0.275。这不是通过真实识牌验收，权重仍未打包、未启用，尚需独立画风、未知输入、行动按钮、公共牌和置信度测试。训练输入为 `[37,40,3,48,32]`，压缩文件 SHA-256 为 `d012bcedc8fb842059c7cdcce98973830009a09370d33c41ecd5cf1b90f47468`，生成脚本、字体来源与哈希均保存在本机 `models/permissive-synthetic-v1/`。
+
+独立检查又从官方 FAQ 取得 34 张带数字/字母提示和完整边框的说明牌图，逐张人工核对标签后才运行分类，未把它们加入训练。整图结果为 24/34；采用当前公共牌浅色连通区域定位后仍为 24/34，一筒还出现多个候选区域。一万误认二万的分数约 0.986，说明已知三张手牌的 41/41 不能证明跨画风泛化和高分可靠性。这些说明图不是现场对局，只作为独立画风压力测试；原始图片、来源 URL、哈希和失败结果仅保存在本机 `screenshots/official-card-fixtures/`、`runs/local-official-card-probe-5ae310bcb4054e9c8cd9eb2e99ffb9c7/` 与 `runs/local-official-face-probe-74481fcadf1f4a3c8a61125ceb9fcdd1/`，没有上传或删除失败样本。
+
+## 生命周期修复后的固定提交
+
+提交 `06c4b74f72af03226a1c99ecb3637854d78b56eb` 的版本测试 8 项和全项目回归 9 项均在本机通过，无失败或跳过，摘要为 `.local-test-data/runs/version-v0.0.1-6953ba37615541ec91ab670752680ba2/version-tests.json` 和 `.local-test-data/runs/all-3e89bff1e2b64ebf8d679b8c7fa2b284/all-tests.json`。该提交的 [CI 运行 40518212205](https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40518212205) 的五项 required checks 均通过，其中包含隔离子进程生命周期测试；前两次失败记录继续保留。
+
+同一干净提交的原生数值对照记录在 `.local-test-data/runs/local-native-onnx-a05fe85d96454938b6cdb94d2da1874a/`：最大 logits 误差仍为 `2.55e-6`，该次模型加载约 27.8 ms、41 次执行约 3.1 ms。此对照使用较早的 40/41 CC0 权重，不是新增混合字体权重的准确率或实时验收。
