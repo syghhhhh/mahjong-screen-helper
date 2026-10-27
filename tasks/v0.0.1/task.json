@@ -161,6 +161,23 @@
           ],
           "limitations": "Inspected developer inputs, synthetic negatives and word-only prototypes; no independent or live acceptance, enabled-button context or shipped weights. OCR attribution review remains incomplete. Original v1 input contract retained."
         }
+      ],
+      "validation_history": [
+        {
+          "source_sha": "b6c4a0fc7559697df872fabb8b059ea975e6a358",
+          "source_dirty": false,
+          "version_test_run": "version-v0.0.1-f5fd59b077b04af8b224baef2b934879",
+          "regression_test_run": "all-components-0026fd17ca554ea490c136dede73531a",
+          "version_passed": true,
+          "vision_regression_passed": true,
+          "full_regression_passed": false,
+          "failed_check": "tests/regression/rules.test.ps1",
+          "native_exit_code": "0xc0000005",
+          "summary": ".local-test-data/runs/all-components-0026fd17ca554ea490c136dede73531a/all-tests.json",
+          "log": ".local-test-data/runs/all-components-0026fd17ca554ea490c136dede73531a/all-tests.log",
+          "completed_at": "2026-10-27T21:38:20.1669374Z",
+          "limitations": "Six new geometry tests pass, but the full suite naturally failed in the unchanged rule concurrency binary. No success gate was run; visual acceptance also remains incomplete."
+        }
       ]
     },
     {
@@ -463,6 +480,30 @@
           "concurrency_pdb_sha256": "e13dc703c17f03ee86fc45e92005e5fab9a95d0cf775b27fe4fd51e065082d0b",
           "environment": { "os": "Windows 11 10.0.26200", "architecture": "x64", "rustc": "1.93.1" },
           "completed_at": "2026-10-27T20:50:20.3468100Z"
+        },
+        {
+          "source_sha": "b6c4a0fc7559697df872fabb8b059ea975e6a358",
+          "source_dirty": false,
+          "test_run": "all-components-0026fd17ca554ea490c136dede73531a",
+          "command": "scripts/test-all.ps1 -Version v0.0.1",
+          "failed_check": "tests/regression/rules.test.ps1",
+          "checks": 10,
+          "failed": 1,
+          "skipped": 0,
+          "exit_code": 1,
+          "native_exit_code": "0xc0000005",
+          "native_target": "riichi-core/tests/concurrency.rs",
+          "version_test_run": "version-v0.0.1-f5fd59b077b04af8b224baef2b934879",
+          "version_passed": true,
+          "summary": ".local-test-data/runs/all-components-0026fd17ca554ea490c136dede73531a/all-tests.json",
+          "log": ".local-test-data/runs/all-components-0026fd17ca554ea490c136dede73531a/all-tests.log",
+          "preserved_artifacts": ".local-test-data/runs/component-regression-native-failure-4a4f329c3b25451e9ac2c4ffde987759/",
+          "concurrency_exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
+          "concurrency_pdb_sha256": "e13dc703c17f03ee86fc45e92005e5fab9a95d0cf775b27fe4fd51e065082d0b",
+          "strict_utf8": true,
+          "nul_bytes": 0,
+          "environment": { "os": "Windows 11 10.0.26200", "architecture": "x64", "rustc": "1.93.1" },
+          "completed_at": "2026-10-27T21:38:20.1669374Z"
         }
       ]
     },
@@ -515,8 +556,8 @@
           "limitations": "New source fixes logging code pages. This passing run does not resolve or replace prior native failures; declared dependency V001-009 still fails and no success gate was run."
         }
       ],
-      "blocked_reason": "CP437 logging contracts, the version suite and all 10 full-regression checks passed at 6dd27fe. Prior intermittent native failures remain unexplained and declared dependency V001-009 is still failed, so the success gate has not run.",
-      "blocking_run": "all-add896cdaad741b38996799197b1cbf7"
+      "blocked_reason": "Logging contracts remain passed. The latest clean full run at b6c4a0f passed 9/10 checks but naturally failed in the unchanged rule concurrency binary with 0xc0000005. Declared dependency V001-009 remains failed; prior successful logging validation is historical and no success gate has run.",
+      "blocking_run": "all-components-0026fd17ca554ea490c136dede73531a"
     }
   ],
   "release_gate": {
