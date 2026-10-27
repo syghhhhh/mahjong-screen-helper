@@ -29,4 +29,6 @@
 
 新增合成字体来源为 [Ma Shan Zheng](https://github.com/google/fonts/tree/ddf386ba1b9fbc6b2c818f1ddcd9148f54ced94b/ofl/mashanzheng) 与 [LXGW WenKai](https://github.com/lxgw/LxgwWenKai/tree/db34daf997d8f38e3f5595db0a56e00368d1323f)，分别固定提交 `ddf386ba1b9fbc6b2c818f1ddcd9148f54ced94b`、`db34daf997d8f38e3f5595db0a56e00368d1323f`。本机保存原始 OFL-1.1 文本及文件 SHA-256，不安装字体、不随包分发。生成器检查字体 CMap，只从确实支持的字形中取样，防止缺字方框被当作训练牌码。相应候选使用自绘透视、阴影及原有原创负例，未使用游戏截图像素训练，但实图表现未通过，仍不打包。
 
-重新调研的 [Camerash 数据集](https://github.com/Camerash/mahjong-dataset) 虽标注 MIT，README 同时说明图像主要由 Google、Ebay、Alibaba 搜索抓取，未提供本轮所需的逐图来源记录；本轮未用作训练输入。另只读取了 [pjura 34 类 ViT 模型卡与配置](https://huggingface.co/pjura/mahjong_soul_vision)：其声明 Apache-2.0，训练数据说明尚未填写，类别及架构与当前 37 类小分类器不同。本轮没有下载该模型权重或将其集成。
+重新调研的 [Camerash 数据集](https://github.com/Camerash/mahjong-dataset) 虽标注 MIT，README 同时说明图像主要由 Google、Ebay、Alibaba 搜索抓取，未提供本轮所需的逐图来源记录；未用作训练输入。
+
+[pjura 的 34 类 ViT](https://huggingface.co/pjura/mahjong_soul_vision) 在最初只读模型卡之后，进一步固定到提交 `ea01ca0bcb9be0fc10a5fa09ee8356770c25adc5`，下载到本机研究目录。权重 343,367,594 字节，SHA-256 为 `a3cc566c8011b4496239a5228de3985e37ba2c2dfceefd52f67bb34c5f7e49c0`；模型卡声明 Apache-2.0，但训练与评估数据来源说明尚未填写。只用显式 ViT 类和 `torch.load(weights_only=True)` 读取参数，不执行远程代码或读取 `training_args.bin`，没有安装或修改全局开发依赖。模型及原始画面均未加入仓库或便携包，尚未用作训练教师。它在现有开发图上的 34 类结果较好，但无法区分赤五，且空白非牌面会误报白板；具体计数和限制见[研究记录](vision-model-research.md#固定版本-vit-教师的本机评估)。项目自身仍为 MIT，不能把第三方模型声明改写为 MIT，也不能凭模型卡推断原始游戏素材的授权。
