@@ -52,7 +52,7 @@
     {
       "id": "V001-002",
       "title": "实现窗口采集与首次区域校准",
-      "status": "planned",
+      "status": "implemented",
       "depends_on": [
         "V001-001"
       ],
