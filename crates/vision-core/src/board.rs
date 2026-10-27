@@ -104,6 +104,10 @@ fn public_face_pixel(pixel: &[u8]) -> bool {
 /// Locate separated pale tile faces in a tightly calibrated public-information region.
 /// This does not prove that every tile on a real table has been detected.
 pub fn detect_public_slots(image: &RgbImage) -> Vec<Rect> {
+    detect_public_slots_using(image, public_face_pixel)
+}
+
+fn detect_public_slots_using(image: &RgbImage, accepts: impl Fn(&[u8]) -> bool) -> Vec<Rect> {
     let count = image.rgb.len() / 3;
     let mut visited = vec![false; count];
     let mut slots = Vec::new();
@@ -111,7 +115,7 @@ pub fn detect_public_slots(image: &RgbImage) -> Vec<Rect> {
     let height = image.height as usize;
     let mut pending = Vec::new();
     for start in 0..count {
-        if visited[start] || !public_face_pixel(&image.rgb[start * 3..start * 3 + 3]) {
+        if visited[start] || !accepts(&image.rgb[start * 3..start * 3 + 3]) {
             continue;
         }
         visited[start] = true;
@@ -136,9 +140,7 @@ pub fn detect_public_slots(image: &RgbImage) -> Vec<Rect> {
             .into_iter()
             .flatten()
             {
-                if !visited[neighbor]
-                    && public_face_pixel(&image.rgb[neighbor * 3..neighbor * 3 + 3])
-                {
+                if !visited[neighbor] && accepts(&image.rgb[neighbor * 3..neighbor * 3 + 3]) {
                     visited[neighbor] = true;
                     pending.push(neighbor);
                 }
@@ -178,6 +180,28 @@ impl TemplateBank {
         classifier: Option<&dyn FaceClassifier>,
     ) -> PublicTileRead {
         let slots = detect_public_slots(image);
+        // A face entirely washed green must not disappear as an empty table.
+        // Retain plausible old pale components with no surviving face. Glows
+        // joined to valid faces are handled by the separated candidates above.
+        let obscured: Vec<_> = detect_public_slots_using(image, is_pale)
+            .into_iter()
+            .filter(|raw| {
+                !slots.iter().any(|face| {
+                    raw.x < face.x + face.width
+                        && face.x < raw.x + raw.width
+                        && raw.y < face.y + face.height
+                        && face.y < raw.y + raw.height
+                })
+            })
+            .collect();
+        if !obscured.is_empty() {
+            return PublicTileRead {
+                tiles: None,
+                uncertain_regions: obscured,
+                confidence: 0.0,
+                offered: None,
+            };
+        }
         if slots.is_empty()
             && image
                 .rgb

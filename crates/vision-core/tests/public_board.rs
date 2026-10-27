@@ -148,6 +148,36 @@ fn pale_green_offer_glow_does_not_join_or_expand_adjacent_tile_faces() {
 }
 
 #[test]
+fn a_green_washed_face_cannot_become_an_accepted_empty_region() {
+    let mut image = RgbImage::new(100, 100, vec![38; 100 * 100 * 3]).unwrap();
+    let rect = vision_core::Rect {
+        x: 50,
+        y: 30,
+        width: 18,
+        height: 26,
+    };
+    for y in rect.y..rect.y + rect.height {
+        for x in rect.x..rect.x + rect.width {
+            let at = ((y * image.width() + x) * 3) as usize;
+            image.pixels_mut()[at..at + 3].copy_from_slice(&[190, 235, 205]);
+        }
+    }
+    // The color is excluded from face matching but remains possible-tile
+    // evidence. Its small area must not bypass the old large-pale-area guard.
+    assert!(detect_public_slots(&image).is_empty());
+    let read = bank().recognize_public_tiles(&image, MatchConfig::default());
+    assert!(read.tiles.is_none());
+    assert!(read.uncertain_regions.contains(&rect));
+    assert!(read.offered.is_none());
+    paste(&mut image, &art(0), 10, 30, false);
+    assert_eq!(detect_public_slots(&image).len(), 1);
+    let read = bank().recognize_public_tiles(&image, MatchConfig::default());
+    assert!(read.tiles.is_none());
+    assert!(read.uncertain_regions.contains(&rect));
+    assert!(read.offered.is_none());
+}
+
+#[test]
 fn rejects_unknown_tiles_and_impossible_public_counts() {
     let bank = bank();
     let mut image = RgbImage::new(160, 50, vec![38; 160 * 50 * 3]).unwrap();
