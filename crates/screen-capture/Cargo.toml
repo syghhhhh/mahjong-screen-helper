@@ -14,3 +14,11 @@ windows-capture = "=2.0.1"
 [lib]
 name = "screen_capture"
 path = "src/lib.rs"
+
+[features]
+interactive-test = []
+
+[[test]]
+name = "local_window_capture"
+path = "tests/local_window_capture.rs"
+required-features = ["interactive-test"]
