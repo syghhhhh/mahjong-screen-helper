@@ -308,7 +308,7 @@ pub fn run(smoke: bool) -> Result<(), String> {
     });
     unsafe {
         SetLayeredWindowAttributes(window, 0, 250, LWA_ALPHA);
-        SetTimer(window, 1, 100, std::ptr::null());
+        SetTimer(window, 1, 50, std::ptr::null());
         if smoke {
             let sample = wide("1m 2m 3m 4m 5m 6m 2p 3p 4p 2s 3s 7z 7z 9p");
             SetWindowTextW(edit, sample.as_ptr());
