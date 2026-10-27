@@ -101,7 +101,7 @@
     {
       "id": "V001-004",
       "title": "实现四麻牌效与 Top-3 推荐",
-      "status": "implemented",
+      "status": "succeed",
       "depends_on": [
         "V001-001"
       ],
@@ -120,7 +120,29 @@
         "tests/regression/rules.test.ps1"
       ],
       "regression_profile": "full",
-      "evidence": null
+      "evidence": {
+        "source_sha": "a130d6d932e7c6086473ba5db138fb7d6e3b3ed6",
+        "version_test_run": "gate-version-v0.0.1-4b1c644b224f4698a3c3cc1c45ec9726",
+        "regression_test_run": "gate-all-15622db87ec94555a1fe22b95e49b543",
+        "commands": [
+          "scripts/test-version.ps1 -Version v0.0.1 -RunId gate-version-v0.0.1-4b1c644b224f4698a3c3cc1c45ec9726",
+          "scripts/test-all.ps1 -Version v0.0.1 -RunId gate-all-15622db87ec94555a1fe22b95e49b543"
+        ],
+        "logs": [
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-version-v0.0.1-4b1c644b224f4698a3c3cc1c45ec9726\\version-tests.log",
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-all-15622db87ec94555a1fe22b95e49b543\\all-tests.log"
+        ],
+        "summaries": [
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-version-v0.0.1-4b1c644b224f4698a3c3cc1c45ec9726\\version-tests.json",
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-all-15622db87ec94555a1fe22b95e49b543\\all-tests.json"
+        ],
+        "fixture_hashes": [],
+        "environment": {
+          "os": "Microsoft Windows NT 10.0.26200.0",
+          "architecture": "X64"
+        },
+        "completed_at": "2026-10-27T08:54:04.1892537Z"
+      }
     },
     {
       "id": "V001-005",
