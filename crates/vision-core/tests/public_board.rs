@@ -178,6 +178,71 @@ fn a_green_washed_face_cannot_become_an_accepted_empty_region() {
 }
 
 #[test]
+fn shadowed_faces_are_located_without_expanding_existing_bright_faces() {
+    let mut image = RgbImage::new(100, 70, vec![38; 100 * 70 * 3]).unwrap();
+    let mut shadowed = art(1);
+    for pixel in shadowed.pixels_mut().chunks_exact_mut(3) {
+        if pixel == [240; 3] {
+            pixel.copy_from_slice(&[166, 167, 165]);
+        }
+    }
+    // A shadow halo may join the relaxed component around a bright face;
+    // preserve the established bright bounds instead of expanding them.
+    paste(
+        &mut image,
+        &RgbImage::new(22, 30, vec![170; 22 * 30 * 3]).unwrap(),
+        8,
+        18,
+        false,
+    );
+    paste(&mut image, &art(0), 10, 20, false);
+    paste(&mut image, &shadowed, 50, 20, false);
+    let slots = detect_public_slots(&image);
+    assert_eq!(slots.len(), 2, "missing shadow face: {slots:?}");
+    for (slot, x) in slots.iter().zip([10, 50]) {
+        assert_eq!(
+            *slot,
+            vision_core::Rect {
+                x,
+                y: 20,
+                width: 18,
+                height: 26
+            }
+        );
+    }
+}
+
+#[test]
+fn shadowed_green_regions_remain_uncertain_alongside_bright_tiles() {
+    let mut image = RgbImage::new(100, 70, vec![38; 100 * 70 * 3]).unwrap();
+    paste(&mut image, &art(0), 10, 20, false);
+    let rect = vision_core::Rect {
+        x: 50,
+        y: 20,
+        width: 18,
+        height: 26,
+    };
+    for y in rect.y..rect.y + rect.height {
+        for x in rect.x..rect.x + rect.width {
+            let at = ((y * image.width() + x) * 3) as usize;
+            image.pixels_mut()[at..at + 3].copy_from_slice(&[165, 210, 180]);
+        }
+    }
+    let read = bank().recognize_public_tiles(&image, MatchConfig::default());
+    assert!(read.tiles.is_none(), "a shadowed candidate disappeared");
+    assert!(read.uncertain_regions.contains(&rect));
+}
+
+#[test]
+fn a_large_shadowed_surface_is_unknown_rather_than_an_empty_table() {
+    let image = RgbImage::new(400, 300, vec![170; 400 * 300 * 3]).unwrap();
+    assert!(detect_public_slots(&image).is_empty());
+    let read = bank().recognize_public_tiles(&image, MatchConfig::default());
+    assert!(read.tiles.is_none());
+    assert_eq!(read.uncertain_regions.len(), 1);
+}
+
+#[test]
 fn rejects_unknown_tiles_and_impossible_public_counts() {
     let bank = bank();
     let mut image = RgbImage::new(160, 50, vec![38; 160 * 50 * 3]).unwrap();

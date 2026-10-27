@@ -204,6 +204,54 @@ fn public_neural_reads_feed_the_same_pipeline_and_rejection_clears_old_state() {
 }
 
 #[test]
+fn a_shadowed_unknown_public_face_erases_advice_and_requires_three_clean_frames() {
+    let (mut engine, dictionary, _, _) = setup();
+    let hand = picture(&tiles(), &dictionary);
+    let empty = RgbImage::new(80, 80, vec![38; 80 * 80 * 3]).unwrap();
+    let mut dora = empty.clone();
+    paste(
+        &mut dora,
+        &dictionary.iter().find(|(t, _)| *t == tile("1p")).unwrap().1,
+        30,
+        25,
+    );
+    let mut public = PublicImages {
+        river: &empty,
+        own_melds: &empty,
+        opponent_melds: [&empty; 3],
+        dora: &dora,
+    };
+    for frame in 1..=2 {
+        engine.process_with_public(frame, &hand, None, &public);
+    }
+    assert!(matches!(
+        engine.process_with_public(3, &hand, None, &public),
+        PipelineOutput::Ready { .. }
+    ));
+    let mut shadow = empty.clone();
+    let washed = RgbImage::new(18, 26, [165, 210, 180].repeat(18 * 26)).unwrap();
+    paste(&mut shadow, &washed, 30, 25);
+    public.river = &shadow;
+    assert!(matches!(
+        engine.process_with_public(4, &hand, None, &public),
+        PipelineOutput::Uncertain
+    ));
+    assert!(engine.tracker().discard_recommendations().is_empty());
+    public.river = &empty;
+    for frame in 5..=6 {
+        assert!(matches!(
+            engine.process_with_public(frame, &hand, None, &public),
+            PipelineOutput::Waiting
+        ));
+    }
+    assert!(matches!(
+        engine.process_with_public(7, &hand, None, &public),
+        PipelineOutput::Ready { .. }
+    ));
+    assert_eq!(engine.recommendation_calculations(), 2);
+}
+
+#[test]
 fn pausing_and_removing_a_classifier_never_reuse_prior_stable_results() {
     let (mut engine, dictionary, _, calls) = setup();
     let hand = picture(&tiles(), &dictionary);

@@ -173,3 +173,21 @@ tensor 文件为 1–256 个连续的 little-endian `[1,3,48,32]` float32 输入
 干净提交 `e28dfac973e75114c64bf5859b8dd901d67dc533` 的实际原生模型牌河探针为 18 个边界与人工复核一致，6 张通过、12 张拒绝、已接受标签无误；整组拒绝，来牌为空。证据为 `.local-test-data/runs/local-model-public-board-fd2443efb67045c7bb6863e4a5cb1824/summary.json`，保存源 SHA、模型/清单/真值/图像哈希、命令和完整方向诊断。本机完整版本 8 项与回归 9 项通过，回归摘要为 `all-31ff7d0add5840a2bd4b2fdc265cef95/all-tests.json`。候选通过率不是准确率达标，当前公共牌模型仍不足以支撑默认自动建议。
 
 补充反例复现整张浅绿覆盖牌被误作空区域，失败记录为 `ci-ce88a94-failure/washed-face-initial-failure.log`。公共识别现在保留原亮色候选中没有分离牌面对应的可疑区域并拒绝；测试覆盖单独覆盖牌及旁边有正常牌，防止绿色排除把未识别牌变成空桌。合并、遮挡和未定位的真实牌面仍需继续验证。
+
+## 阴影定位与新来源基准
+
+提交 `03a20d82a7b9ff79c6d1e1eb81a64c2046a77bf9` 的 [CI 40541524170](https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40541524170) 五项通过。随后从另一位作者的[公开回放文章](https://note.com/ymdesign/n/n5e7c34e4b3a2)选第一张画面，在首次推理前冻结原图/ROI/人工标签/模型哈希。放大旋转复核上方六万与左侧北，逐个数筒索，标明手牌二索被回放标记部分遮挡。真值为 `tests/fixtures/manifests/public-scene-v1.json`；该文章的相邻帧不能算额外独立对局。
+
+初始实际 Windows 模型探针 `.local-test-data/runs/local-independent-scene-b4c468c3922d49ba86b6772c06271990/summary.json` 显示公共牌只定位 8/10，接受 4 张，其中红中被误认一万；手牌接受 11/14、已接受标签无误，手牌加六组公共图片的静态链路未形成 Ready，也没有 Top-3。该诊断缺少按钮输入、采集、UI、真实帧间隔和连续对局，不能代表现场集成通过。
+
+像素连通检查找到两种漏定位：密集索子背景不足以通过原亮度扫描，以及灰色遮罩下的南。独立的较暗候选扫描保留原亮牌边界，只补没有已有亮牌对应的区域；绿色遮挡、大块灰面仍拒绝，白板的中心亮度及边界证据继续独立检查。首次两个合成失败日志为 `.local-test-data/shadow-public-initial-failure.log`。五个新测试覆盖定位、原边界、未知遮挡、白板约束和运行时清除旧建议及三帧恢复。
+
+开发探针 `local-independent-scene-e51e8936728246cb8862e2f2eec14097` 恢复到 10/10 定位，仍接受 4 张、误认 1 张，整帧保持不确定。该图片已用于定位亮度选择与一个本机凸包背景原型，故由初始跨来源基准转为开发集；原始冻结真值另存 `public-truth-reassessment-80c3a3edcb4f49ccba6d7ca6a5bed89d/initial-independent-scene-truth.json`，用途变化记录在清单中。凸包原型仅改善个别牌，没有消除误认，尚未加入生产路径。不能将这次开发后的复测作为独立准确率。
+
+## 旋转候选失败与公共真值修订
+
+仅用已有 CC0/OFL 合成正例、原创负例和旧合成权重进行一次预注册的四方向增强实验，固定 4000 步、种子及沿用的温度 0.8，检查最终权重，不按实图挑选中途 checkpoint。候选 `local-rotation-invariant-cnn-50854fcba0a9453b899bc7f1641f3d24` 仍为 61,517 参数、247,696 字节，模型 SHA-256 为 `f531d4efa3499a44376572714b6e36850220716db59a01728e7b271356149745`。训练和导出完成后写摘要时发生 `NameError: Path`；原失败脚本及日志保留，通过单独元数据恢复脚本核验已落盘文件，没有重新训练或覆盖失败记录。
+
+原生决定探针 `local-bound-classifier-88f6ad07c50d4b6fb82a860f9272bc02` 仅接受 76/97 开发手牌、无已接受标签错误，19 个开发非牌面均拒绝；旧候选为 94/97。公共探针 `local-model-public-board-f2f5fe546939484a8e38b5abf6216623` 接受 12/18 却误认 2 张：西与一筒均被报南。该候选不进入默认程序，分数升高不能替代识别正确。最先遇到误认而非零退出的运行 `local-model-public-board-5c5c7cbd81cc4d1c8e561255669fe41b` 的原始日志也保留。
+
+放大公共牌预处理图时发现 `river-12` 的数字与萬字均为红色，应为 `0m`，此前标为 `5m`。同图其他万牌及官方普通五万图的数字为黑色，可供对照；修订未取自模型输出。清单保留旧标签、旧真值哈希及 Git/运行引用；`public-truth-reassessment-80c3a3edcb4f49ccba6d7ca6a5bed89d/summary.json` 保留放大图、旧摘要哈希和单独复算，两轮旧模型已接受标签错误数仍为 0，修订牌原来均被拒。真实截图、候选和所有实验日志仍只在本机。

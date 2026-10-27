@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "truth_revision": "2026-10-28-public-river-review",
+  "truth_revision": "2026-10-28-public-river-red-five-review",
   "raw_images_in_repository": false,
   "source_url": "https://haisousa.hatenadiary.jp/entry/2025/09/05/170000",
   "original_sha256": "2b7d2334a3f317e4587ec5d24fc992c4b6d77bf1e50086e83f6bc9ea4c2042de",
@@ -23,11 +23,21 @@
     {"id": "river-09", "rect": [286, 111, 45, 24], "tile": "4z"},
     {"id": "river-10", "rect": [289, 135, 47, 25], "tile": "2z"},
     {"id": "river-11", "rect": [291, 161, 46, 30], "tile": "1p"},
-    {"id": "river-12", "rect": [207, 193, 35, 40], "tile": "5m"},
+    {"id": "river-12", "rect": [207, 193, 35, 40], "tile": "0m"},
     {"id": "river-13", "rect": [134, 194, 34, 39], "tile": "1z"},
     {"id": "river-14", "rect": [170, 194, 35, 39], "tile": "1s"},
     {"id": "river-15", "rect": [59, 195, 36, 40], "tile": "1p"},
     {"id": "river-16", "rect": [97, 195, 35, 39], "tile": "2z"},
     {"id": "river-17", "rect": [244, 195, 35, 40], "tile": "7p"}
+  ],
+  "corrections": [
+    {
+      "id": "river-12",
+      "previous_label": "5m",
+      "corrected_label": "0m",
+      "review": "Enlarged original crop shows the rank glyph in red as well as the red man glyph. Other man tiles in this same scene have black rank glyphs. Ordinary 5m official illustration also has a black rank glyph. This correction uses source pixels, not the model prediction.",
+      "previous_truth_sha256": "26f13b61dd7fc98fe1056588f6b7eed0909e8eb257e9ff656cc271c2f3e4cf7e",
+      "historical_evidence_policy": "Retain the prior truth in Git and both local-model-public-board-fd2443efb67045c7bb6863e4a5cb1824 and local-model-public-board-b214795a9ffe4fc4912f076d9615ab52 run directories unchanged; reassess against this revision separately."
+    }
   ]
 }

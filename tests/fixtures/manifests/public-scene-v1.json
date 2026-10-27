@@ -1,0 +1,258 @@
+{
+  "schema_version": "1.0",
+  "truth_revision": "2026-10-28-independent-source-preinference",
+  "source_url": "https://note.com/ymdesign/n/n5e7c34e4b3a2",
+  "source_image_url": "https://assets.st-note.com/img/1772623272-f237yXqkKMJtxYB0CjHWS6El.png",
+  "local_original": ".local-test-data/screenshots/new-public-source-20261028/scene-00.png",
+  "original_sha256": "5e9cd5b88d8efe7f94f315453ec08db4aea82b02487a439a51b41359ff666a66",
+  "original_size": [
+    1530,
+    854
+  ],
+  "raw_images_in_repository": false,
+  "reviewed_at": "2026-10-27T16:43:03.850038+00:00",
+  "source_sha_at_review": "03a20d82a7b9ff79c6d1e1eb81a64c2046a77bf9",
+  "frozen_model_sha256": [
+    "047619fa6f677b694c59cdfa7e8b31a9f3a6449681a9468ae69122fa7ce5b5d3",
+    "f531d4efa3499a44376572714b6e36850220716db59a01728e7b271356149745"
+  ],
+  "inference_not_run_at_review": true,
+  "independent_game_count": 1,
+  "scope": "One new publisher/game; other downloaded frames from this article are correlated and are not additional independent games. Initial frozen-model results preceded adaptation. The scene subsequently informed shadow-component localization and an offline hull prototype, so it is now development data.",
+  "current_role": "development-after-initial-frozen-baseline",
+  "usage_history": [
+    {
+      "stage": "initial-frozen-baseline",
+      "truth_sha256": "63e9308e43ff11acc6178291330efc0744a5b5c4db1adbf876a15293f9530624",
+      "evidence_run": "local-independent-scene-b4c468c3922d49ba86b6772c06271990",
+      "initial_truth_archive": ".local-test-data/runs/public-truth-reassessment-80c3a3edcb4f49ccba6d7ca6a5bed89d/initial-independent-scene-truth.json"
+    },
+    {
+      "stage": "shadow-localization-development",
+      "evidence_run": "local-independent-scene-e51e8936728246cb8862e2f2eec14097",
+      "changes": "A separate lower-brightness component pass recovers two missing faces while preserving existing bright-face bounds. Classification score thresholds and network weights are unchanged. The scene is no longer an untouched holdout."
+    }
+  ],
+  "review": "Enlarged hand and river before inference. Half-turn crop confirms top middle is 6m, not 9m; a rotated crop confirms left middle is North. Pips/bamboo counted; first hand tile is red 5m.",
+  "regions": {
+    "hand": {
+      "rect": [
+        162,
+        731,
+        1102,
+        123
+      ],
+      "local_png": ".local-test-data/screenshots/new-public-source-20261028/hand.png",
+      "png_sha256": "05201ff182680825fb6686b86960bd613c82f95fa3c34c081707879ae77f1694",
+      "local_rgb": ".local-test-data/screenshots/new-public-source-20261028/hand.rgb",
+      "rgb_sha256": "1001f9fbf81f0dad66699cb4e5992c14baf2572b8f5071308a11f91a75ec5a24",
+      "width": 1102,
+      "height": 123
+    },
+    "river": {
+      "rect": [
+        530,
+        180,
+        470,
+        320
+      ],
+      "local_png": ".local-test-data/screenshots/new-public-source-20261028/river.png",
+      "png_sha256": "a80fd956032bb78ce7df56439bcc54baf30e094b7724620c835d72619804b4f7",
+      "local_rgb": ".local-test-data/screenshots/new-public-source-20261028/river.rgb",
+      "rgb_sha256": "ee9e8f137bcd54d102df43436fe490d6da26c85e281b78457b1b7f4334082176",
+      "width": 470,
+      "height": 320
+    },
+    "dora": {
+      "rect": [
+        9,
+        31,
+        43,
+        66
+      ],
+      "local_png": ".local-test-data/screenshots/new-public-source-20261028/dora.png",
+      "png_sha256": "e7cf7c74fa8344825c4980a6bffdd2b1ff30faa207d916362ede8dac2a15b459",
+      "local_rgb": ".local-test-data/screenshots/new-public-source-20261028/dora.rgb",
+      "rgb_sha256": "246388b18d70457ba35b5a3e35b4b0ebb783aae6e00e8185565163c37299b4f5",
+      "width": 43,
+      "height": 66
+    },
+    "own_melds": {
+      "rect": [
+        905,
+        550,
+        90,
+        35
+      ],
+      "local_png": ".local-test-data/screenshots/new-public-source-20261028/own_melds.png",
+      "png_sha256": "ad9a121ffdebae7edcccb329432b4a9d368f735ef2bb13d1b8d6f34329f22eb1",
+      "local_rgb": ".local-test-data/screenshots/new-public-source-20261028/own_melds.rgb",
+      "rgb_sha256": "2dce43818e73fa105150a34b1700f5764bcb172336e5bc2438e57d5af59b485c",
+      "width": 90,
+      "height": 35
+    },
+    "left_melds": {
+      "rect": [
+        250,
+        515,
+        90,
+        35
+      ],
+      "local_png": ".local-test-data/screenshots/new-public-source-20261028/left_melds.png",
+      "png_sha256": "befeedbc06e3e13b9ff67f79a5deeac2cf3c6e2e95c0ce36099bb22cc6e3bb1f",
+      "local_rgb": ".local-test-data/screenshots/new-public-source-20261028/left_melds.rgb",
+      "rgb_sha256": "ce8a1001fe3a174eaf66e311f7244d0034ccc42eb0f345eaf12af78a0ad12f67",
+      "width": 90,
+      "height": 35
+    },
+    "across_melds": {
+      "rect": [
+        1000,
+        190,
+        90,
+        30
+      ],
+      "local_png": ".local-test-data/screenshots/new-public-source-20261028/across_melds.png",
+      "png_sha256": "83922cbf486aacb06cae5fed5ff5a6f9ea143387cff8c4bb14ac55040357269e",
+      "local_rgb": ".local-test-data/screenshots/new-public-source-20261028/across_melds.rgb",
+      "rgb_sha256": "bab4d791b5717c70cf9849b67e629b6ff97c8a77e838c4026e32e770c166caf8",
+      "width": 90,
+      "height": 30
+    },
+    "right_melds": {
+      "rect": [
+        1260,
+        560,
+        90,
+        35
+      ],
+      "local_png": ".local-test-data/screenshots/new-public-source-20261028/right_melds.png",
+      "png_sha256": "c6ee99611859ebcfbae161645d050038e2ea469402f0931643ec6947f98584f6",
+      "local_rgb": ".local-test-data/screenshots/new-public-source-20261028/right_melds.rgb",
+      "rgb_sha256": "93b7ac2defd384a24e516642af070c9ba1610681036a203d013f375738234025",
+      "width": 90,
+      "height": 35
+    }
+  },
+  "expected_hand": "0m 5m 5m 7m 1p 3p 7p 2s 7s 9s 9s 4z 6z 2p",
+  "hand_occlusions": [
+    {
+      "one_based_tile_position": 8,
+      "description": "Orange replay \u81ea badge covers the lower part of 2s; acceptance must not assume the crop is unobscured."
+    }
+  ],
+  "expected_dora_indicators": [
+    "8p"
+  ],
+  "expected_melds": {
+    "own": [],
+    "left": [],
+    "across": [],
+    "right": []
+  },
+  "expected_offered_tile": null,
+  "public_faces": [
+    {
+      "id": "new-river-00",
+      "source_box": [
+        760,
+        188,
+        43,
+        50
+      ],
+      "tile": "8p"
+    },
+    {
+      "id": "new-river-01",
+      "source_box": [
+        806,
+        188,
+        42,
+        51
+      ],
+      "tile": "6m"
+    },
+    {
+      "id": "new-river-02",
+      "source_box": [
+        850,
+        188,
+        44,
+        51
+      ],
+      "tile": "2m"
+    },
+    {
+      "id": "new-river-03",
+      "source_box": [
+        552,
+        227,
+        61,
+        31
+      ],
+      "tile": "9s"
+    },
+    {
+      "id": "new-river-04",
+      "source_box": [
+        549,
+        255,
+        64,
+        34
+      ],
+      "tile": "4z"
+    },
+    {
+      "id": "new-river-05",
+      "source_box": [
+        546,
+        286,
+        64,
+        36
+      ],
+      "tile": "6s"
+    },
+    {
+      "id": "new-river-06",
+      "source_box": [
+        914,
+        353,
+        63,
+        36
+      ],
+      "tile": "7z"
+    },
+    {
+      "id": "new-river-07",
+      "source_box": [
+        915,
+        388,
+        68,
+        40
+      ],
+      "tile": "1s"
+    },
+    {
+      "id": "new-river-08",
+      "source_box": [
+        606,
+        430,
+        49,
+        51
+      ],
+      "tile": "7z"
+    },
+    {
+      "id": "new-river-09",
+      "source_box": [
+        654,
+        430,
+        53,
+        51
+      ],
+      "tile": "2z"
+    }
+  ],
+  "public_geometry_matching": "Each detected center, translated by the river ROI origin, must belong to exactly one manually reviewed source_box; require one candidate per face. Boxes include a small border and are not detector-produced exact face bounds.",
+  "acceptance_verified": false
+}

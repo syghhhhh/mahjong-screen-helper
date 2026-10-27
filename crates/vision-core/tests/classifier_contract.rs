@@ -195,3 +195,28 @@ fn a_high_scoring_blank_region_is_not_white_dragon_without_enclosing_tile_edges(
         RejectReason::UnverifiedBlank,
     );
 }
+
+#[test]
+fn locating_a_shadowed_public_face_does_not_verify_it_as_white_dragon() {
+    let region = Rect {
+        x: 5,
+        y: 5,
+        width: 40,
+        height: 64,
+    };
+    let mut scene = RgbImage::new(50, 74, vec![30; 50 * 74 * 3]).unwrap();
+    for y in region.y..region.y + region.height {
+        for x in region.x..region.x + region.width {
+            let at = ((y * scene.width() + x) * 3) as usize;
+            scene.pixels_mut()[at..at + 3].copy_from_slice(&[170; 3]);
+        }
+    }
+    assert!(vision_core::detect_public_slots(&scene).contains(&region));
+    let face = FaceObservation::in_public(&scene, region, vision_core::Rotation::Upright).unwrap();
+    assert!(face.glyph_bounds().is_none());
+    assert!(!face.blank_face_verified());
+    rejected(
+        manifest(&json()).decide(&face, &peaked(31)),
+        RejectReason::UnverifiedBlank,
+    );
+}

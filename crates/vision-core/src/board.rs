@@ -101,10 +101,34 @@ fn public_face_pixel(pixel: &[u8]) -> bool {
     is_pale(pixel) && !green_highlight(pixel)
 }
 
+fn shadow_pale(pixel: &[u8]) -> bool {
+    let low = pixel[0].min(pixel[1]).min(pixel[2]);
+    let high = pixel[0].max(pixel[1]).max(pixel[2]);
+    low >= 160 && high - low <= 70
+}
+
+fn shadow_face_pixel(pixel: &[u8]) -> bool {
+    shadow_pale(pixel) && !green_highlight(pixel)
+}
+
 /// Locate separated pale tile faces in a tightly calibrated public-information region.
 /// This does not prove that every tile on a real table has been detected.
 pub fn detect_public_slots(image: &RgbImage) -> Vec<Rect> {
-    detect_public_slots_using(image, public_face_pixel)
+    let mut slots = detect_public_slots_using(image, public_face_pixel);
+    // Keep established bright-face bounds. The shadow pass only adds separate
+    // components: a relaxed component contains its corresponding bright one.
+    for shadow in detect_public_slots_using(image, shadow_face_pixel) {
+        if !slots.iter().any(|face| {
+            shadow.x <= face.x
+                && shadow.y <= face.y
+                && shadow.x + shadow.width >= face.x + face.width
+                && shadow.y + shadow.height >= face.y + face.height
+        }) {
+            slots.push(shadow);
+        }
+    }
+    slots.sort_by_key(|rect| (rect.y, rect.x));
+    slots
 }
 
 fn detect_public_slots_using(image: &RgbImage, accepts: impl Fn(&[u8]) -> bool) -> Vec<Rect> {
@@ -183,7 +207,7 @@ impl TemplateBank {
         // A face entirely washed green must not disappear as an empty table.
         // Retain plausible old pale components with no surviving face. Glows
         // joined to valid faces are handled by the separated candidates above.
-        let obscured: Vec<_> = detect_public_slots_using(image, is_pale)
+        let obscured: Vec<_> = detect_public_slots_using(image, shadow_pale)
             .into_iter()
             .filter(|raw| {
                 !slots.iter().any(|face| {
@@ -206,7 +230,7 @@ impl TemplateBank {
             && image
                 .rgb
                 .chunks_exact(3)
-                .filter(|pixel| is_pale(pixel))
+                .filter(|pixel| shadow_pale(pixel))
                 .count()
                 * 5
                 > image.rgb.len() / 3
