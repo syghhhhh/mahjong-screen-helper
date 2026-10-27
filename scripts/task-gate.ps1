@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [string]$Version = 'v0.0.1',
-    [Parameter(Mandatory = $true)][string]$TaskId
+    [Parameter(Mandatory = $true)][string]$TaskId,
+    [string[]]$LocalEvidencePaths = @()
 )
 
 $ErrorActionPreference = 'Stop'
@@ -31,6 +32,7 @@ foreach ($entry in $dirty) {
 }
 $sourceSha = (& git -C $repoRoot rev-parse HEAD).Trim()
 if ($LASTEXITCODE -ne 0 -or $sourceSha -notmatch '^[0-9a-f]{40}$') { throw 'Source commit is missing' }
+& (Join-Path $PSScriptRoot 'validate-local-evidence.ps1') -SourceSha $sourceSha -RequiredKinds @($task.local_evidence_required) -Paths $LocalEvidencePaths
 
 $versionRunId = 'gate-version-{0}-{1}' -f $Version, [guid]::NewGuid().ToString('N')
 $allRunId = 'gate-all-{0}' -f [guid]::NewGuid().ToString('N')
@@ -83,6 +85,7 @@ $task.evidence = [pscustomobject]@{
     logs = @($versionSummary.log, $all.log)
     summaries = @($versionSummaryPath, $allSummaryPath)
     fixture_hashes = @($versionSummary.fixture_hashes)
+    local_evidence_paths = @($LocalEvidencePaths)
     environment = $versionSummary.environment
     completed_at = (Get-Date).ToUniversalTime().ToString('o')
 }

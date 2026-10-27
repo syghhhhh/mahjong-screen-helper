@@ -13,6 +13,7 @@ $required = @(
     "scripts\test-version.ps1",
     "scripts\test-all.ps1",
     "scripts\task-gate.ps1",
+    "scripts\validate-local-evidence.ps1",
     "tests\regression\repository-process.test.ps1"
 )
 foreach ($relative in $required) {
@@ -29,6 +30,9 @@ foreach ($item in @($task.tasks)) {
 }
 
 $scratch = Join-Path $repoRoot ('.local-test-data\validator-negative-{0}.json' -f [guid]::NewGuid().ToString('N'))
+$fixture = Join-Path $repoRoot ('.local-test-data\validator-fixture-{0}.txt' -f [guid]::NewGuid().ToString('N'))
+$localLog = Join-Path $repoRoot ('.local-test-data\validator-local-{0}.log' -f [guid]::NewGuid().ToString('N'))
+$localSummary = Join-Path $repoRoot ('.local-test-data\validator-local-{0}.json' -f [guid]::NewGuid().ToString('N'))
 $originalErrorActionPreference = $ErrorActionPreference
 try {
     $invalid = Get-Content -LiteralPath (Join-Path $repoRoot 'tasks\v0.0.1\task.json') -Raw -Encoding utf8 | ConvertFrom-Json
@@ -47,9 +51,49 @@ try {
     & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File (Join-Path $repoRoot 'scripts\validate-task.ps1') -Version v0.0.1 -TaskPath $scratch 2>&1 | Out-Null
     $ErrorActionPreference = $originalErrorActionPreference
     Assert-True ($LASTEXITCODE -ne 0) 'validator accepted missing version tests'
+
+    'sample' | Set-Content -LiteralPath $fixture -Encoding utf8
+    'checked' | Set-Content -LiteralPath $localLog -Encoding utf8
+    $sha = (& git -C $repoRoot rev-parse HEAD).Trim()
+    $ErrorActionPreference = 'Continue'
+    & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File (Join-Path $repoRoot 'scripts\validate-local-evidence.ps1') -SourceSha $sha -RequiredKinds live-hand-recognition 2>&1 | Out-Null
+    $ErrorActionPreference = $originalErrorActionPreference
+    Assert-True ($LASTEXITCODE -ne 0) 'local validator accepted missing evidence'
+
+    $local = [pscustomobject]@{
+        kind = 'live-hand-recognition'
+        run_id = [guid]::NewGuid().ToString('N')
+        source_sha = $sha
+        passed = $true
+        command = 'synthetic process contract probe'
+        log = $localLog
+        fixture_hashes = @([pscustomobject]@{ path=$fixture; sha256=(Get-FileHash -LiteralPath $fixture -Algorithm SHA256).Hash.ToLowerInvariant() })
+        environment = [pscustomobject]@{ os='Windows'; architecture='x64' }
+        completed_at = (Get-Date).ToUniversalTime().ToString('o')
+    }
+    $local | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $localSummary -Encoding utf8
+    & (Join-Path $repoRoot 'scripts\validate-local-evidence.ps1') -SourceSha $sha -RequiredKinds @('live-hand-recognition') -Paths @($localSummary) | Out-Null
+
+    $local.source_sha = '0' * 40
+    $local | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $localSummary -Encoding utf8
+    $ErrorActionPreference = 'Continue'
+    & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File (Join-Path $repoRoot 'scripts\validate-local-evidence.ps1') -SourceSha $sha -RequiredKinds live-hand-recognition -Paths $localSummary 2>&1 | Out-Null
+    $ErrorActionPreference = $originalErrorActionPreference
+    Assert-True ($LASTEXITCODE -ne 0) 'local validator accepted mismatched source SHA'
+
+    $local.source_sha = $sha
+    $local | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $localSummary -Encoding utf8
+    'tampered' | Set-Content -LiteralPath $fixture -Encoding utf8
+    $ErrorActionPreference = 'Continue'
+    & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File (Join-Path $repoRoot 'scripts\validate-local-evidence.ps1') -SourceSha $sha -RequiredKinds live-hand-recognition -Paths $localSummary 2>&1 | Out-Null
+    $ErrorActionPreference = $originalErrorActionPreference
+    Assert-True ($LASTEXITCODE -ne 0) 'local validator accepted changed fixture'
 } finally {
     $ErrorActionPreference = $originalErrorActionPreference
     Remove-Item -LiteralPath $scratch -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $fixture -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $localLog -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $localSummary -ErrorAction SilentlyContinue
 }
 
 Write-Output "Version process contract passed"

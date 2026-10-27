@@ -25,6 +25,7 @@
         "tests/regression/repository-process.test.ps1"
       ],
       "regression_profile": "full",
+      "local_evidence_required": [],
       "evidence": {
         "source_sha": "4dc047b194cf6bd92a035669ea653c968afdc32b",
         "version_test_run": "gate-version-v0.0.1-5d6a6f73ba4c4b57b091de5b5e607005",
@@ -72,6 +73,7 @@
         "tests/regression/capture-calibration.test.ps1"
       ],
       "regression_profile": "full",
+      "local_evidence_required": [],
       "evidence": {
         "source_sha": "178ce12f977ed9408d4daf8f8002c173bcd60074",
         "version_test_run": "gate-version-v0.0.1-1aed1e9e877e4d26a840800dfeeb6a65",
@@ -118,6 +120,10 @@
         "tests/regression/vision.test.ps1"
       ],
       "regression_profile": "full",
+      "local_evidence_required": [
+        "live-hand-recognition",
+        "live-action-recognition"
+      ],
       "evidence": null
     },
     {
@@ -142,6 +148,7 @@
         "tests/regression/rules.test.ps1"
       ],
       "regression_profile": "full",
+      "local_evidence_required": [],
       "evidence": {
         "source_sha": "a130d6d932e7c6086473ba5db138fb7d6e3b3ed6",
         "version_test_run": "gate-version-v0.0.1-4b1c644b224f4698a3c3cc1c45ec9726",
@@ -190,6 +197,9 @@
         "tests/regression/state-actions.test.ps1"
       ],
       "regression_profile": "full",
+      "local_evidence_required": [
+        "live-action-advice"
+      ],
       "evidence": null
     },
     {
@@ -215,6 +225,9 @@
         "tests/regression/overlay-integration.test.ps1"
       ],
       "regression_profile": "full",
+      "local_evidence_required": [
+        "live-overlay-latency"
+      ],
       "evidence": null
     },
     {
@@ -240,6 +253,10 @@
         "tests/regression/packaging-performance.test.ps1"
       ],
       "regression_profile": "full",
+      "local_evidence_required": [
+        "clean-windows-start",
+        "live-30-minute-soak"
+      ],
       "evidence": null
     }
   ],

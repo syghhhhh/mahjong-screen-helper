@@ -16,7 +16,7 @@ if (-not (Test-Path -LiteralPath $TaskPath -PathType Leaf)) {
 
 $json = Get-Content -LiteralPath $TaskPath -Raw -Encoding utf8 | ConvertFrom-Json
 $allowedStatuses = @("planned", "in_progress", "implemented", "self_tested", "regression_tested", "succeed", "failed", "blocked")
-$requiredTaskFields = @("id", "title", "status", "depends_on", "scope", "acceptance_criteria", "version_tests", "affected_tests", "regression_profile", "evidence")
+$requiredTaskFields = @("id", "title", "status", "depends_on", "scope", "acceptance_criteria", "version_tests", "affected_tests", "regression_profile", "local_evidence_required", "evidence")
 
 if ($json.schema_version -ne "1.0") { throw "Unsupported schema_version: $($json.schema_version)" }
 if ($json.project -ne "mahjong-screen-helper") { throw "Unexpected project: $($json.project)" }
@@ -38,6 +38,11 @@ foreach ($task in @($json.tasks)) {
     if (@($task.scope).Count -lt 1) { throw "Task $($task.id) needs scope" }
     if (@($task.version_tests).Count -lt 1 -or @($task.affected_tests).Count -lt 1) { throw "Task $($task.id) needs declared tests" }
     if ($task.regression_profile -ne 'full') { throw "Task $($task.id) must use full regression" }
+    $localKinds = @($task.local_evidence_required)
+    if (@($localKinds | Select-Object -Unique).Count -ne $localKinds.Count) { throw "Task $($task.id) has duplicate local evidence kinds" }
+    foreach ($kind in $localKinds) {
+        if ([string]$kind -cnotmatch '^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$') { throw "Invalid local evidence kind for task $($task.id): $kind" }
+    }
     foreach ($testPath in @($task.version_tests) + @($task.affected_tests)) {
         if ([string]$testPath -notmatch '^tests/(version|regression)/[A-Za-z0-9.\-]+(/[A-Za-z0-9.\-]+)*\.test\.ps1$') {
             throw "Invalid test path for task $($task.id): $testPath"
@@ -59,6 +64,9 @@ foreach ($task in @($json.tasks)) {
             if ([string]::IsNullOrWhiteSpace([string]$task.evidence.$field)) { throw "Task $($task.id) has incomplete evidence: $field" }
         }
         if (@($task.evidence.commands).Count -lt 2 -or @($task.evidence.logs).Count -lt 2) { throw "Task $($task.id) has incomplete test evidence" }
+        if ($localKinds.Count -gt 0 -and ($null -eq $task.evidence.local_evidence_paths -or @($task.evidence.local_evidence_paths).Count -lt $localKinds.Count)) {
+            throw "Task $($task.id) lacks required local evidence paths"
+        }
     }
 }
 

@@ -38,6 +38,7 @@ scripts/
   test-all.ps1
   task-gate.ps1
   validate-task.ps1
+  validate-local-evidence.ps1
 ```
 
 真实截图、个人对局数据和本机模型文件只允许放在 `.local-test-data/`，该目录不提交到 Git。仓库中只保存合成 fixture、脱敏结构化结果、哈希和测试摘要。
@@ -139,6 +140,8 @@ regression
 
 代码提交和 `task.json` 状态更新可以是两个提交，但 `task.json` 必须保存被测试的源代码 SHA。缺少任意关键证据时，任务不能变成 `succeed`。
 
+需要真实画面或目标机器验收的任务在 `local_evidence_required` 列出证据类型。执行门禁时用 `-LocalEvidencePaths` 传入位于 `.local-test-data/` 的本机摘要 JSON；每种类型恰好一份。摘要须包含 `kind`、`run_id`、`source_sha`、`passed: true`、命令、日志路径、操作系统与架构、完成时间，以及至少一个本机 fixture 的路径和 SHA-256。门禁会复核日志、fixture 文件及哈希，并要求摘要与当前提交一致。候选诊断、空闲浮窗测试或失败摘要不能替代声明的真实对局验收类型。
+
 ## 7. GitHub 合并门禁
 
 `main` 分支禁止直接推送，必须通过 Pull Request 和 required checks：
@@ -171,6 +174,7 @@ scripts/validate-task.ps1 -Version v0.0.1
 scripts/test-version.ps1 -Version v0.0.1
 scripts/test-all.ps1
 scripts/task-gate.ps1 -Version v0.0.1 -TaskId V001-001
+scripts/task-gate.ps1 -Version v0.0.1 -TaskId V001-003 -LocalEvidencePaths @('.local-test-data/runs/手牌验收/summary.json', '.local-test-data/runs/按钮验收/summary.json')
 ```
 
 门禁脚本失败时返回非零退出码，并且不得写入 `succeed`。
