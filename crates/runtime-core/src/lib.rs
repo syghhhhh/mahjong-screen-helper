@@ -81,6 +81,9 @@ impl RuntimeEngine {
     /// Native sessions remain on the caller's thread.
     pub fn set_tile_classifier(&mut self, classifier: Option<Box<dyn FaceClassifier>>) {
         self.tile_classifier = classifier;
+        // Round transitions need evidence from one recognition source; model
+        // replacement must not compare its labels with the old model's baseline.
+        self.round_baseline = None;
         self.reset_recognition();
     }
     pub fn tracker_mut(&mut self) -> &mut GameTracker {

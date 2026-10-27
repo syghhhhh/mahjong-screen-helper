@@ -229,3 +229,68 @@ fn pausing_and_removing_a_classifier_never_reuse_prior_stable_results() {
     ));
     assert!(engine.tracker().discard_recommendations().is_empty());
 }
+
+#[test]
+fn changing_classifiers_cannot_turn_cross_model_evidence_into_a_new_round() {
+    let (mut engine, dictionary, _, _) = setup();
+    let original = tiles();
+    let hand = picture(&original, &dictionary);
+    let empty = RgbImage::new(80, 80, vec![38; 80 * 80 * 3]).unwrap();
+    let mut first_indicator = empty.clone();
+    paste(
+        &mut first_indicator,
+        &dictionary.iter().find(|(t, _)| *t == tile("1p")).unwrap().1,
+        30,
+        25,
+    );
+    let public = PublicImages {
+        river: &first_indicator,
+        own_melds: &empty,
+        opponent_melds: [&empty; 3],
+        dora: &first_indicator,
+    };
+    for frame in 1..=2 {
+        engine.process_with_public(frame, &hand, None, &public);
+    }
+    assert!(matches!(
+        engine.process_with_public(3, &hand, None, &public),
+        PipelineOutput::Ready { .. }
+    ));
+    let replacement = Classifier {
+        samples: dictionary
+            .iter()
+            .map(|(t, i)| (*t, FaceObservation::isolated(i).unwrap().input().to_vec()))
+            .collect(),
+        fail: Rc::new(Cell::new(false)),
+        calls: Rc::new(Cell::new(0)),
+    };
+    engine.set_tile_classifier(Some(Box::new(replacement)));
+    let mut changed = original;
+    changed[0] = tile("2m");
+    changed[4] = tile("6m");
+    let hand = picture(&changed, &dictionary);
+    let mut new_indicator = empty.clone();
+    paste(
+        &mut new_indicator,
+        &dictionary.iter().find(|(t, _)| *t == tile("2m")).unwrap().1,
+        30,
+        25,
+    );
+    let public = PublicImages {
+        river: &empty,
+        own_melds: &empty,
+        opponent_melds: [&empty; 3],
+        dora: &new_indicator,
+    };
+    for frame in 4..=5 {
+        engine.process_with_public(frame, &hand, None, &public);
+    }
+    match engine.process_with_public(6, &hand, None, &public) {
+        PipelineOutput::Ready { events, .. } => assert!(
+            !events.contains(&game_state::StateEvent::RoundEnd),
+            "different classifier interpretations cannot prove a round transition"
+        ),
+        PipelineOutput::Uncertain => {}
+        other => panic!("expected a decided third frame, got {other:?}"),
+    }
+}
