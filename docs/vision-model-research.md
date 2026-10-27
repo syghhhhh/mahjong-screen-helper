@@ -119,3 +119,21 @@ tensor 文件为 1–256 个连续的 little-endian `[1,3,48,32]` float32 输入
 新增 `ModelManifest`、`FaceObservation` 和 Windows `LocalTileClassifier` 实现明确的本机模型契约：限定文件名、实际 SHA-256、类别顺序、预处理版本和显式阈值；读取时保持模型文件写入/替换锁，使用稳定数值运算并明确拒识；空白须有同一手牌观察中的四边牌槽证据。详见 [清单与拒识接口](model-manifest.md)。这仍不替代目标游戏白板、遮挡、未知输入与动作识别验收，且还没有接入浮窗。
 
 新增八个测试覆盖清单/决定/白板几何、系统哈希和本机加载。初始缺模块的 TDD 日志在 `.local-test-data/runs/classifier-contract-tdd-a1a0dd9/initial-failure.log`。另保留 `first-behavior-failure.log`：最初的并列分数用例因其最高概率略小于 0.5，先触发低概率拒识，未隔离到预期的差值检查；把第二名从 20 改为 19.98，使最高概率略高于 0.5 而差值不足，分别验证两条规则，没有放宽实现阈值。
+
+## 清单与拒识的固定提交验算
+
+干净提交 `905546eed6461086f615d104ce32a34b20cdbed5` 通过本机版本 8 项、完整回归 9 项，无失败或跳过。摘要为 `.local-test-data/runs/version-v0.0.1-0d43f3e9a2d747508bd24e3d0a9986e7/version-tests.json` 与 `.local-test-data/runs/all-a1920d19c13f4466894fa33245068882/all-tests.json`；[CI 40527423010](https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40527423010) 也已完成，五项检查均通过。新功能复用已有锁定的 serde 和 serde_json，没有增加注册表依赖种类；许可证收集仍覆盖 50 项。
+
+同一提交用第二轮辅助负样本模型，通过新清单加载器及实际 Rust 决定规则检查七张公开手牌，共 97 张。保持 `min_probability: 0.8 / min_margin: 0.1 / max_normalized_entropy: 0.4`，接受 81 张且已接受标签无误、拒绝 16 张；8 张真实白板均通过同帧边界检查，19 个开发非牌面全部拒绝。证据为 `.local-test-data/runs/local-bound-classifier-0d7c065a168d4963ae6c4d900828f1ab/summary.json`，包含实际清单和模型哈希、源提交、所有输入哈希、命令及逐例原因。七张牌局画面均至少有一张被拒，因此不能把“没有接受错牌”解释为整手可用；这份证据也不是浮窗实时验收。
+
+## 开发集单参数校准
+
+另参照[温度缩放原论文](https://proceedings.mlr.press/v70/guo17a)，尝试只校准输出 logits 的单个温度，不改变网络权重、类别、输入预处理或接受门槛。本机 `calibrate-outlier-temperature.py` 在预先列出的 12 个温度中，最小化开发集真牌 NLL 加 0.5 倍未知输入均匀分布 KL 的自定义目标；这项联合目标是本项目实验，不是声称原论文证明它适合麻将。
+
+拟合数据明确为前三张已知手牌的 41 个 logits、已参与调参的 FAQ 34 个 logits、18 个已有非牌面。空白区域由几何规则处理，不纳入未知分布拟合；四张新作者的 56 张牌未用于选择温度。虽网络权重仍仅由合成素材训练，这个温度确实使用公开画面的开发 logits 拟合，不能宣称整个模型未接触真实画面数据。
+
+选择温度为 0.8，开发目标约 0.1354；完整候选数值、脚本和来源哈希位于 `.local-test-data/runs/local-temperature-calibration-e0272d45d2ad4a59a72ad3770a4d059a/summary.json`。新 ONNX 的 SHA-256 为 `047619fa6f677b694c59cdfa7e8b31a9f3a6449681a9468ae69122fa7ce5b5d3`，只在本机存放。112 个输入的 Windows 原生输出与 PyTorch 参考除以 0.8 的最大误差约 `5.23e-6`，最高类别均一致，数值证据为 `local-calibrated-native-parity-0615c5eb5be04e7580d63073f698f48b`。
+
+仍在同一干净提交、保持 0.8 / 0.1 / 0.4 门槛，重新检查七张手牌：接受 94/97，已接受标签无误；赤五索及两个相关帧中的九筒共 3 张仍被拒绝。8 张白板均验证通过，19 个开发非牌面全部拒绝。证据为 `.local-test-data/runs/local-bound-classifier-bf78fe6d65694546bb1f14723d4531c2/summary.json`。原先 81/97 的摘要、两次辅助训练的低分和错误继续保留。新作者四帧中有两帧仍不能整手提交，不能以单牌 94/97 替代整手可用率。
+
+该校准只改善有限开发样本的接受率，不能证明未见字形、其他皮肤、遮挡、公共牌、动作按钮或现场连续识别已通过；仍须额外冻结模型并检查新来源。所有训练与校准候选均未加入便携包，V001-003、005、006、007、008 继续 `in_progress`。
