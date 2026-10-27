@@ -393,13 +393,12 @@ unsafe extern "system" fn window_proc(
                     PostMessageW(window, WM_CLOSE, 0, 0);
                 }
             } else if wparam == 1 {
-                APP.with(|cell| {
-                    if let Some(state) = cell.borrow_mut().as_mut() {
-                        state.tick();
+                let changed =
+                    APP.with(|cell| cell.borrow_mut().as_mut().is_some_and(AppState::tick));
+                if changed {
+                    unsafe {
+                        InvalidateRect(window, std::ptr::null(), 0);
                     }
-                });
-                unsafe {
-                    InvalidateRect(window, std::ptr::null(), 0);
                 }
             }
             return 0;
@@ -791,13 +790,13 @@ impl AppState {
         self.manual_override = false;
     }
 
-    fn tick(&mut self) {
+    fn tick(&mut self) -> bool {
         if self.manual_override || self.runtime.is_none() {
-            return;
+            return false;
         }
         let mut fresh_frame = false;
         let Some(stream) = self.hand_stream.as_mut() else {
-            return;
+            return false;
         };
         match stream.next_frame(Duration::from_millis(10)) {
             Ok(frame) => {
@@ -809,7 +808,7 @@ impl AppState {
                     Err(_) => {
                         self.status = "采集画面格式错误".into();
                         self.runtime = None;
-                        return;
+                        return true;
                     }
                 }
             }
@@ -819,7 +818,7 @@ impl AppState {
                 self.runtime = None;
                 self.hand_stream = None;
                 self.action_stream = None;
-                return;
+                return true;
             }
         }
         if let Some(action_stream) = self.action_stream.as_mut() {
@@ -833,7 +832,7 @@ impl AppState {
                         Err(_) => {
                             self.status = "按钮区域画面格式错误".into();
                             self.runtime = None;
-                            return;
+                            return true;
                         }
                     }
                 }
@@ -842,18 +841,18 @@ impl AppState {
                     self.status = format!("按钮区域采集已停止：{error}");
                     self.runtime = None;
                     self.action_stream = None;
-                    return;
+                    return true;
                 }
             }
         }
         if !fresh_frame {
-            return;
+            return false;
         }
         let Some(image) = self.last_hand.as_ref() else {
-            return;
+            return false;
         };
         let Some(action_image) = self.last_action.as_ref() else {
-            return;
+            return false;
         };
         self.frame_id = self.frame_id.saturating_add(1);
         let output = self.runtime.as_mut().expect("checked above").process(
@@ -862,6 +861,7 @@ impl AppState {
             Some(action_image),
         );
         self.last_output = Some(output);
+        true
     }
 
     fn toggle_pause(&mut self) {
