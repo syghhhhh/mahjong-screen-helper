@@ -1,0 +1,636 @@
+//! Deterministic observed-hand tracking and conservative action comparisons.
+
+use riichi_core::{Recommendation, Tile, recommend_discards, shanten, ukeire};
+use vision_core::ActionLabel;
+
+const MIN_CONFIDENCE: f32 = 0.8;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase {
+    Idle,
+    AwaitDraw,
+    AwaitDiscard,
+    Uncertain,
+    RoundEnded,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum StateEvent {
+    Draw(Tile),
+    Discard(Tile),
+    ActionAvailable(ActionLabel),
+    CallDeclared(ActionLabel),
+    RiichiDeclared,
+    RoundEnd,
+    WindowLost,
+    Uncertain,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ObservedHand {
+    pub frame_id: u64,
+    pub hand: Vec<Tile>,
+    pub actions: Vec<ActionLabel>,
+    pub confidence: f32,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ObservationResult {
+    pub phase: Phase,
+    pub events: Vec<StateEvent>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum StateError {
+    InvalidHand,
+    InvalidAction,
+    InvalidConfidence,
+}
+
+#[derive(Clone, Debug)]
+pub struct GameTracker {
+    phase: Phase,
+    hand: Option<Vec<Tile>>,
+    actions: Vec<ActionLabel>,
+    confidence: f32,
+    last_frame_id: Option<u64>,
+    open_melds: u8,
+    riichi_declared: bool,
+    known_yaku: bool,
+    visible: [u8; 34],
+    dora_indicators: Vec<Tile>,
+}
+
+impl Default for GameTracker {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl GameTracker {
+    pub fn new() -> Self {
+        Self {
+            phase: Phase::Idle,
+            hand: None,
+            actions: Vec::new(),
+            confidence: 0.0,
+            last_frame_id: None,
+            open_melds: 0,
+            riichi_declared: false,
+            known_yaku: false,
+            visible: [0; 34],
+            dora_indicators: Vec::new(),
+        }
+    }
+
+    pub fn phase(&self) -> Phase {
+        self.phase
+    }
+    pub fn hand(&self) -> Option<&[Tile]> {
+        self.hand.as_deref()
+    }
+    pub fn open_melds(&self) -> u8 {
+        self.open_melds
+    }
+    pub fn riichi_declared(&self) -> bool {
+        self.riichi_declared
+    }
+
+    pub fn observe(&mut self, observation: ObservedHand) -> ObservationResult {
+        if self
+            .last_frame_id
+            .is_some_and(|last| observation.frame_id <= last)
+        {
+            return self.enter_uncertain();
+        }
+        self.last_frame_id = Some(observation.frame_id);
+        if !valid_confidence(observation.confidence)
+            || !valid_hand(&observation.hand, self.open_melds)
+            || !valid_visible(&observation.hand, &self.visible)
+        {
+            return self.enter_uncertain();
+        }
+        let expected_discard = 14 - 3 * self.open_melds as usize;
+        let phase = if observation.hand.len() == expected_discard {
+            Phase::AwaitDiscard
+        } else {
+            Phase::AwaitDraw
+        };
+        let mut events = Vec::new();
+        if let Some(previous) = &self.hand {
+            match hand_change(previous, &observation.hand) {
+                HandChange::Same => {}
+                HandChange::Draw(tile) => events.push(StateEvent::Draw(tile)),
+                HandChange::Discard(tile) => events.push(StateEvent::Discard(tile)),
+                HandChange::Invalid => return self.enter_uncertain(),
+            }
+        }
+        for action in &observation.actions {
+            if *action != ActionLabel::None && !self.actions.contains(action) {
+                events.push(StateEvent::ActionAvailable(*action));
+            }
+        }
+        self.phase = phase;
+        self.hand = Some(observation.hand);
+        self.actions = observation.actions;
+        self.confidence = observation.confidence;
+        ObservationResult { phase, events }
+    }
+
+    pub fn discard_recommendations(&self) -> Vec<Recommendation> {
+        if self.phase != Phase::AwaitDiscard || self.riichi_declared {
+            return Vec::new();
+        }
+        self.hand
+            .as_ref()
+            .and_then(|hand| {
+                recommend_discards(
+                    hand,
+                    &self.visible,
+                    &self.dora_indicators,
+                    self.open_melds,
+                    self.confidence,
+                )
+                .ok()
+            })
+            .unwrap_or_default()
+    }
+
+    pub fn action_advice(
+        &self,
+        action: ActionLabel,
+        offered: Option<Tile>,
+        source: ClaimSource,
+    ) -> Option<ActionAdvice> {
+        if self.phase == Phase::Uncertain || !self.actions.contains(&action) {
+            return None;
+        }
+        let hand = self.hand.clone()?;
+        let context = ActionContext {
+            hand,
+            visible: self.visible,
+            dora_indicators: self.dora_indicators.clone(),
+            offered,
+            source,
+            open_melds: self.open_melds,
+            riichi_declared: self.riichi_declared,
+            known_yaku: self.known_yaku,
+            confidence: self.confidence,
+        };
+        advise_action(&context, action)
+    }
+
+    pub fn correct_hand(&mut self, hand: Vec<Tile>, confidence: f32) -> Result<(), StateError> {
+        if !valid_confidence(confidence) {
+            return Err(StateError::InvalidConfidence);
+        }
+        if !valid_hand(&hand, self.open_melds) || !valid_visible(&hand, &self.visible) {
+            return Err(StateError::InvalidHand);
+        }
+        self.phase = if hand.len() == 14 - 3 * self.open_melds as usize {
+            Phase::AwaitDiscard
+        } else {
+            Phase::AwaitDraw
+        };
+        self.hand = Some(hand);
+        self.actions.clear();
+        self.confidence = confidence;
+        Ok(())
+    }
+
+    pub fn set_public_tiles(
+        &mut self,
+        visible: [u8; 34],
+        dora_indicators: Vec<Tile>,
+    ) -> Result<(), StateError> {
+        if visible.iter().any(|count| *count > 4)
+            || self
+                .hand
+                .as_ref()
+                .is_some_and(|hand| !valid_visible(hand, &visible))
+        {
+            return Err(StateError::InvalidHand);
+        }
+        self.visible = visible;
+        self.dora_indicators = dora_indicators;
+        Ok(())
+    }
+
+    pub fn set_known_yaku(&mut self, known_yaku: bool) {
+        self.known_yaku = known_yaku;
+    }
+
+    pub fn confirm_call(
+        &mut self,
+        action: ActionLabel,
+        tiles_from_hand: &[Tile],
+        offered: Tile,
+        source: ClaimSource,
+    ) -> Result<StateEvent, StateError> {
+        let required = match action {
+            ActionLabel::Chi | ActionLabel::Pon => 2,
+            ActionLabel::Kan => 3,
+            _ => return Err(StateError::InvalidAction),
+        };
+        if self.phase != Phase::AwaitDraw
+            || self.riichi_declared
+            || self.open_melds >= 4
+            || !self.actions.contains(&action)
+            || tiles_from_hand.len() != required
+            || self.visible[offered.index() as usize] == 0
+            || !legal_claim(action, tiles_from_hand, offered, source)
+        {
+            return Err(StateError::InvalidAction);
+        }
+        let mut hand = self.hand.clone().ok_or(StateError::InvalidHand)?;
+        for tile in tiles_from_hand {
+            let position = hand
+                .iter()
+                .position(|candidate| candidate == tile)
+                .ok_or(StateError::InvalidAction)?;
+            hand.remove(position);
+        }
+        let next_open = self.open_melds + 1;
+        if !valid_hand(&hand, next_open) {
+            return Err(StateError::InvalidHand);
+        }
+        for tile in tiles_from_hand {
+            self.visible[tile.index() as usize] += 1;
+        }
+        self.open_melds = next_open;
+        self.phase = if action == ActionLabel::Kan {
+            Phase::AwaitDraw
+        } else {
+            Phase::AwaitDiscard
+        };
+        self.hand = Some(hand);
+        self.actions.clear();
+        Ok(StateEvent::CallDeclared(action))
+    }
+
+    pub fn confirm_riichi(&mut self) -> Result<StateEvent, StateError> {
+        if self.open_melds != 0
+            || self.phase != Phase::AwaitDiscard
+            || self.riichi_declared
+            || !self.actions.contains(&ActionLabel::Riichi)
+        {
+            return Err(StateError::InvalidAction);
+        }
+        let hand = self.hand.as_ref().ok_or(StateError::InvalidHand)?;
+        if shanten(&counts(hand), 0).map_err(|_| StateError::InvalidHand)? < 0 {
+            return Err(StateError::InvalidAction);
+        }
+        let candidates = recommend_discards(
+            hand,
+            &self.visible,
+            &self.dora_indicators,
+            0,
+            self.confidence,
+        )
+        .map_err(|_| StateError::InvalidHand)?;
+        if !candidates.iter().any(|item| item.shanten == 0) {
+            return Err(StateError::InvalidAction);
+        }
+        self.riichi_declared = true;
+        Ok(StateEvent::RiichiDeclared)
+    }
+
+    pub fn window_lost(&mut self) -> StateEvent {
+        self.enter_uncertain();
+        self.last_frame_id = None;
+        StateEvent::WindowLost
+    }
+
+    pub fn round_end(&mut self) -> StateEvent {
+        self.phase = Phase::RoundEnded;
+        self.hand = None;
+        self.actions.clear();
+        self.confidence = 0.0;
+        self.last_frame_id = None;
+        self.open_melds = 0;
+        self.riichi_declared = false;
+        self.known_yaku = false;
+        self.visible = [0; 34];
+        self.dora_indicators.clear();
+        StateEvent::RoundEnd
+    }
+
+    fn enter_uncertain(&mut self) -> ObservationResult {
+        self.phase = Phase::Uncertain;
+        self.hand = None;
+        self.actions.clear();
+        self.confidence = 0.0;
+        ObservationResult {
+            phase: Phase::Uncertain,
+            events: vec![StateEvent::Uncertain],
+        }
+    }
+}
+
+fn valid_confidence(confidence: f32) -> bool {
+    confidence.is_finite() && (MIN_CONFIDENCE..=1.0).contains(&confidence)
+}
+
+fn valid_hand(hand: &[Tile], open_melds: u8) -> bool {
+    let mut counts = [0u8; 34];
+    for tile in hand {
+        counts[tile.index() as usize] = counts[tile.index() as usize].saturating_add(1);
+    }
+    shanten(&counts, open_melds).is_ok()
+}
+
+fn valid_visible(hand: &[Tile], visible: &[u8; 34]) -> bool {
+    let mut counts = [0u8; 34];
+    for tile in hand {
+        counts[tile.index() as usize] = counts[tile.index() as usize].saturating_add(1);
+    }
+    (0..34).all(|i| counts[i] as u16 + visible[i] as u16 <= 4)
+}
+
+enum HandChange {
+    Same,
+    Draw(Tile),
+    Discard(Tile),
+    Invalid,
+}
+
+fn hand_change(before: &[Tile], after: &[Tile]) -> HandChange {
+    let mut old = before.to_vec();
+    let mut new = after.to_vec();
+    old.sort();
+    new.sort();
+    if old == new {
+        return HandChange::Same;
+    }
+    if new.len() == old.len() + 1 {
+        for index in 0..new.len() {
+            let mut reduced = new.clone();
+            let tile = reduced.remove(index);
+            if reduced == old {
+                return HandChange::Draw(tile);
+            }
+        }
+    }
+    if old.len() == new.len() + 1 {
+        for index in 0..old.len() {
+            let mut reduced = old.clone();
+            let tile = reduced.remove(index);
+            if reduced == new {
+                return HandChange::Discard(tile);
+            }
+        }
+    }
+    HandChange::Invalid
+}
+
+fn legal_claim(
+    action: ActionLabel,
+    tiles_from_hand: &[Tile],
+    offered: Tile,
+    source: ClaimSource,
+) -> bool {
+    if source == ClaimSource::SelfDraw {
+        return false;
+    }
+    match action {
+        ActionLabel::Pon => {
+            tiles_from_hand.len() == 2
+                && tiles_from_hand
+                    .iter()
+                    .all(|tile| tile.index() == offered.index())
+        }
+        ActionLabel::Kan => {
+            tiles_from_hand.len() == 3
+                && tiles_from_hand
+                    .iter()
+                    .all(|tile| tile.index() == offered.index())
+        }
+        ActionLabel::Chi => {
+            if source != ClaimSource::Left || offered.index() >= 27 || tiles_from_hand.len() != 2 {
+                return false;
+            }
+            let mut indices = [
+                tiles_from_hand[0].index(),
+                tiles_from_hand[1].index(),
+                offered.index(),
+            ];
+            indices.sort();
+            indices[0] / 9 == indices[2] / 9
+                && indices[0] + 1 == indices[1]
+                && indices[1] + 1 == indices[2]
+        }
+        _ => false,
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ClaimSource {
+    SelfDraw,
+    Left,
+    Across,
+    Right,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ActionContext {
+    pub hand: Vec<Tile>,
+    pub visible: [u8; 34],
+    pub dora_indicators: Vec<Tile>,
+    pub offered: Option<Tile>,
+    pub source: ClaimSource,
+    pub open_melds: u8,
+    pub riichi_declared: bool,
+    /// True only when an already secured yaku has been confirmed by state or user.
+    pub known_yaku: bool,
+    pub confidence: f32,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ActionAdvice {
+    pub action: ActionLabel,
+    pub tiles_from_hand: Vec<Tile>,
+    pub discard_after_action: Option<Tile>,
+    pub before_shanten: i8,
+    pub after_shanten: i8,
+    pub before_ukeire: u16,
+    pub after_ukeire: u16,
+    pub recommended: bool,
+    pub confidence: f32,
+    pub reason: String,
+}
+
+/// Evaluate a legal action against the current visible tiles. Missing offered tiles,
+/// low confidence, and incomplete hand counts suppress deterministic advice.
+pub fn advise_action(context: &ActionContext, action: ActionLabel) -> Option<ActionAdvice> {
+    if !valid_confidence(context.confidence)
+        || !valid_hand(&context.hand, context.open_melds)
+        || !valid_visible(&context.hand, &context.visible)
+        || context.riichi_declared
+    {
+        return None;
+    }
+    match action {
+        ActionLabel::Riichi => advise_riichi(context),
+        ActionLabel::Chi | ActionLabel::Pon | ActionLabel::Kan => advise_call(context, action),
+        ActionLabel::None => None,
+    }
+}
+
+fn counts(hand: &[Tile]) -> [u8; 34] {
+    let mut result = [0; 34];
+    for tile in hand {
+        result[tile.index() as usize] += 1;
+    }
+    result
+}
+
+fn advise_riichi(context: &ActionContext) -> Option<ActionAdvice> {
+    if context.open_melds != 0
+        || context.source != ClaimSource::SelfDraw
+        || context.hand.len() != 14
+    {
+        return None;
+    }
+    let before = shanten(&counts(&context.hand), 0).ok()?;
+    if before < 0 {
+        return None;
+    }
+    let choices = recommend_discards(
+        &context.hand,
+        &context.visible,
+        &context.dora_indicators,
+        0,
+        context.confidence,
+    )
+    .ok()?;
+    let chosen = choices.into_iter().find(|item| item.shanten == 0)?;
+    Some(ActionAdvice {
+        action: ActionLabel::Riichi,
+        tiles_from_hand: vec![],
+        discard_after_action: Some(chosen.discard),
+        before_shanten: before,
+        after_shanten: chosen.shanten,
+        before_ukeire: 0,
+        after_ukeire: chosen.ukeire,
+        recommended: true,
+        confidence: context.confidence,
+        reason: format!("切牌后听牌，{} 张有效牌；未计打点与防守", chosen.ukeire),
+    })
+}
+
+fn advise_call(context: &ActionContext, action: ActionLabel) -> Option<ActionAdvice> {
+    if context.open_melds >= 4 || context.source == ClaimSource::SelfDraw {
+        return None;
+    }
+    let offered = context.offered?;
+    if context.visible[offered.index() as usize] == 0 {
+        return None;
+    }
+    let before = ukeire(&counts(&context.hand), &context.visible, context.open_melds).ok()?;
+    let mut choices: Vec<Vec<u8>> = Vec::new();
+    match action {
+        ActionLabel::Chi => {
+            if context.source != ClaimSource::Left || offered.index() >= 27 {
+                return None;
+            }
+            let index = offered.index() as i16;
+            let suit_start = index / 9 * 9;
+            for start in index - 2..=index {
+                if start < suit_start || start + 2 >= suit_start + 9 {
+                    continue;
+                }
+                choices.push(
+                    (start..=start + 2)
+                        .filter(|candidate| *candidate != index)
+                        .map(|value| value as u8)
+                        .collect(),
+                );
+            }
+        }
+        ActionLabel::Pon => choices.push(vec![offered.index(); 2]),
+        ActionLabel::Kan => choices.push(vec![offered.index(); 3]),
+        _ => return None,
+    }
+    let mut advice = Vec::new();
+    for indices in choices {
+        let mut remaining = context.hand.clone();
+        let mut consumed = Vec::new();
+        for index in indices {
+            let position = remaining
+                .iter()
+                .position(|tile| tile.index() == index && !tile.is_red())
+                .or_else(|| remaining.iter().position(|tile| tile.index() == index));
+            let Some(position) = position else {
+                consumed.clear();
+                break;
+            };
+            consumed.push(remaining.remove(position));
+        }
+        let required = if action == ActionLabel::Kan { 3 } else { 2 };
+        if consumed.len() != required {
+            continue;
+        }
+        let mut after_visible = context.visible;
+        for tile in &consumed {
+            after_visible[tile.index() as usize] += 1;
+        }
+        let next_open = context.open_melds + 1;
+        let (after_shanten, after_ukeire, discard) = if action == ActionLabel::Kan {
+            let result = ukeire(&counts(&remaining), &after_visible, next_open).ok()?;
+            (result.shanten, result.count, None)
+        } else {
+            let best = recommend_discards(
+                &remaining,
+                &after_visible,
+                &context.dora_indicators,
+                next_open,
+                context.confidence,
+            )
+            .ok()?
+            .into_iter()
+            .next()?;
+            (best.shanten, best.ukeire, Some(best.discard))
+        };
+        let efficiency_gain = after_shanten < before.shanten
+            || (action != ActionLabel::Kan
+                && after_shanten == before.shanten
+                && after_ukeire > before.count);
+        let guaranteed_yaku = context.known_yaku
+            || (matches!(action, ActionLabel::Pon | ActionLabel::Kan) && offered.index() >= 31);
+        let recommended = efficiency_gain && guaranteed_yaku && action != ActionLabel::Kan;
+        let reason = if action == ActionLabel::Kan {
+            format!(
+                "杠前 {} 向听/{} 张，杠后补牌前 {} 向听/{} 张；补牌结果未知",
+                before.shanten, before.count, after_shanten, after_ukeire
+            )
+        } else if !guaranteed_yaku {
+            format!(
+                "行动前 {} 向听/{} 张，行动并切牌后 {} 向听/{} 张；未确认役种，暂不建议鸣牌",
+                before.shanten, before.count, after_shanten, after_ukeire
+            )
+        } else {
+            format!(
+                "行动前 {} 向听/{} 张，行动并切牌后 {} 向听/{} 张",
+                before.shanten, before.count, after_shanten, after_ukeire
+            )
+        };
+        advice.push(ActionAdvice {
+            action,
+            tiles_from_hand: consumed,
+            discard_after_action: discard,
+            before_shanten: before.shanten,
+            after_shanten,
+            before_ukeire: before.count,
+            after_ukeire,
+            recommended,
+            confidence: context.confidence,
+            reason,
+        });
+    }
+    advice.sort_by(|a, b| {
+        a.after_shanten
+            .cmp(&b.after_shanten)
+            .then_with(|| b.after_ukeire.cmp(&a.after_ukeire))
+    });
+    advice.into_iter().next()
+}

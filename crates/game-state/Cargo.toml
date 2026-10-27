@@ -1,0 +1,13 @@
+[package]
+name = "game-state"
+version = "0.0.1"
+edition = "2024"
+description = "Observed hand state and conservative riichi action advice"
+
+[dependencies]
+riichi-core = { path = "../riichi-core" }
+vision-core = { path = "../vision-core" }
+
+[lib]
+name = "game_state"
+path = "src/lib.rs"

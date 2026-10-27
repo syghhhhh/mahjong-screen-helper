@@ -169,7 +169,7 @@
     {
       "id": "V001-005",
       "title": "实现局面状态与吃碰杠立直建议",
-      "status": "planned",
+      "status": "in_progress",
       "depends_on": [
         "V001-003",
         "V001-004"
