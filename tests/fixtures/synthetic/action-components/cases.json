@@ -1,0 +1,32 @@
+[
+  {
+    "name": "transitive",
+    "bounds": [
+      20,
+      12,
+      56,
+      48
+    ],
+    "foreground_pixels": 736
+  },
+  {
+    "name": "all-sides",
+    "bounds": [
+      24,
+      10,
+      64,
+      46
+    ],
+    "foreground_pixels": 1072
+  },
+  {
+    "name": "box-without-ink",
+    "bounds": [
+      40,
+      20,
+      20,
+      24
+    ],
+    "foreground_pixels": 480
+  }
+]

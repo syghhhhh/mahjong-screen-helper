@@ -125,7 +125,43 @@
         "live-hand-recognition",
         "live-action-recognition"
       ],
-      "evidence": null
+      "evidence": null,
+      "research_history": [
+        {
+          "kind": "action-input-component-completion-and-resource-comparison",
+          "base_sha": "3c20e11ecbb275ac71062d71a5069a924c4c8467",
+          "source_dirty": true,
+          "preprocessing_id": "action-complete-word-mask-v2",
+          "production_integrated": false,
+          "acceptance_verified": false,
+          "record": "docs/action-recognition.md",
+          "red_test_log": ".local-test-data/runs/component-contract-red-98d291b1a5474f6d8bfb11b075c00b73/test.log",
+          "native_parity_run": "native-action-complete-component-parity-b5fb922cb3674b87bc46f8e8859898b3",
+          "native_input_differing_values": 0,
+          "max_native_pytorch_logit_error": 0.000001191930175892253,
+          "native_classifier_probe_exit_code": 1,
+          "component_comparison_run": "action-component-closure-afd15d273f94465c84f433273cb17065",
+          "font_candidate": {
+            "run_id": "font-action-cnn-v2-c40ef1feda394dddad1631f0f7585270",
+            "model_sha256": "9b460246c66a6171f4558a31ac5b97aab2e4f63685c3d0f15078fbe1c10d3a23",
+            "v1_input_correct_accepted": 9,
+            "v1_input_wrong_accepted": 0,
+            "v1_input_rejected": 12,
+            "complete_input_correct_accepted": 10,
+            "complete_input_wrong_accepted": 0,
+            "complete_input_rejected": 11,
+            "primary_five_complete": false
+          },
+          "ocr_source_revision": "80b427d69bfc5b91a12913394875910296c6f315",
+          "ocr_runs": [
+            "rapidocr-action-development-adbc141efbf54ab195e596bcc9a7c308",
+            "rapidocr-action-development-19f85fa3be3e450992a308f389e2356d",
+            "rapidocr-action-development-ae93535792e145a7844188e8d644d083",
+            "rapidocr-action-development-3d98c06781c945ea8d1d6d5a43c2eed7"
+          ],
+          "limitations": "Inspected developer inputs, synthetic negatives and word-only prototypes; no independent or live acceptance, enabled-button context or shipped weights. OCR attribution review remains incomplete. Original v1 input contract retained."
+        }
+      ]
     },
     {
       "id": "V001-004",

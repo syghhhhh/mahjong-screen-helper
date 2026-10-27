@@ -4,6 +4,7 @@
 use crate::{Rect, RgbImage, VisionError};
 
 pub const PREPROCESSING_ID: &str = "action-bright-word-mask-v1";
+pub const COMPLETE_COMPONENT_PREPROCESSING_ID: &str = "action-complete-word-mask-v2";
 pub const INPUT_WIDTH: usize = 128;
 pub const INPUT_HEIGHT: usize = 64;
 pub const INPUT_FLOATS: usize = INPUT_WIDTH * INPUT_HEIGHT;
@@ -25,6 +26,79 @@ pub enum ActionWordInput {
 }
 
 pub fn prepare_action_word(image: &RgbImage) -> Result<ActionWordInput, VisionError> {
+    prepare(image, false)
+}
+
+/// Complete every four-connected foreground component reached by the word
+/// rectangle, including components reached by subsequent rectangle expansion.
+/// This is a separate input contract; a v1 model must not silently receive v2.
+/// Completion still supplies no evidence of an enabled button or its context.
+pub fn prepare_complete_action_word(image: &RgbImage) -> Result<ActionWordInput, VisionError> {
+    prepare(image, true)
+}
+
+#[derive(Clone, Copy)]
+struct Bounds {
+    left: usize,
+    top: usize,
+    right: usize,
+    bottom: usize,
+}
+
+fn complete_components(labels: &[u32], components: &[Bounds], w: usize, seed: Bounds) -> Bounds {
+    let mut bounds = seed;
+    let mut included = vec![false; components.len()];
+    let mut pending = vec![seed];
+    while let Some(region) = pending.pop() {
+        for y in region.top..region.bottom {
+            for x in region.left..region.right {
+                let label = labels[y * w + x];
+                if label == 0 || included[label as usize - 1] {
+                    continue;
+                }
+                let index = label as usize - 1;
+                included[index] = true;
+                let component = components[index];
+                let old = bounds;
+                bounds.left = bounds.left.min(component.left);
+                bounds.top = bounds.top.min(component.top);
+                bounds.right = bounds.right.max(component.right);
+                bounds.bottom = bounds.bottom.max(component.bottom);
+                // Scan only newly added, disjoint strips. Every pixel is visited
+                // at most once, even for a chain of tiny boundary components.
+                for strip in [
+                    Bounds {
+                        bottom: old.top,
+                        ..bounds
+                    },
+                    Bounds {
+                        top: old.bottom,
+                        ..bounds
+                    },
+                    Bounds {
+                        top: old.top,
+                        bottom: old.bottom,
+                        right: old.left,
+                        ..bounds
+                    },
+                    Bounds {
+                        top: old.top,
+                        bottom: old.bottom,
+                        left: old.right,
+                        ..bounds
+                    },
+                ] {
+                    if strip.left < strip.right && strip.top < strip.bottom {
+                        pending.push(strip);
+                    }
+                }
+            }
+        }
+    }
+    bounds
+}
+
+fn prepare(image: &RgbImage, complete: bool) -> Result<ActionWordInput, VisionError> {
     let w = image.width() as usize;
     let h = image.height() as usize;
     if !(16..=1024).contains(&w) || !(16..=1024).contains(&h) {
@@ -42,15 +116,17 @@ pub fn prepare_action_word(image: &RgbImage) -> Result<ActionWordInput, VisionEr
     if !mask.iter().any(|&v| v) {
         return Ok(ActionWordInput::Empty);
     }
-    let mut seen = vec![false; mask.len()];
+    let mut labels = vec![0u32; mask.len()];
+    let mut components = Vec::new();
     let mut stack = Vec::new();
     let (mut left, mut top, mut right, mut bottom) = (w, h, 0, 0);
     for start in 0..mask.len() {
-        if !mask[start] || seen[start] {
+        if !mask[start] || labels[start] != 0 {
             continue;
         }
         stack.push(start);
-        seen[start] = true;
+        let label = components.len() as u32 + 1;
+        labels[start] = label;
         let (mut x0, mut y0, mut x1, mut y1) = (start % w, start / w, start % w, start / w);
         let mut area = 0;
         while let Some(i) = stack.pop() {
@@ -69,8 +145,8 @@ pub fn prepare_action_word(image: &RgbImage) -> Result<ActionWordInput, VisionEr
             .into_iter()
             .flatten()
             {
-                if mask[neighbor] && !seen[neighbor] {
-                    seen[neighbor] = true;
+                if mask[neighbor] && labels[neighbor] == 0 {
+                    labels[neighbor] = label;
                     stack.push(neighbor);
                 }
             }
@@ -81,9 +157,31 @@ pub fn prepare_action_word(image: &RgbImage) -> Result<ActionWordInput, VisionEr
             top = top.min(y0);
             bottom = bottom.max(y1 + 1);
         }
+        if complete {
+            components.push(Bounds {
+                left: x0,
+                top: y0,
+                right: x1 + 1,
+                bottom: y1 + 1,
+            });
+        }
     }
     if right <= left || bottom <= top {
         return Ok(ActionWordInput::Unlocalized);
+    }
+    if complete {
+        let bounds = complete_components(
+            &labels,
+            &components,
+            w,
+            Bounds {
+                left,
+                top,
+                right,
+                bottom,
+            },
+        );
+        (left, top, right, bottom) = (bounds.left, bounds.top, bounds.right, bounds.bottom);
     }
     let width = right - left;
     let height = bottom - top;
