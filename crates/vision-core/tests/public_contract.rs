@@ -118,6 +118,17 @@ fn finds_separate_hand_tile_bands_in_a_calibrated_region() {
     }
     let dark = RgbImage::new(32, 24, vec![38; 32 * 24 * 3]).unwrap();
     assert!(detect_hand_slots(&dark).is_empty());
+
+    let (mut image, expected_slots, _) = hand_scene(3);
+    for rect in &expected_slots {
+        for y in rect.y + 10..rect.y + rect.height - 10 {
+            for x in rect.x + 10..rect.x + rect.width - 10 {
+                let i = ((y * image.width() + x) * 3) as usize;
+                image.pixels_mut()[i..i + 3].fill(15);
+            }
+        }
+    }
+    assert_eq!(detect_hand_slots(&image).len(), 14);
 }
 
 #[test]

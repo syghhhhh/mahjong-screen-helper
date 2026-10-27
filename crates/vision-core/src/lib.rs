@@ -147,17 +147,16 @@ impl RgbImage {
 /// Detect pale, upright tile faces inside a tightly calibrated hand region.
 /// This is a fast candidate detector; callers still have to classify and validate every slot.
 pub fn detect_hand_slots(image: &RgbImage) -> Vec<Rect> {
-    let min_column = (image.height / 3).max(2);
+    let band_start = image.height / 12;
+    let band_end = (image.height / 4).max(band_start + 1).min(image.height);
+    let min_column = (band_end - band_start).div_ceil(2);
     let min_width = (image.height / 4).max(3);
     let mut columns = Vec::with_capacity(image.width as usize);
     for x in 0..image.width {
         let mut bright = 0u32;
-        for y in 0..image.height {
+        for y in band_start..band_end {
             let i = ((y * image.width + x) * 3) as usize;
-            let pixel = &image.rgb[i..i + 3];
-            let min = *pixel.iter().min().unwrap_or(&0);
-            let max = *pixel.iter().max().unwrap_or(&0);
-            if min >= 175 && max - min <= 70 {
+            if is_pale(&image.rgb[i..i + 3]) {
                 bright += 1;
             }
         }
@@ -176,10 +175,7 @@ pub fn detect_hand_slots(image: &RgbImage) -> Vec<Rect> {
                     for y in 0..image.height {
                         for xx in left..x {
                             let i = ((y * image.width + xx) * 3) as usize;
-                            let pixel = &image.rgb[i..i + 3];
-                            let min = *pixel.iter().min().unwrap_or(&0);
-                            let max = *pixel.iter().max().unwrap_or(&0);
-                            if min >= 175 && max - min <= 70 {
+                            if is_pale(&image.rgb[i..i + 3]) {
                                 top = top.min(y);
                                 bottom = bottom.max(y + 1);
                             }
@@ -200,6 +196,12 @@ pub fn detect_hand_slots(image: &RgbImage) -> Vec<Rect> {
         }
     }
     slots
+}
+
+fn is_pale(pixel: &[u8]) -> bool {
+    let min = *pixel.iter().min().unwrap_or(&0);
+    let max = *pixel.iter().max().unwrap_or(&0);
+    min >= 175 && max - min <= 70
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
