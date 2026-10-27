@@ -1,0 +1,60 @@
+name: Native rule host comparison
+
+on:
+  pull_request:
+    paths:
+      - 'crates/riichi-core/**'
+      - 'scripts/*rule*'
+      - 'tests/**/rule-diagnostic*'
+      - 'tests/fixtures/synthetic/rule_probe_control.rs'
+      - '.github/workflows/native-rule-diagnostic.yml'
+      - 'rust-toolchain.toml'
+      - '.cargo/config.toml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-rule-probe:
+    runs-on: windows-2022
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Validate the runner with synthetic child processes
+        shell: pwsh
+        run: powershell.exe -NoProfile -File tests/version/v0.0.1/rule-diagnostic.test.ps1
+      - name: Compile and package the actual rule contract without running it
+        shell: pwsh
+        run: .\scripts\package-rule-probe.ps1 -OutputDirectory "$PWD\.local-test-data\native-rule-probe"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: native-rule-probe
+          path: .local-test-data/native-rule-probe/
+          if-no-files-found: error
+          retention-days: 14
+          include-hidden-files: true
+
+  compare-identical-probe:
+    needs: build-rule-probe
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, windows-2025]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: native-rule-probe
+          path: probe
+      - name: Run exactly the downloaded executable, without rebuilding
+        shell: pwsh
+        run: powershell.exe -NoProfile -File probe/Run-RuleDiagnostic.ps1 -MaxAttempts 20
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: native-rule-results-${{ matrix.os }}
+          path: probe/results-*/
+          if-no-files-found: error
+          retention-days: 14

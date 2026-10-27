@@ -623,6 +623,17 @@
           "exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
           "pdb_sha256": "e13dc703c17f03ee86fc45e92005e5fab9a95d0cf775b27fe4fd51e065082d0b",
           "completed_at": "2026-10-27T22:44:56.8170335Z"
+        },
+        {
+          "source_sha": "09065fbf0f3bc9847ae3dde6ec394fe10f555bd4",
+          "source_dirty": true,
+          "run_id": "version-host-comparison-20261028-01",
+          "summary": ".local-test-data/runs/version-host-comparison-20261028-01/version-tests.json",
+          "failed_test": "rules.test.ps1: independently_owned_hands_keep_exact_results_across_ten_workers",
+          "exit_code": 101,
+          "diagnostic": "Native scoped worker panicked at riichi-core/src/lib.rs:167: attempt to subtract with overflow; ten other version checks passed",
+          "exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
+          "completed_at": "2026-10-27T22:52:32.3601518Z"
         }
       ]
     },
@@ -1733,6 +1744,17 @@
           "exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
           "pdb_sha256": "e13dc703c17f03ee86fc45e92005e5fab9a95d0cf775b27fe4fd51e065082d0b",
           "completed_at": "2026-10-27T22:44:56.8170335Z"
+        },
+        {
+          "source_sha": "09065fbf0f3bc9847ae3dde6ec394fe10f555bd4",
+          "source_dirty": true,
+          "run_id": "version-host-comparison-20261028-01",
+          "summary": ".local-test-data/runs/version-host-comparison-20261028-01/version-tests.json",
+          "failed_test": "rules.test.ps1: independently_owned_hands_keep_exact_results_across_ten_workers",
+          "exit_code": 101,
+          "diagnostic": "Native scoped worker panicked at riichi-core/src/lib.rs:167: attempt to subtract with overflow; ten other version checks passed",
+          "exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
+          "completed_at": "2026-10-27T22:52:32.3601518Z"
         }
       ],
       "targeted_test_logs": [
@@ -1786,6 +1808,64 @@
           "exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
           "pdb_sha256": "e13dc703c17f03ee86fc45e92005e5fab9a95d0cf775b27fe4fd51e065082d0b",
           "completed_at": "2026-10-27T22:44:56.8170335Z"
+        },
+        {
+          "source_sha": "09065fbf0f3bc9847ae3dde6ec394fe10f555bd4",
+          "source_dirty": true,
+          "run_id": "version-host-comparison-20261028-01",
+          "summary": ".local-test-data/runs/version-host-comparison-20261028-01/version-tests.json",
+          "failed_test": "rules.test.ps1: independently_owned_hands_keep_exact_results_across_ten_workers",
+          "exit_code": 101,
+          "diagnostic": "Native scoped worker panicked at riichi-core/src/lib.rs:167: attempt to subtract with overflow; ten other version checks passed",
+          "exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
+          "completed_at": "2026-10-27T22:52:32.3601518Z"
+        }
+      ]
+    },
+    {
+      "id": "V001-015",
+      "title": "同一规则二进制的跨 Windows 主机诊断与失败证据保留",
+      "status": "failed",
+      "depends_on": [
+        "V001-001"
+      ],
+      "scope": [
+        "workflow",
+        "testing",
+        "packaging"
+      ],
+      "acceptance_criteria": [
+        "从干净源提交构建十线程规则契约，不打包截图、模型、PDB 或 dump",
+        "GitHub 两种 Windows runner 下载并运行同一哈希的构建产物，本机可运行相同便携诊断包",
+        "运行前锁定并核对 exe 哈希；非零、超时、零测试或跳过结果均失败，首次失败即停止",
+        "保留 UTF-8 stdout/stderr、退出码、环境和来源 SHA；明确有限通过不是原生故障解决或产品验收",
+        "合成独立进程测试覆盖成功、失败、无测试、超时、篡改拒绝"
+      ],
+      "version_tests": [
+        "tests/version/v0.0.1/rule-diagnostic.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/regression/rule-diagnostic.test.ps1"
+      ],
+      "regression_profile": "full",
+      "local_evidence_required": [],
+      "evidence": null,
+      "targeted_test_logs": [
+        ".local-test-data/rule-diagnostic-contract-red-20261028.log",
+        ".local-test-data/rule-diagnostic-contract-green-20261028.log",
+        ".local-test-data/rule-diagnostic-contract-fixed-20261028.log"
+      ],
+      "failure_history": [
+        {
+          "source_sha": "09065fbf0f3bc9847ae3dde6ec394fe10f555bd4",
+          "source_dirty": true,
+          "run_id": "version-host-comparison-20261028-01",
+          "summary": ".local-test-data/runs/version-host-comparison-20261028-01/version-tests.json",
+          "failed_test": "rules.test.ps1: independently_owned_hands_keep_exact_results_across_ten_workers",
+          "exit_code": 101,
+          "diagnostic": "Native scoped worker panicked at riichi-core/src/lib.rs:167: attempt to subtract with overflow; ten other version checks passed",
+          "exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
+          "completed_at": "2026-10-27T22:52:32.3601518Z"
         }
       ]
     }
