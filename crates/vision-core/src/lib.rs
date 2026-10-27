@@ -263,6 +263,7 @@ pub fn detect_hand_slots(image: &RgbImage) -> Vec<Rect> {
                     }
                     if bottom > top {
                         top = hand_paper_top(image, left, x, top, bottom, &pale_rows);
+                        top = hand_flat_paper_top(image, left, x, top, bottom);
                         slots.push(Rect {
                             x: left,
                             y: top,
@@ -322,6 +323,78 @@ fn hand_paper_top(
     }
     if colored * 2 >= u64::from(width) * u64::from(body_top - top) {
         body_top
+    } else {
+        top
+    }
+}
+
+/// A narrow neutral bevel can contain compression speckles below the ink
+/// threshold. Only trim it when a broad brighter paper surface follows and
+/// the prefix itself is predominantly neutral, rather than printed content.
+fn hand_flat_paper_top(image: &RgbImage, left: u32, right: u32, top: u32, bottom: u32) -> u32 {
+    let width = right - left;
+    let pixel = |x: u32, y: u32| {
+        let i = ((y * image.width + x) * 3) as usize;
+        &image.rgb[i..i + 3]
+    };
+    let mut histogram = [0u64; 256];
+    let mut count = 0u64;
+    for y in top..bottom {
+        for x in left + width / 5..right - width / 5 {
+            let p = pixel(x, y);
+            if is_pale(p) {
+                let mean = p.iter().map(|&v| u32::from(v)).sum::<u32>() / 3;
+                histogram[mean as usize] += 1;
+                count += 1;
+            }
+        }
+    }
+    if count < u64::from(width) * u64::from(bottom - top) / 8 || count == 0 {
+        return top;
+    }
+    let mut accumulated = 0;
+    let paper = histogram
+        .iter()
+        .position(|&frequency| {
+            accumulated += frequency;
+            accumulated > count / 2
+        })
+        .unwrap_or(0) as u8;
+    if paper < 200 {
+        return top;
+    }
+    let bright = |y: u32| {
+        (left..right)
+            .filter(|&x| {
+                let p = pixel(x, y);
+                is_pale(p) && p.iter().all(|&v| v >= paper - 10)
+            })
+            .count() as u32
+            * 5
+            >= width * 3
+    };
+    let support = width.div_ceil(32).clamp(1, 3);
+    let Some(last) = bottom.checked_sub(width.max(support)) else {
+        return top;
+    };
+    let limit = (top + width / 4).min(last);
+    let Some(flat_top) = (top..=limit).find(|&y| (0..support).all(|dy| bright(y + dy))) else {
+        return top;
+    };
+    if flat_top - top < 2 {
+        return top;
+    }
+    let mut gray = 0u64;
+    for y in top..flat_top {
+        for x in left..right {
+            let p = pixel(x, y);
+            let low = *p.iter().min().unwrap();
+            let high = *p.iter().max().unwrap();
+            gray += u64::from(low >= 150 && high <= paper - 20 && high - low <= 25);
+        }
+    }
+    if gray * 4 >= u64::from(width) * u64::from(flat_top - top) * 3 {
+        flat_top
     } else {
         top
     }

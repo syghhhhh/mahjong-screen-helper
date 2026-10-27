@@ -103,6 +103,93 @@ fn header_trimming_preserves_relative_boundaries_at_multiple_pixel_scales() {
 }
 
 #[test]
+fn neutral_bevel_noise_above_the_flat_paper_does_not_expand_a_glyph_crop() {
+    let mut image = scene();
+    let body = paper(8, 8);
+    fill(&mut image, body, [225; 3]);
+    fill(
+        &mut image,
+        Rect {
+            x: 8,
+            y: 8,
+            width: 48,
+            height: 8,
+        },
+        [179; 3],
+    );
+    // A few compression/shadow pixels on the bevel used to become the
+    // top/left of the glyph even though the actual ink starts much lower.
+    fill(
+        &mut image,
+        Rect {
+            x: 11,
+            y: 12,
+            width: 3,
+            height: 2,
+        },
+        [160; 3],
+    );
+    let flat = Rect {
+        x: 8,
+        y: 16,
+        width: 48,
+        height: 72,
+    };
+    assert_eq!(detect_hand_slots(&image), vec![flat]);
+    let blank = vision_core::classifier::FaceObservation::in_hand(&image, flat).unwrap();
+    assert!(blank.glyph_bounds().is_none());
+    assert!(blank.blank_face_verified());
+    fill(
+        &mut image,
+        Rect {
+            x: 22,
+            y: 38,
+            width: 12,
+            height: 30,
+        },
+        [15; 3],
+    );
+    let printed = vision_core::classifier::FaceObservation::in_hand(&image, flat).unwrap();
+    assert_eq!(
+        printed.glyph_bounds(),
+        Some(Rect {
+            x: 13,
+            y: 21,
+            width: 14,
+            height: 32
+        })
+    );
+    assert!(!printed.blank_face_verified());
+}
+
+#[test]
+fn a_dark_gray_face_or_a_large_gray_region_is_not_silently_cropped() {
+    for (color, band_height) in [([179; 3], 80), ([179; 3], 28), ([40; 3], 8)] {
+        let mut image = scene();
+        let body = paper(8, 8);
+        fill(&mut image, body, [225; 3]);
+        fill(
+            &mut image,
+            Rect {
+                height: band_height,
+                ..body
+            },
+            color,
+        );
+        let expected = if color == [40; 3] {
+            Rect {
+                y: 16,
+                height: 72,
+                ..body
+            }
+        } else {
+            body
+        };
+        assert_eq!(detect_hand_slots(&image), vec![expected]);
+    }
+}
+
+#[test]
 fn a_dense_leading_paper_row_preserves_raised_and_tightly_printed_faces() {
     let mut image = scene();
     let face = paper(8, 2);
