@@ -1,0 +1,25 @@
+[package]
+name = "screen-capture"
+version = "0.0.1"
+edition = "2024"
+description = "Read-only Windows client-area capture and calibrated regions"
+license = "MIT"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[target.'cfg(windows)'.dependencies]
+windows-capture = "=2.0.1"
+
+[lib]
+name = "screen_capture"
+path = "src/lib.rs"
+
+[features]
+interactive-test = []
+
+[[test]]
+name = "local_window_capture"
+path = "tests/local_window_capture.rs"
+required-features = ["interactive-test"]

@@ -1,0 +1,3 @@
+# Deterministic synthetic hand used by vision-core public contract tests.
+# Artwork is generated in tests from these labels, and is not game artwork.
+1m 2m 3m 5m 1m 2m 3m 5m 1m 2m 3m 5m 1m 0m

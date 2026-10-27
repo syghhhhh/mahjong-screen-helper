@@ -1,0 +1,17 @@
+[package]
+name = "riichi-screen-helper"
+version = "0.0.1"
+edition = "2024"
+description = "Portable Windows overlay for read-only Mahjong Soul assistance"
+license = "MIT"
+
+[dependencies]
+screen-capture = { path = "../screen-capture" }
+vision-core = { path = "../vision-core" }
+game-state = { path = "../game-state" }
+runtime-core = { path = "../runtime-core" }
+riichi-core = { path = "../riichi-core" }
+
+[[bin]]
+name = "RiichiScreenHelper"
+path = "src/main.rs"

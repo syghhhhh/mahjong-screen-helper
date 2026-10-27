@@ -1,0 +1,8 @@
+# name x y width height removed_corner_hints; -1 means no glyph
+blank -1 -1 0 0 0
+hint-only -1 -1 0 0 1
+hint-and-red-glyph 24 37 29 71 1
+fractional-downsample 3 4 81 105 21
+fractional-upsample 0 0 17 23 3
+equal-size 0 1 32 46 3
+preserve-red 17 12 59 84 0

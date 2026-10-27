@@ -1,0 +1,2168 @@
+{
+  "schema_version": "1.0",
+  "project": "mahjong-screen-helper",
+  "release": "v0.0.1",
+  "tasks": [
+    {
+      "id": "V001-001",
+      "title": "建立自动化开发与测试闸门基线",
+      "status": "succeed",
+      "depends_on": [],
+      "scope": [
+        "process",
+        "testing"
+      ],
+      "acceptance_criteria": [
+        "流程、版本文档及任务文件存在",
+        "结构校验、版本测试及回归测试可运行",
+        "门禁拒绝错误状态、缺失证据和失败测试"
+      ],
+      "version_tests": [
+        "tests/version/v0.0.1/process-contract.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/version/v0.0.1/process-contract.test.ps1",
+        "tests/regression/repository-process.test.ps1"
+      ],
+      "regression_profile": "full",
+      "local_evidence_required": [],
+      "evidence": {
+        "source_sha": "4dc047b194cf6bd92a035669ea653c968afdc32b",
+        "version_test_run": "gate-version-v0.0.1-5d6a6f73ba4c4b57b091de5b5e607005",
+        "regression_test_run": "gate-all-8ab413020b244e7f95d3f3dca2467a67",
+        "commands": [
+          "scripts/test-version.ps1 -Version v0.0.1 -RunId gate-version-v0.0.1-5d6a6f73ba4c4b57b091de5b5e607005",
+          "scripts/test-all.ps1 -Version v0.0.1 -RunId gate-all-8ab413020b244e7f95d3f3dca2467a67"
+        ],
+        "logs": [
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-version-v0.0.1-5d6a6f73ba4c4b57b091de5b5e607005\\version-tests.log",
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-all-8ab413020b244e7f95d3f3dca2467a67\\all-tests.log"
+        ],
+        "summaries": [
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-version-v0.0.1-5d6a6f73ba4c4b57b091de5b5e607005\\version-tests.json",
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-all-8ab413020b244e7f95d3f3dca2467a67\\all-tests.json"
+        ],
+        "fixture_hashes": [],
+        "environment": {
+          "os": "Microsoft Windows NT 10.0.26200.0",
+          "architecture": "X64"
+        },
+        "completed_at": "2026-10-27T08:48:11.3486424Z"
+      }
+    },
+    {
+      "id": "V001-002",
+      "title": "实现窗口采集与首次区域校准",
+      "status": "succeed",
+      "depends_on": [
+        "V001-001"
+      ],
+      "scope": [
+        "capture",
+        "calibration"
+      ],
+      "acceptance_criteria": [
+        "只读捕获目标窗口的校准区域",
+        "窗口移动、缩放和 DPI 变化后坐标正确",
+        "默认不保存原始截图"
+      ],
+      "version_tests": [
+        "tests/version/v0.0.1/capture-calibration.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/regression/capture-calibration.test.ps1"
+      ],
+      "regression_profile": "full",
+      "local_evidence_required": [],
+      "evidence": {
+        "source_sha": "178ce12f977ed9408d4daf8f8002c173bcd60074",
+        "version_test_run": "gate-version-v0.0.1-1aed1e9e877e4d26a840800dfeeb6a65",
+        "regression_test_run": "gate-all-7a83bea7f5794037b6a8337661e62883",
+        "commands": [
+          "scripts/test-version.ps1 -Version v0.0.1 -RunId gate-version-v0.0.1-1aed1e9e877e4d26a840800dfeeb6a65",
+          "scripts/test-all.ps1 -Version v0.0.1 -RunId gate-all-7a83bea7f5794037b6a8337661e62883"
+        ],
+        "logs": [
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-version-v0.0.1-1aed1e9e877e4d26a840800dfeeb6a65\\version-tests.log",
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-all-7a83bea7f5794037b6a8337661e62883\\all-tests.log"
+        ],
+        "summaries": [
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-version-v0.0.1-1aed1e9e877e4d26a840800dfeeb6a65\\version-tests.json",
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-all-7a83bea7f5794037b6a8337661e62883\\all-tests.json"
+        ],
+        "fixture_hashes": [],
+        "environment": {
+          "os": "Microsoft Windows NT 10.0.26200.0",
+          "architecture": "X64"
+        },
+        "completed_at": "2026-10-27T09:19:26.489737Z"
+      }
+    },
+    {
+      "id": "V001-003",
+      "title": "实现手牌与行动按钮视觉识别",
+      "status": "in_progress",
+      "depends_on": [
+        "V001-002"
+      ],
+      "scope": [
+        "vision"
+      ],
+      "acceptance_criteria": [
+        "识别默认雀魂四麻手牌与吃碰杠立直按钮",
+        "小型 ONNX 回退与随包模型的来源、授权和实图结果明确",
+        "低置信度和不稳定帧不提交确定性结果",
+        "合成 fixture 与本机真实截图均有测试证据"
+      ],
+      "version_tests": [
+        "tests/version/v0.0.1/vision.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/regression/vision.test.ps1"
+      ],
+      "regression_profile": "full",
+      "local_evidence_required": [
+        "live-hand-recognition",
+        "live-action-recognition"
+      ],
+      "evidence": null,
+      "research_history": [
+        {
+          "kind": "action-input-component-completion-and-resource-comparison",
+          "base_sha": "3c20e11ecbb275ac71062d71a5069a924c4c8467",
+          "source_dirty": true,
+          "preprocessing_id": "action-complete-word-mask-v2",
+          "production_integrated": false,
+          "acceptance_verified": false,
+          "record": "docs/action-recognition.md",
+          "red_test_log": ".local-test-data/runs/component-contract-red-98d291b1a5474f6d8bfb11b075c00b73/test.log",
+          "native_parity_run": "native-action-complete-component-parity-b5fb922cb3674b87bc46f8e8859898b3",
+          "native_input_differing_values": 0,
+          "max_native_pytorch_logit_error": 1.191930175892253E-06,
+          "native_classifier_probe_exit_code": 1,
+          "component_comparison_run": "action-component-closure-afd15d273f94465c84f433273cb17065",
+          "font_candidate": {
+            "run_id": "font-action-cnn-v2-c40ef1feda394dddad1631f0f7585270",
+            "model_sha256": "9b460246c66a6171f4558a31ac5b97aab2e4f63685c3d0f15078fbe1c10d3a23",
+            "v1_input_correct_accepted": 9,
+            "v1_input_wrong_accepted": 0,
+            "v1_input_rejected": 12,
+            "complete_input_correct_accepted": 10,
+            "complete_input_wrong_accepted": 0,
+            "complete_input_rejected": 11,
+            "primary_five_complete": false
+          },
+          "ocr_source_revision": "80b427d69bfc5b91a12913394875910296c6f315",
+          "ocr_runs": [
+            "rapidocr-action-development-adbc141efbf54ab195e596bcc9a7c308",
+            "rapidocr-action-development-19f85fa3be3e450992a308f389e2356d",
+            "rapidocr-action-development-ae93535792e145a7844188e8d644d083",
+            "rapidocr-action-development-3d98c06781c945ea8d1d6d5a43c2eed7"
+          ],
+          "limitations": "Inspected developer inputs, synthetic negatives and word-only prototypes; no independent or live acceptance, enabled-button context or shipped weights. OCR attribution review remains incomplete. Original v1 input contract retained."
+        },
+        {
+          "kind": "ten-font-action-complete-input-development-comparison",
+          "source_sha": "41beb28eef807a6487adb55999ac46164fa77a42",
+          "source_dirty": true,
+          "run_id": "native-action-v3-complete-component-parity-bf69ea8f6a734f52ac7477cc9116994c",
+          "model_run": "font-action-cnn-v3-f3a8ed9dab304b56866e194d4720c12f",
+          "model_sha256": "0f813d677f61533264bbdd0c1d48a17006c01a2122ab8fd812a3f1927abbb6a7",
+          "model_bytes": 1616311,
+          "correct_accepted": 9,
+          "wrong_accepted": 0,
+          "rejected": 12,
+          "primary_five_complete": false,
+          "input_differing_values": 0,
+          "max_native_pytorch_logit_error": 2.741411804230154E-06,
+          "probe_exit_code": 1,
+          "acceptance_verified": false,
+          "production_integrated": false,
+          "record": "docs/action-recognition.md",
+          "limitations": "Known inspected developer inputs, including repeated negatives; no independent or live acceptance. No game pixels or pretrained weights used for training. No thresholds lowered or weights bundled."
+        }
+      ],
+      "validation_history": [
+        {
+          "source_sha": "b6c4a0fc7559697df872fabb8b059ea975e6a358",
+          "source_dirty": false,
+          "version_test_run": "version-v0.0.1-f5fd59b077b04af8b224baef2b934879",
+          "regression_test_run": "all-components-0026fd17ca554ea490c136dede73531a",
+          "version_passed": true,
+          "vision_regression_passed": true,
+          "full_regression_passed": false,
+          "failed_check": "tests/regression/rules.test.ps1",
+          "native_exit_code": "0xc0000005",
+          "summary": ".local-test-data/runs/all-components-0026fd17ca554ea490c136dede73531a/all-tests.json",
+          "log": ".local-test-data/runs/all-components-0026fd17ca554ea490c136dede73531a/all-tests.log",
+          "completed_at": "2026-10-27T21:38:20.1669374Z",
+          "limitations": "Six new geometry tests pass, but the full suite naturally failed in the unchanged rule concurrency binary. No success gate was run; visual acceptance also remains incomplete."
+        }
+      ],
+      "research_20261028": {
+        "document": "docs/research-2026-10-28-public-models.md",
+        "acceptance_verified": false,
+        "public_v6_old": "15/18 accepted, zero errors; existing seed model remains 17/18",
+        "public_v6_new": "7/10 accepted, zero errors, incomplete",
+        "public_v7": "rejected due to accepted errors",
+        "background_hull": "rejected due to regression",
+        "medium_ocr": "five major actions incomplete, developer CPU median 488.23 ms per word",
+        "weights_shipped": false
+      },
+      "action_word_research": {
+        "document": "docs/action-word-decisions.md",
+        "summary": ".local-test-data/runs/action-word-decision-comparison-34045d4d3ce948638cb4af64722110a9/summary.json",
+        "source_sha": "22bb3292d4587618caf3456c3b79518c49b302f1",
+        "source_dirty": true,
+        "v4_model_sha256": "4ba0bb1bdf366e5089f3fe82565a851354692c25f08c99510ed0916ed6818bfb",
+        "v5_model_sha256": "7b283df3a08aebcb555a2a3a18ab71cc5a658f1727d2a3b15c3b5b525639e474",
+        "primary_accepted": [
+          1,
+          2,
+          2
+        ],
+        "nonoperable_false_candidates": [
+          0,
+          0,
+          1
+        ],
+        "model_order": [
+          "v3",
+          "v4",
+          "v5"
+        ],
+        "acceptance_verified": false,
+        "weights_bundled": false
+      }
+    },
+    {
+      "id": "V001-004",
+      "title": "实现四麻牌效与 Top-3 推荐",
+      "status": "succeed",
+      "depends_on": [
+        "V001-001"
+      ],
+      "scope": [
+        "rules"
+      ],
+      "acceptance_criteria": [
+        "普通形、七对子和国士向听正确",
+        "有效牌扣除可见牌且推荐切牌来自手牌",
+        "输出 Top-3、置信度和理由"
+      ],
+      "version_tests": [
+        "tests/version/v0.0.1/rules.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/regression/rules.test.ps1"
+      ],
+      "regression_profile": "full",
+      "local_evidence_required": [],
+      "evidence": {
+        "source_sha": "a130d6d932e7c6086473ba5db138fb7d6e3b3ed6",
+        "version_test_run": "gate-version-v0.0.1-4b1c644b224f4698a3c3cc1c45ec9726",
+        "regression_test_run": "gate-all-15622db87ec94555a1fe22b95e49b543",
+        "commands": [
+          "scripts/test-version.ps1 -Version v0.0.1 -RunId gate-version-v0.0.1-4b1c644b224f4698a3c3cc1c45ec9726",
+          "scripts/test-all.ps1 -Version v0.0.1 -RunId gate-all-15622db87ec94555a1fe22b95e49b543"
+        ],
+        "logs": [
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-version-v0.0.1-4b1c644b224f4698a3c3cc1c45ec9726\\version-tests.log",
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-all-15622db87ec94555a1fe22b95e49b543\\all-tests.log"
+        ],
+        "summaries": [
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-version-v0.0.1-4b1c644b224f4698a3c3cc1c45ec9726\\version-tests.json",
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-all-15622db87ec94555a1fe22b95e49b543\\all-tests.json"
+        ],
+        "fixture_hashes": [],
+        "environment": {
+          "os": "Microsoft Windows NT 10.0.26200.0",
+          "architecture": "X64"
+        },
+        "completed_at": "2026-10-27T08:54:04.1892537Z"
+      }
+    },
+    {
+      "id": "V001-005",
+      "title": "实现局面状态与吃碰杠立直建议",
+      "status": "in_progress",
+      "depends_on": [
+        "V001-003",
+        "V001-004"
+      ],
+      "scope": [
+        "state",
+        "actions"
+      ],
+      "acceptance_criteria": [
+        "摸切、鸣牌、立直和局终事件可追踪",
+        "动作建议展示前后向听与有效牌变化",
+        "暗杠和加杠有比较，暗杠保持门清，立直后杠限制有验证",
+        "不确定状态暂停推荐且允许纠错"
+      ],
+      "version_tests": [
+        "tests/version/v0.0.1/state-actions.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/regression/state-actions.test.ps1"
+      ],
+      "regression_profile": "full",
+      "local_evidence_required": [
+        "live-action-advice"
+      ],
+      "evidence": null
+    },
+    {
+      "id": "V001-006",
+      "title": "实现透明浮窗与实时集成",
+      "status": "failed",
+      "depends_on": [
+        "V001-005"
+      ],
+      "scope": [
+        "overlay",
+        "integration"
+      ],
+      "acceptance_criteria": [
+        "浮窗显示手牌、Top-3、动作建议与置信度",
+        "支持拖动、缩放、暂停、隐藏、重新识别和手动纠错",
+        "稳定画面到更新目标低于 250 ms"
+      ],
+      "version_tests": [
+        "tests/version/v0.0.1/overlay-integration.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/regression/overlay-integration.test.ps1"
+      ],
+      "regression_profile": "full",
+      "local_evidence_required": [
+        "live-overlay-latency"
+      ],
+      "evidence": null,
+      "failure_history": [
+        {
+          "source_sha": "9c3cbd2c1ee41adacf83cad182baaa5e4d4bf32b",
+          "source_dirty": false,
+          "test_run": "all-b8e86d5d08ea4f11a1690ec055d90a1c",
+          "command": "scripts/test-all.ps1 -Version v0.0.1",
+          "failed_check": "tests/regression/overlay-integration.test.ps1",
+          "exit_code": 1,
+          "native_exit_code": "0xc0000005",
+          "native_target": "runtime-core/tests/pipeline.rs",
+          "log": ".local-test-data/runs/all-b8e86d5d08ea4f11a1690ec055d90a1c/all-tests.log",
+          "summary": ".local-test-data/runs/all-b8e86d5d08ea4f11a1690ec055d90a1c/all-tests.json",
+          "preserved_artifacts": ".local-test-data/runs/pipeline-access-violation-9bb800bb715546d3b5db692aca5ddb69/",
+          "exe_sha256": "8789767b18e1629a0b4720402bf150fe607c3a2c2202423182d83f515d65c96c",
+          "pdb_sha256": "54d47f0a06c916c0b1d543f1283a591fa28e202300b22731da03d8f1c0aa3427",
+          "environment": {
+            "os": "Windows 11 10.0.26200",
+            "architecture": "x64",
+            "rustc": "1.93.1 (01f6ddf75 2026-02-11)"
+          },
+          "diagnostics": {
+            "under_debugger_attempts": 30,
+            "reproduced": false,
+            "result": "All 30 preserved-binary debug attempts passed; debugger changes timing and this does not fix or erase the original crash."
+          },
+          "root_cause": "unresolved",
+          "completed_at": "2026-10-27T19:59:49.8367807Z"
+        },
+        {
+          "source_sha": "777d293c99e2d2af6dec12fac34f61d84e47bfaf",
+          "source_dirty": false,
+          "regression_test_run": "all-action-word-decisions-20261028-01",
+          "summary": ".local-test-data/runs/all-action-word-decisions-20261028-01/all-tests.json",
+          "failure_folder": ".local-test-data/runs/neural-pipeline-heap-corruption-77db08def7314f73ad519c287001c213",
+          "failed_test": "tests/regression/overlay-integration.test.ps1",
+          "target": "runtime-core/tests/neural_pipeline.rs",
+          "process_exit_code_hex": "0xc0000374",
+          "exe_sha256": "3388681aa65ab317d017fb59058f970987ffe894df867ca4b2c4d7a32ea9107c",
+          "pdb_sha256": "82de14be726c93f82e2ef977dfe827af7cc13dc8e4b86afe935a1ecca7a0611d",
+          "checks": 12,
+          "failed": 1,
+          "skipped": 0,
+          "completed_at": "2026-10-27T23:37:13.7227677Z",
+          "application_event_count": 1,
+          "faulting_module": "ntdll.dll",
+          "faulting_offset": "0x118095",
+          "same_cause_as_prior_failures_verified": false,
+          "note": "Eight neural pipeline tests completed before natural heap-corruption termination. Uses synthetic images and mocked face classifiers; actual corrupting write and responsible test are unknown. No success gate was run.",
+          "event_query_correction": ".local-test-data/runs/neural-pipeline-heap-corruption-77db08def7314f73ad519c287001c213/event-evidence-final.json"
+        }
+      ],
+      "diagnostic_history": [
+        {
+          "source_sha": "4a0ae8c893981049897deefa3eff4110c62d9f74",
+          "source_dirty": false,
+          "kind": "native-crash-reproduction-and-clean-build-comparison",
+          "status": "unresolved",
+          "natural_failure_summary": ".local-test-data/runs/pipeline-standard-heap-75dc039b84e8457f92a28c6f7ee6f025/debug-results.json",
+          "native_exit_code": "0xc0000005",
+          "first_fault_summary": ".local-test-data/runs/pipeline-first-fault-050b807a421b4579b60da25c2ca2a785/debug-results.json",
+          "clean_build_summary": ".local-test-data/runs/pipeline-clean-reproduction-d85a949d1b3246488c8761771fab41a9/debug-results.json",
+          "clean_exe_sha256": "3379900af9cf658583a48e3c52cd57d183068276b96280354ae4d035b1958259",
+          "identical_text_sha256": "c5bef746818db03a0792201ab5d6b1828ca8b15eb1239bb1edf8a75166091f92",
+          "independent_rule_attempts_passed": 10,
+          "original_rule_library_attempts_passed": 20,
+          "limitations": "First-fault capture intentionally stops the child after dumping; its forced exit is not a natural test result. Raw stack symbols are not a verified unwind. Passing diagnostics and CI do not fix or erase the reproduced access violation.",
+          "record": "docs/failures/2026-10-28-pipeline-access-violation.md",
+          "recorded_at": "2026-10-27T20:32:03Z"
+        }
+      ]
+    },
+    {
+      "id": "V001-007",
+      "title": "构建和验证 Windows x64 便携包",
+      "status": "in_progress",
+      "depends_on": [
+        "V001-006"
+      ],
+      "scope": [
+        "packaging",
+        "performance"
+      ],
+      "acceptance_criteria": [
+        "无需开发环境即可解压双击运行",
+        "打包冒烟、冷启动、内存与 30 分钟持续运行有证据",
+        "默认离线且不上传截图"
+      ],
+      "version_tests": [
+        "tests/version/v0.0.1/packaging-performance.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/regression/packaging-performance.test.ps1"
+      ],
+      "regression_profile": "full",
+      "local_evidence_required": [
+        "clean-windows-start",
+        "live-30-minute-soak"
+      ],
+      "evidence": null
+    },
+    {
+      "id": "V001-008",
+      "title": "接入公共牌与来牌识别及同帧采集",
+      "status": "in_progress",
+      "depends_on": [
+        "V001-002",
+        "V001-003",
+        "V001-004"
+      ],
+      "scope": [
+        "capture",
+        "calibration",
+        "vision",
+        "state",
+        "integration"
+      ],
+      "acceptance_criteria": [
+        "八区域同帧采集，旧配置迁移并要求补齐三家副露区域",
+        "牌河、四家副露与宝牌指示牌计数进入牌效计算",
+        "稳定来牌进入吃碰杠建议，公共信息变化清除旧建议",
+        "鸣牌后通过合法副露与手牌共同校对状态",
+        "合成回归与真实公共牌画面验收均有完整证据"
+      ],
+      "version_tests": [
+        "tests/version/v0.0.1/capture-calibration.test.ps1",
+        "tests/version/v0.0.1/vision.test.ps1",
+        "tests/version/v0.0.1/state-actions.test.ps1",
+        "tests/version/v0.0.1/overlay-integration.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/regression/capture-calibration.test.ps1",
+        "tests/regression/vision.test.ps1",
+        "tests/regression/state-actions.test.ps1",
+        "tests/regression/overlay-integration.test.ps1"
+      ],
+      "regression_profile": "full",
+      "local_evidence_required": [
+        "live-public-table-recognition",
+        "live-public-table-integration"
+      ],
+      "evidence": null
+    },
+    {
+      "id": "V001-009",
+      "title": "定位并修复原生并行规则计算异常",
+      "status": "failed",
+      "depends_on": [
+        "V001-004"
+      ],
+      "scope": [
+        "rules",
+        "integration",
+        "testing"
+      ],
+      "acceptance_criteria": [
+        "保留原访问异常、诊断 panic、最小规则复现和对应构建哈希",
+        "确认可检验的原因并验证修复，不以有限次重跑通过代替根因分析",
+        "独立手牌并行计算保持已知向听值、合法切牌、固定排名和确定性",
+        "默认线程与堆设置下完成版本测试、完整回归及本机故障修复对照",
+        "不串行化正式测试，不屏蔽异常，不放宽原断言"
+      ],
+      "version_tests": [
+        "tests/version/v0.0.1/rules.test.ps1",
+        "tests/version/v0.0.1/overlay-integration.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/regression/rules.test.ps1",
+        "tests/regression/overlay-integration.test.ps1"
+      ],
+      "regression_profile": "full",
+      "local_evidence_required": [
+        "native-parallel-resolution"
+      ],
+      "evidence": null,
+      "diagnostic_history": [
+        {
+          "source_sha": "01ea22ee99c2a07306b6e5039b04c1c44d242426",
+          "source_dirty": false,
+          "kind": "rule-only-reproduction-and-frame-pointer-diagnostic",
+          "status": "unresolved",
+          "original_rule_libtest_summary": ".local-test-data/runs/core-test-harness-7d6a1a894678419aa7a76d0f9ac54bf9/debug-results.json",
+          "original_rule_std_threads_summary": ".local-test-data/runs/core-ten-threads-318444b8e4f845289c8ab88d6d2a751b/debug-results.json",
+          "alternate_compiler_summary": ".local-test-data/runs/core-stable-static-67a2d599f95f43a49d068979a9191d3a/debug-results.json",
+          "dynamic_crt_summary": ".local-test-data/runs/core-1.93.1-dynamic-aa5d0999a2454ba1be508514b4b959e5/debug-results.json",
+          "frame_pointer_panic_summary": ".local-test-data/runs/pipeline-frame-panic-513edf103f3a4c05bfd6effa5945bf3c/debug-results.json",
+          "limitations": "First-AV diagnostic captures intentionally terminate the child. Independent compiler, CRT and C++ controls change code and timing; they do not establish a root cause.",
+          "record": "docs/failures/2026-10-28-pipeline-access-violation.md"
+        },
+        {
+          "source_sha": "964828b335e342ddce42c613481a10663a10e113",
+          "kind": "invariant-controls-and-independent-host-probe-preparation",
+          "status": "unresolved",
+          "instrumented_source_run": ".local-test-data/runs/rule-invariant-probe-2d18f21e1d7d463790eaef23cdc9db73/normal-results.json",
+          "instrumented_debug_run": ".local-test-data/runs/rule-invariant-debug-e6a3ac90874c48bf8567a54234c321b4/debug-results.json",
+          "original_binary_native_run": ".local-test-data/runs/original-rule-native-3c843c2cb020430a91f1c627b359f872/normal-results.json",
+          "standalone_same_binary_failure": ".local-test-data/diagnostics/rule-runtime-probe-beb769087501415bb74bf450d2d938e7/results-20261028-050214-2ad2ece23bfc4ae59f518a0359582fe3/report.json",
+          "standalone_native_exit_code": "0xc0000005",
+          "diagnostic_zip_sha256": "7a1dcc95d4b547c77f1c9a9e9c5c6d210c93db0d855da1c430352b0426859f33",
+          "environment_clue": {
+            "processor": "i7-13700K",
+            "bios": "1.11",
+            "bios_date": "2022-09-19",
+            "microcode_registry_u32_le": "0x10B"
+          },
+          "limitations": "Read-only environment clues and finite passing controls do not establish a hardware or compiler cause. Independent-host diagnostic is not success-gate evidence. Same preserved rule contract still fails naturally on this host.",
+          "record": "docs/failures/2026-10-28-pipeline-access-violation.md"
+        },
+        {
+          "kind": "same-binary-single-logical-processor-comparison",
+          "run_id": "rule-affinity-research-db38e2fbd2c147ffbe7d923e2d005d8f",
+          "base_sha": "79ba0711d2c1550caafc8026cfa02b3ae1b763c6",
+          "exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
+          "logical_processors": 24,
+          "attempts": 48,
+          "passed": 48,
+          "failed": 0,
+          "timed_out": 0,
+          "production_settings_changed": false,
+          "acceptance_verified": false,
+          "record": "docs/failures/2026-10-28-pipeline-access-violation.md",
+          "completed_at": "2026-10-27T21:53:13.1294369Z",
+          "limitations": "Child affinity applied after process start. Other development work ran during the probe. Changed scheduling and uncontrolled background load prevent hardware localization or performance acceptance; passing results do not resolve default-affinity failures."
+        }
+      ],
+      "failure_history": [
+        {
+          "source_sha": "62c757eb4dfc39010877db4ec85fbc8d71d990b1",
+          "source_dirty": false,
+          "test_run": "all-0996c22b41d644199ac8b76417d8daea",
+          "command": "scripts/test-all.ps1 -Version v0.0.1",
+          "failed_check": "tests/regression/state-actions.test.ps1",
+          "exit_code": 1,
+          "native_exit_code": "0xc0000005",
+          "native_target": "game-state/tests/public_contract.rs",
+          "summary": ".local-test-data/runs/all-0996c22b41d644199ac8b76417d8daea/all-tests.json",
+          "log": ".local-test-data/runs/all-0996c22b41d644199ac8b76417d8daea/all-tests.log",
+          "preserved_artifacts": ".local-test-data/runs/state-access-violation-d54ba5e3b41c4956a1915b8395ad70af/",
+          "exe_sha256": "a05c91da902bfb70f5da479215990e0591a28307e5caacd74263da7f5cfb76cb",
+          "pdb_sha256": "a5fe53f583a3fd2c105d3dc46b81285891176e63dbf2f597f82e5ef921f3ee02",
+          "environment": {
+            "os": "Windows 11 10.0.26200",
+            "architecture": "x64",
+            "rustc": "1.93.1"
+          },
+          "completed_at": "2026-10-27T20:43:30.8721206Z"
+        },
+        {
+          "source_sha": "12db20f6f69278c0c51e58d19a2c93315fa1aff1",
+          "source_dirty": false,
+          "test_run": "all-add896cdaad741b38996799197b1cbf7",
+          "command": "scripts/test-all.ps1 -Version v0.0.1",
+          "failed_checks": [
+            "scripts/test-version.ps1",
+            "tests/regression/overlay-integration.test.ps1"
+          ],
+          "exit_code": 1,
+          "natural_failures": [
+            {
+              "target": "riichi-core/tests/concurrency.rs",
+              "exit_code": 101,
+              "reason": "subtraction overflow at riichi-core/src/lib.rs:154"
+            },
+            {
+              "target": "runtime-core/tests/pipeline.rs",
+              "native_exit_code": "0xc0000005",
+              "reason": "stack-overflow message followed by access violation"
+            }
+          ],
+          "summary": ".local-test-data/runs/all-add896cdaad741b38996799197b1cbf7/all-tests.json",
+          "log": ".local-test-data/runs/all-add896cdaad741b38996799197b1cbf7/all-tests.log",
+          "preserved_artifacts": ".local-test-data/runs/concurrency-natural-failure-541a286eb6b44cab876631f7a94c35bc/",
+          "concurrency_exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
+          "concurrency_pdb_sha256": "e13dc703c17f03ee86fc45e92005e5fab9a95d0cf775b27fe4fd51e065082d0b",
+          "environment": {
+            "os": "Windows 11 10.0.26200",
+            "architecture": "x64",
+            "rustc": "1.93.1"
+          },
+          "completed_at": "2026-10-27T20:50:20.34681Z"
+        },
+        {
+          "source_sha": "b6c4a0fc7559697df872fabb8b059ea975e6a358",
+          "source_dirty": false,
+          "test_run": "all-components-0026fd17ca554ea490c136dede73531a",
+          "command": "scripts/test-all.ps1 -Version v0.0.1",
+          "failed_check": "tests/regression/rules.test.ps1",
+          "checks": 10,
+          "failed": 1,
+          "skipped": 0,
+          "exit_code": 1,
+          "native_exit_code": "0xc0000005",
+          "native_target": "riichi-core/tests/concurrency.rs",
+          "version_test_run": "version-v0.0.1-f5fd59b077b04af8b224baef2b934879",
+          "version_passed": true,
+          "summary": ".local-test-data/runs/all-components-0026fd17ca554ea490c136dede73531a/all-tests.json",
+          "log": ".local-test-data/runs/all-components-0026fd17ca554ea490c136dede73531a/all-tests.log",
+          "preserved_artifacts": ".local-test-data/runs/component-regression-native-failure-4a4f329c3b25451e9ac2c4ffde987759/",
+          "concurrency_exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
+          "concurrency_pdb_sha256": "e13dc703c17f03ee86fc45e92005e5fab9a95d0cf775b27fe4fd51e065082d0b",
+          "strict_utf8": true,
+          "nul_bytes": 0,
+          "environment": {
+            "os": "Windows 11 10.0.26200",
+            "architecture": "x64",
+            "rustc": "1.93.1"
+          },
+          "completed_at": "2026-10-27T21:38:20.1669374Z"
+        },
+        {
+          "source_sha": "46c97e9e458d2ee7724cc8851294d86c83980f1c",
+          "source_dirty": true,
+          "run_id": "version-public-models-20261028-01",
+          "summary": ".local-test-data/runs/version-public-models-20261028-01/version-tests.json",
+          "failed_test": "rules.test.ps1: independently_owned_hands_keep_exact_results_across_ten_workers",
+          "exit_code": "0xc0000005",
+          "diagnostic": "thread has overflowed its stack; unchanged archived rule binary",
+          "exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
+          "pdb_sha256": "e13dc703c17f03ee86fc45e92005e5fab9a95d0cf775b27fe4fd51e065082d0b",
+          "completed_at": "2026-10-27T22:41:20.4497336Z"
+        },
+        {
+          "source_sha": "46c97e9e458d2ee7724cc8851294d86c83980f1c",
+          "source_dirty": true,
+          "run_id": "version-gate-consistency-20261028-01",
+          "summary": ".local-test-data/runs/version-gate-consistency-20261028-01/version-tests.json",
+          "failed_test": "rules.test.ps1: independently_owned_hands_keep_exact_results_across_ten_workers",
+          "exit_code": "0xc0000005",
+          "diagnostic": "Unchanged archived rule binary; nine other version checks including six miniature gate cases passed",
+          "exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
+          "pdb_sha256": "e13dc703c17f03ee86fc45e92005e5fab9a95d0cf775b27fe4fd51e065082d0b",
+          "completed_at": "2026-10-27T22:44:56.8170335Z"
+        },
+        {
+          "source_sha": "09065fbf0f3bc9847ae3dde6ec394fe10f555bd4",
+          "source_dirty": true,
+          "run_id": "version-host-comparison-20261028-01",
+          "summary": ".local-test-data/runs/version-host-comparison-20261028-01/version-tests.json",
+          "failed_test": "rules.test.ps1: independently_owned_hands_keep_exact_results_across_ten_workers",
+          "exit_code": 101,
+          "diagnostic": "Native scoped worker panicked at riichi-core/src/lib.rs:167: attempt to subtract with overflow; ten other version checks passed",
+          "exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
+          "completed_at": "2026-10-27T22:52:32.3601518Z"
+        },
+        {
+          "source_sha": "777d293c99e2d2af6dec12fac34f61d84e47bfaf",
+          "source_dirty": false,
+          "regression_test_run": "all-action-word-decisions-20261028-01",
+          "summary": ".local-test-data/runs/all-action-word-decisions-20261028-01/all-tests.json",
+          "failure_folder": ".local-test-data/runs/neural-pipeline-heap-corruption-77db08def7314f73ad519c287001c213",
+          "failed_test": "tests/regression/overlay-integration.test.ps1",
+          "target": "runtime-core/tests/neural_pipeline.rs",
+          "process_exit_code_hex": "0xc0000374",
+          "exe_sha256": "3388681aa65ab317d017fb59058f970987ffe894df867ca4b2c4d7a32ea9107c",
+          "pdb_sha256": "82de14be726c93f82e2ef977dfe827af7cc13dc8e4b86afe935a1ecca7a0611d",
+          "checks": 12,
+          "failed": 1,
+          "skipped": 0,
+          "completed_at": "2026-10-27T23:37:13.7227677Z",
+          "application_event_count": 1,
+          "faulting_module": "ntdll.dll",
+          "faulting_offset": "0x118095",
+          "same_cause_as_prior_failures_verified": false,
+          "note": "Eight neural pipeline tests completed before natural heap-corruption termination. Uses synthetic images and mocked face classifiers; actual corrupting write and responsible test are unknown. No success gate was run.",
+          "event_query_correction": ".local-test-data/runs/neural-pipeline-heap-corruption-77db08def7314f73ad519c287001c213/event-evidence-final.json"
+        }
+      ],
+      "ci_validation_history": [
+        {
+          "source_sha": "3e444ced49c6511742d95167b251d11b91e20e54",
+          "checkout_sha": "38d51cce5238c9b625a26d9393cfe0b3511649ca",
+          "run_id": 40598298229,
+          "url": "https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40598298229",
+          "checks": [
+            "task-schema",
+            "version-tests",
+            "regression-tests",
+            "build-smoke",
+            "package-smoke"
+          ],
+          "passed": true,
+          "observed_at": "2026-10-27T23:02:11.6657218Z",
+          "local_native_resolution": false
+        }
+      ],
+      "cross_host_history": [
+        {
+          "source_sha": "3e444ced49c6511742d95167b251d11b91e20e54",
+          "checkout_sha": "38d51cce5238c9b625a26d9393cfe0b3511649ca",
+          "ci_run_id": 40598298281,
+          "ci_url": "https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40598298281",
+          "exe_sha256": "1f1e6355caf7d92cd987ce5c8d9380cd5b1f9346c26ca760e8ade4f932ce162c",
+          "environments": [
+            "Windows Server 2022 AMD EPYC 7763 / 4 logical CPUs",
+            "Windows Server 2025 AMD EPYC 7763 / 4 logical CPUs",
+            "Windows 11 i7-13700K / 24 logical CPUs"
+          ],
+          "attempts_per_environment": 20,
+          "failed": 0,
+          "timed_out": 0,
+          "acceptance_verified": false,
+          "reproduces_original_failing_binary": false,
+          "summary": ".local-test-data/runs/ci-rule-comparison-b313b784a409408fb2262a51dd646bf0/three-host-comparison.json",
+          "document": "docs/native-rule-comparison.md"
+        }
+      ],
+      "static_function_comparison": {
+        "summary": ".local-test-data/runs/rule-function-symbols-dd710c8acc6946c19b1254ba3e0c3650/search-normal-call-difference-audit.json",
+        "original_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
+        "ci_sha256": "1f1e6355caf7d92cd987ce5c8d9380cd5b1f9346c26ca760e8ade4f932ce162c",
+        "selected_original_pdb_functions": 296,
+        "identical_at_same_rva": 226,
+        "different_at_same_rva": 70,
+        "search_normal_instructions": 933,
+        "changed_instructions": 70,
+        "changed_bytes": 140,
+        "changed_opcode": "call rel32",
+        "original_changed_targets": "core panicking symbols",
+        "ci_target_shift_bytes": 736,
+        "linker_versions": [
+          "14.41",
+          "14.44"
+        ],
+        "root_cause_verified": false,
+        "original_probe_upload": "awaiting_explicit_user_authorization"
+      }
+    },
+    {
+      "id": "V001-010",
+      "title": "修复 PowerShell 5 测试日志混合编码",
+      "status": "blocked",
+      "depends_on": [
+        "V001-001",
+        "V001-009"
+      ],
+      "scope": [
+        "process",
+        "testing"
+      ],
+      "acceptance_criteria": [
+        "版本及全项目测试日志统一写入 UTF-8，保留中文和非 ASCII 字符",
+        "即使从 CP437 启动，也统一原生子进程输出与 PowerShell 解码为 UTF-8",
+        "stdout、stderr、命令行和后续测试输出均可直接检索，无 UTF-16 NUL 混入",
+        "故意失败的退出码保持失败，后续成功项不覆盖前面的失败",
+        "两个入口在日志写入失败时均返回失败，不能保存成功摘要",
+        "最小仓库集成测试覆盖两个真实测试入口和嵌套版本测试",
+        "本版本及全项目回归完成后才允许执行成功门禁"
+      ],
+      "version_tests": [
+        "tests/version/v0.0.1/runner-logging.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/regression/runner-logging.test.ps1",
+        "tests/regression/repository-process.test.ps1"
+      ],
+      "regression_profile": "full",
+      "local_evidence_required": [],
+      "evidence": null,
+      "failure_history": [
+        {
+          "source_sha": "964828b335e342ddce42c613481a10663a10e113",
+          "ci_run": 40581870231,
+          "url": "https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40581870231",
+          "failed_checks": [
+            "version-tests",
+            "regression-tests"
+          ],
+          "reason": "English Windows native PowerShell child lost Unicode before UTF-8 file persistence; logging contract could not find stdout-中文Ω.",
+          "logs": [
+            ".local-test-data/runs/ci-failure-bc290ca40f374d43a5891c04e6f518bd/version-tests.log",
+            ".local-test-data/runs/ci-failure-bc290ca40f374d43a5891c04e6f518bd/regression-tests.log"
+          ],
+          "environment": {
+            "os": "Windows Server 2022 10.0.20348",
+            "architecture": "x64"
+          },
+          "observed_at": "2026-10-27T21:03:34.1615523Z"
+        }
+      ],
+      "last_verified_stage": "regression_tested",
+      "validation_history": [
+        {
+          "source_sha": "6dd27fe7cba190e499007191afc0bdd4789d4c6a",
+          "source_dirty": false,
+          "version_test_run": "version-v0.0.1-ffbdf54bb7214b0f8ad453462de657bb",
+          "regression_test_run": "all-2ac6a027e96049ca9b45de40d614561a",
+          "passed": true,
+          "checks": 10,
+          "failed": 0,
+          "skipped": 0,
+          "summary": ".local-test-data/runs/all-2ac6a027e96049ca9b45de40d614561a/all-tests.json",
+          "log": ".local-test-data/runs/all-2ac6a027e96049ca9b45de40d614561a/all-tests.log",
+          "completed_at": "2026-10-27T21:08:36.2739114Z",
+          "limitations": "New source fixes logging code pages. This passing run does not resolve or replace prior native failures; declared dependency V001-009 still fails and no success gate was run."
+        }
+      ],
+      "blocked_reason": "Logging contracts, the clean full run and subsequent per-task gates passed at 41beb28. Earlier natural failures in the unchanged rule concurrency binary remain unexplained, and declared dependency V001-009 is still failed; no V001-010 success gate has run.",
+      "blocking_run": "all-components-0026fd17ca554ea490c136dede73531a"
+    },
+    {
+      "id": "V001-011",
+      "title": "修复 Windows 同时刻测试临时目录冲突",
+      "status": "succeed",
+      "depends_on": [
+        "V001-001"
+      ],
+      "scope": [
+        "testing",
+        "startup",
+        "vision"
+      ],
+      "acceptance_criteria": [
+        "启动和本机分类器测试使用原子序号及排他创建，不依赖时钟精度保证唯一性",
+        "相同时钟和并行创建均得到独立目录，不复用或删除既有目录",
+        "权限等非重名错误立即返回，重名恢复次数有界",
+        "保留非法模型拒绝断言，通过版本和完整回归后才执行成功门禁"
+      ],
+      "version_tests": [
+        "tests/version/v0.0.1/overlay-integration.test.ps1",
+        "tests/version/v0.0.1/vision.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/regression/overlay-integration.test.ps1",
+        "tests/regression/vision.test.ps1"
+      ],
+      "regression_profile": "full",
+      "local_evidence_required": [],
+      "evidence": {
+        "source_sha": "41beb28eef807a6487adb55999ac46164fa77a42",
+        "version_test_run": "gate-version-v0.0.1-179bc5a5f4d2452db8feaa100174dd27",
+        "regression_test_run": "gate-all-03b01c99dfd34332a1ccdb16ca3c3233",
+        "commands": [
+          "scripts/test-version.ps1 -Version v0.0.1 -RunId gate-version-v0.0.1-179bc5a5f4d2452db8feaa100174dd27",
+          "scripts/test-all.ps1 -Version v0.0.1 -RunId gate-all-03b01c99dfd34332a1ccdb16ca3c3233"
+        ],
+        "logs": [
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-version-v0.0.1-179bc5a5f4d2452db8feaa100174dd27\\version-tests.log",
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-all-03b01c99dfd34332a1ccdb16ca3c3233\\all-tests.log"
+        ],
+        "summaries": [
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-version-v0.0.1-179bc5a5f4d2452db8feaa100174dd27\\version-tests.json",
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-all-03b01c99dfd34332a1ccdb16ca3c3233\\all-tests.json"
+        ],
+        "fixture_hashes": [
+          {
+            "path": "tests/fixtures/synthetic/runtime_import_control.rs",
+            "sha256": "d0ee8dc51e3bd68ae690f6aa6f9fdf8be3efdeda4e7cd08fe9342ac12d066276"
+          },
+          {
+            "path": "tests/fixtures/synthetic/vision-hand.txt",
+            "sha256": "dee81cd07f2ebabe7f17b21df3621d3976fa3151f00f1152970d469bec1b5b87"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/all-sides.mask",
+            "sha256": "721d309169bac2f09cddcff2ab621097350b1dc44bccb7198701f2501919e511"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/all-sides.png",
+            "sha256": "9f3c44cb7e2b5adf04494d97be2c9f52d1f0a07706271f9bb086dc7b08e90c2e"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/box-without-ink.mask",
+            "sha256": "fa6abfbdfc5653cd786294f7114115317426beff49d7161b24020e6228c714f4"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/box-without-ink.png",
+            "sha256": "224e3c6afe0c3337a4f9c1f40f7af10ba59a49b498d9b43507c04bf188a80c69"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/cases.json",
+            "sha256": "612d4c00d2c7619c2a5052c7a8fb5a4d545ff04d2774e97c2a071d56bbbbbe05"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/generate.py",
+            "sha256": "4e54c6bd9814cc6205457f758a3ecd9e7dcf1e9cfc2a5c50b1fa5ddb5233f489"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/README.md",
+            "sha256": "0f8f65e3edc841fe55a02d0cbf28e1fe0d78ad569fafa50e8742825be050239e"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/transitive.mask",
+            "sha256": "7048019748a96c9f00bfdee0f8ebd02d9a01aa2e8d717366caeb49859d197889"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/transitive.png",
+            "sha256": "d8784c56ec5731d8cdce7f72f14f2f92fac28ff6cf8a2641f7f4acf06bd96278"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/cases.json",
+            "sha256": "2689e5532509a321ba37e9a6389c8eab4741f19994e775a8d2b494847104eabd"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/color-boundary.mask",
+            "sha256": "ac5880875f0de83058682ac3341ab63756633dc04d04556168f353dfe5664998"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/color-boundary.png",
+            "sha256": "25453e2ae460f8afee567b19f12a2c4b6655d66605fbefbde2f5a8293d1648ca"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/empty.png",
+            "sha256": "1bf8cc4eb9f31bf18f850bb3c9c6b41def7d5b4a74c33ace3beb136c794dc09e"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/fragment.png",
+            "sha256": "3e97dc4ec6495023db576a950bc94802315d683dd2c706336fea767016f00803"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/half-down.mask",
+            "sha256": "9f3f875d5faf6b815b87725d0fae91cdd22dba7606518f35556a5c1a39de75fb"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/half-down.png",
+            "sha256": "fede1fd230ec1cf7f17754c5562f6186a53317906c23270d90145829ac95b83c"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/half-up.mask",
+            "sha256": "adeb389e44c6dc803f998eeea8c3456f82da8b506cec558a902ebd61e431a0de"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/half-up.png",
+            "sha256": "e55e1bb3f4e1534950c4468b52dd2d12c108f088034928c9d4e55b52d4d47e78"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/inner-mark.mask",
+            "sha256": "ba68604d0230285d8bcf116d823bb304571f722c2d73d6f27b11c25b8074560b"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/inner-mark.png",
+            "sha256": "3017f8d2e788c4541d44304eb97fba2cbc037366788661d77a8a52a68544e93c"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/large.mask",
+            "sha256": "80eca53a536e073c1e293bba658435ed963adb66d03ac21bf1759ef4afce9b21"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/large.png",
+            "sha256": "bb5449472e2bc397062893daecedd73b1e6a2e8c4eadba7891f7ef50cd3059f7"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/low-channel.png",
+            "sha256": "665c64974496c0f34974945302d3770e9a884261d8de001f422a8eef748b1304"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/low-maximum.png",
+            "sha256": "971f191b4d426254754cbcdd8b05757b7da9d5c367ba2328b6908bfc1b024010"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/narrow.mask",
+            "sha256": "57a9f4e8c266497a4ae9d25cc00aef11df2451e76ef54c9428ac0390251f58dd"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/narrow.png",
+            "sha256": "92d541a63fb7aa9ffcf99b26e6645b034109b9d5b7f4cd196b7c20801a0a2a1d"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/nearest-column-boundary.mask",
+            "sha256": "648e13afa46bea4c1174dcf8ad2dd850fa9878fc853329b71ebd191867edb654"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/nearest-column-boundary.png",
+            "sha256": "2a8883dfdda9a44db8b50ac13e08bac34f4e2c05275e7bb7da3dcfe813b80461"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/nearest-row-boundary.mask",
+            "sha256": "ae47da86383281139a6826bc5830d0263a10183452cecd6f25f79d5c2957b67d"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/nearest-row-boundary.png",
+            "sha256": "b73a60c4414eb6104bed64ee579aad30dba75aee91ff8589a025f1cc0ee6446f"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/odd-margin.mask",
+            "sha256": "608bcdaf1f147fabc35a729e34d120aca99ca1c308a0b8f158f3a0cc3d6bf7e2"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/odd-margin.png",
+            "sha256": "34a458acb660521f9975dd0141c0663c9a90d4ea02e065807dfe0042b07e3f91"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/pattern.mask",
+            "sha256": "7f150c16db0912687d6ec4d2e423294d39679c11c5b5a4fd2bdd1f34db2df809"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/pattern.png",
+            "sha256": "b6ad4e8518fb1c05aef64a858a6b7cf819b2be70d03b345195e660e3e2bf6a96"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/README.md",
+            "sha256": "dff451f5d55cd3b86bf3edf001a9b3602b1c5b1d10fa58e4d27ff7bf1d66c248"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/wide.mask",
+            "sha256": "54a2e0b27c1bda32a8bd0e9bb8c7c37d5fca732c6b938f17a40fd63a2459a193"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/wide.png",
+            "sha256": "160d6b0cbac026886f2d3fa1eab3b7d35a730f365d3995da18e6c5ba05d30a6b"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-neural/affine-7.onnx",
+            "sha256": "d9006123444e2dea6dd901d57a36f58ee8c67391646c29c545057332512ec066"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-neural/nonfinite-output.onnx",
+            "sha256": "d54c4ed7f77b7af2d1b0cbdcc9d0d51412f10aec4936d3592693230669edfdc7"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-neural/README.md",
+            "sha256": "c979e6a17d14c1d4a75969e4a3969f3158030ef1469b7ccb74d1aa56b924b6b0"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-neural/wrong-channels.onnx",
+            "sha256": "81bd75d1e274e186354d63d58731238b3b7bcc4366cb2bcdd6c7f42d9d665021"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-neural/wrong-classes.onnx",
+            "sha256": "e7b72ee37d60db6ab7d187e8a20c171c54f6a6682c7a2f8183a0aab205eb516f"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural/affine-37.onnx",
+            "sha256": "8bd4a9868efb22b83afe12ef258cf76ffec31ff47ab635123bf5be633107440b"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural/classifier.json",
+            "sha256": "c919f837f56af8cb9d512fe53b1909eaaccb83d2c1a8b69e9cd9b13d8edf5fb0"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural/nonfinite-output.onnx",
+            "sha256": "5cfb5af431c2d2ce3219b477d6c1b749a625fb8ff06e67c4c8a8e2e2651b6aaf"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural/not-a-model.onnx",
+            "sha256": "cbc8fee383fc035b1ffb28fdc5566801fab48cffdd2deb1cf5bfe3c5913486be"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural/README.md",
+            "sha256": "235f51a954d3fb417ff5ff8620349fd0cf29fcd045b51cb963b9d3f2e8b38f54"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural/wrong-channels.onnx",
+            "sha256": "0faa1de3385290dc3a6a0817bdf9237c733a22747b76cef1191b1bbc4248e345"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural/wrong-classes.onnx",
+            "sha256": "cd0274d77b4eac841d5c189307d3fec1f686224fe4a30183823303abef7f138b"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/blank.png",
+            "sha256": "140a67051045725d82cb7a93e7dcb09898d24e90a0de9ede1459548d941f8261"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/blank.rgb",
+            "sha256": "d397edef4cf4719aa6670603a4abe242d870f1ac33e619dc894b24dc1eb9b413"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/cases.txt",
+            "sha256": "73c3efcbb7daa82acba3ef33bb6ff30ba084ccebed205cec4c5cd8a82a4740c5"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/equal-size.png",
+            "sha256": "822dec6363b416c126e2278a43ba165669f9ada446b7f7f55b5e16456cdc052b"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/equal-size.rgb",
+            "sha256": "831981f369a57894bcd88547eba4554cf0d4de5a023b49aaa40009fa46e03500"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/fractional-downsample.png",
+            "sha256": "6c32303cc2d80555f68c540a6897b745bc3f11585f4fbc81143f16763344fbbf"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/fractional-downsample.rgb",
+            "sha256": "ac1fd473313123b80f35893b65244785131487aef61e0de4f5c66ff7b073a06d"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/fractional-upsample.png",
+            "sha256": "3673ddf3d8beb4a443a0b0f4e1c6f794b3013997800809de7402ec0a74b49764"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/fractional-upsample.rgb",
+            "sha256": "8ea0dde237433ccda4940083e8ee29eaa8fa58daedb7a79059364d9ea9e20966"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/hint-and-red-glyph.png",
+            "sha256": "f6ffc399b0c5f3dffb71c955925dc643a2975349814891b3c3356b065c3d8b04"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/hint-and-red-glyph.rgb",
+            "sha256": "ed74c866a7cd6c350ebbd79e3d6ebc9080261d8d2973653c4f8c5bd360878737"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/hint-only.png",
+            "sha256": "7249c61216684582c2804dc6d7f2e1b63f870c34e8b95b9561b6476b71c4fbd6"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/hint-only.rgb",
+            "sha256": "d397edef4cf4719aa6670603a4abe242d870f1ac33e619dc894b24dc1eb9b413"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/preserve-red.png",
+            "sha256": "9322546caea9e683288bf93eec8f3cde3d1c8ee8322593c617fca22ff0e06f81"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/preserve-red.rgb",
+            "sha256": "7555bb04ba82a0bdcdd915edb6caf8b4de69dc5e688618c203f560170af548be"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/README.md",
+            "sha256": "cea7ae61c7a040269a6c5a60cf39b862e0997925bc27cdac12615788ddc0d0b1"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/SHA256SUMS",
+            "sha256": "2a5917b40a88a32e5d3e78633ffa475f3e12b183ab99e4a13cfa3a7c2ee31b7e"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/blank.png",
+            "sha256": "140a67051045725d82cb7a93e7dcb09898d24e90a0de9ede1459548d941f8261"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/blank.rgb",
+            "sha256": "d397edef4cf4719aa6670603a4abe242d870f1ac33e619dc894b24dc1eb9b413"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/cases.txt",
+            "sha256": "6ecb52bf1f731950b45241deb2aed22399b20d04ab3e42ad2a22d799d4598f20"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/equal-size.png",
+            "sha256": "822dec6363b416c126e2278a43ba165669f9ada446b7f7f55b5e16456cdc052b"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/equal-size.rgb",
+            "sha256": "b50de9ef3d235d203020357bd94a759b309d824a49739da5f052298adce245e3"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/extreme-tall.png",
+            "sha256": "47f181cea7e04e48d63bc630a44595df2aae64608ebb038d3cf955e128874181"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/extreme-tall.rgb",
+            "sha256": "ac0a999a5e631b6b7c5dcecb738ab6fc8c1da797cce5313fb952a936ab87e9cc"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/extreme-wide.png",
+            "sha256": "8d7ca0f460f6054f3a856bb71b9bba4a88689b1bf850f2e459cb72e0b044832e"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/extreme-wide.rgb",
+            "sha256": "35f6df3f8b22a4a1879ed84df6026c9d801b025c53cea283baa9c0125217e288"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/fractional-downsample.png",
+            "sha256": "6c32303cc2d80555f68c540a6897b745bc3f11585f4fbc81143f16763344fbbf"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/fractional-downsample.rgb",
+            "sha256": "fd2189d692488ba319bebbd38264c8b5e2605b59cca0348b7a55c1577a64c403"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/fractional-upsample.png",
+            "sha256": "3673ddf3d8beb4a443a0b0f4e1c6f794b3013997800809de7402ec0a74b49764"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/fractional-upsample.rgb",
+            "sha256": "0747d4dc9dc85ee19f2296adc6b151e5aec1c8d070ed14011ecbb9fc17db36d3"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/half-even-down.png",
+            "sha256": "869c60b42ea9f12bf386ca22644f3412a7a4d8122f4f9c09de79ab3109971181"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/half-even-down.rgb",
+            "sha256": "474bba78dfc74ba615697457a12c738d2df5a2b617a5d66c3104dd2042153a61"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/half-even.png",
+            "sha256": "0484e5e4372677bf79c3152e0f50b9594024ddd446b0a0b34b6cfedc21a16cee"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/half-even.rgb",
+            "sha256": "4c0263654ca38dca5c788144ce3ced8f2333c40bbdf35ab662e4fcab7692f727"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/hint-and-red-glyph.png",
+            "sha256": "f6ffc399b0c5f3dffb71c955925dc643a2975349814891b3c3356b065c3d8b04"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/hint-and-red-glyph.rgb",
+            "sha256": "577ef685464e6b097a2991637f198d44c552cffa32bd49af5040d1c2f3d9bfcb"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/hint-only.png",
+            "sha256": "7249c61216684582c2804dc6d7f2e1b63f870c34e8b95b9561b6476b71c4fbd6"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/hint-only.rgb",
+            "sha256": "d397edef4cf4719aa6670603a4abe242d870f1ac33e619dc894b24dc1eb9b413"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/narrow.png",
+            "sha256": "164ea872aa33f553bb3c92b0c7b155af01d9e21f1afeb690a4e13cdff33f07a5"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/narrow.rgb",
+            "sha256": "ac5b3538778c31566d954fdc211adfe49fdfbdb25fa0b63ca3d7426c660eae0d"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/odd-center.png",
+            "sha256": "2738804249192f5dcd3d3359f41e3a72b618de162219910497d66e76b06fb503"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/odd-center.rgb",
+            "sha256": "e2a4a04d17c5552d4181b0399fd32fcfe789755243c95f08fcfe51056cea385a"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/preserve-red.png",
+            "sha256": "9322546caea9e683288bf93eec8f3cde3d1c8ee8322593c617fca22ff0e06f81"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/preserve-red.rgb",
+            "sha256": "db30f90bdab76cd34610de5ad4077d50d8f2ff030c5f39cb3349f25b354a1d4f"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/SHA256SUMS",
+            "sha256": "40bdd1c48c1d9a535bd8ce2fb3f08d6897c8d12201e1fc5f717eda35d1402908"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/wide.png",
+            "sha256": "e5e44df158fb749252323a0767bef9c9b4362d00b63414c866cb631554597832"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/wide.rgb",
+            "sha256": "d60f46861152038214491e12fc8d9cdde292591333cd5ea1f85d8d90998e08a0"
+          }
+        ],
+        "local_evidence_paths": [],
+        "environment": {
+          "os": "Microsoft Windows NT 10.0.26200.0",
+          "architecture": "X64"
+        },
+        "completed_at": "2026-10-27T21:56:21.2020719Z"
+      },
+      "failure_history": [
+        {
+          "source_sha": "79ba0711d2c1550caafc8026cfa02b3ae1b763c6",
+          "ci_run": 40588587619,
+          "failed_check": "version-tests",
+          "target": "recognition_setup::tests::an_installed_invalid_model_never_silently_downgrades_to_templates",
+          "reason": "create_dir returned Windows error 183 AlreadyExists for a PID plus SystemTime-only test directory",
+          "log": ".local-test-data/runs/ci-failure-9e1bf94be2af49428ea34023173e4d0e/version-tests.log",
+          "red_test_log": ".local-test-data/runs/ci-contract-red-51e2f77dc36a4b61813fef555822d884/clock.log",
+          "red_test_exit_code": 101
+        }
+      ],
+      "validation_history": [
+        {
+          "source_sha": "41beb28eef807a6487adb55999ac46164fa77a42",
+          "source_dirty": false,
+          "version_test_run": "version-v0.0.1-fc9960747838459d9e0b0e880be683a9",
+          "regression_test_run": "all-ci-recovery-a016e70457004913b1397b89ce8f650c",
+          "passed": true,
+          "checks": 10,
+          "failed": 0,
+          "skipped": 0,
+          "summary": ".local-test-data/runs/all-ci-recovery-a016e70457004913b1397b89ce8f650c/all-tests.json",
+          "completed_at": "2026-10-27T21:53:37.0737174Z"
+        }
+      ],
+      "ci_validation_history": [
+        {
+          "source_sha": "41beb28eef807a6487adb55999ac46164fa77a42",
+          "run_id": 40590366996,
+          "url": "https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40590366996",
+          "checks": [
+            "task-schema",
+            "version-tests",
+            "regression-tests",
+            "build-smoke",
+            "package-smoke"
+          ],
+          "passed": true,
+          "observed_at": "2026-10-27T21:58:47.1488128Z"
+        }
+      ]
+    },
+    {
+      "id": "V001-012",
+      "title": "处理 WinML 模型加载期间的服务暂时停止错误",
+      "status": "succeed",
+      "depends_on": [
+        "V001-001"
+      ],
+      "scope": [
+        "vision",
+        "testing"
+      ],
+      "acceptance_criteria": [
+        "仅模型加载的 CO_E_SERVER_STOPPING 允许至多三次有界恢复等待，总等待不超过 160 ms",
+        "立即成功不重试，其他错误不重试，持续停止仍失败并保留错误",
+        "恢复后仍检查原有模型维度、类型、有限值和调用线程契约，不修改拒绝断言",
+        "注入式测试覆盖恢复、耗尽和非重试错误；原生版本及回归测试保持运行",
+        "不得把 COM 服务恢复视为规则原生访问异常的修复"
+      ],
+      "version_tests": [
+        "tests/version/v0.0.1/vision.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/regression/vision.test.ps1"
+      ],
+      "regression_profile": "full",
+      "local_evidence_required": [],
+      "evidence": {
+        "source_sha": "41beb28eef807a6487adb55999ac46164fa77a42",
+        "version_test_run": "gate-version-v0.0.1-ed2451e735d3409295390bf496a4b640",
+        "regression_test_run": "gate-all-9ee9250cd76a4960aef049e7abfe15c9",
+        "commands": [
+          "scripts/test-version.ps1 -Version v0.0.1 -RunId gate-version-v0.0.1-ed2451e735d3409295390bf496a4b640",
+          "scripts/test-all.ps1 -Version v0.0.1 -RunId gate-all-9ee9250cd76a4960aef049e7abfe15c9"
+        ],
+        "logs": [
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-version-v0.0.1-ed2451e735d3409295390bf496a4b640\\version-tests.log",
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-all-9ee9250cd76a4960aef049e7abfe15c9\\all-tests.log"
+        ],
+        "summaries": [
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-version-v0.0.1-ed2451e735d3409295390bf496a4b640\\version-tests.json",
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-all-9ee9250cd76a4960aef049e7abfe15c9\\all-tests.json"
+        ],
+        "fixture_hashes": [
+          {
+            "path": "tests/fixtures/synthetic/runtime_import_control.rs",
+            "sha256": "d0ee8dc51e3bd68ae690f6aa6f9fdf8be3efdeda4e7cd08fe9342ac12d066276"
+          },
+          {
+            "path": "tests/fixtures/synthetic/vision-hand.txt",
+            "sha256": "dee81cd07f2ebabe7f17b21df3621d3976fa3151f00f1152970d469bec1b5b87"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/all-sides.mask",
+            "sha256": "721d309169bac2f09cddcff2ab621097350b1dc44bccb7198701f2501919e511"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/all-sides.png",
+            "sha256": "9f3c44cb7e2b5adf04494d97be2c9f52d1f0a07706271f9bb086dc7b08e90c2e"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/box-without-ink.mask",
+            "sha256": "fa6abfbdfc5653cd786294f7114115317426beff49d7161b24020e6228c714f4"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/box-without-ink.png",
+            "sha256": "224e3c6afe0c3337a4f9c1f40f7af10ba59a49b498d9b43507c04bf188a80c69"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/cases.json",
+            "sha256": "612d4c00d2c7619c2a5052c7a8fb5a4d545ff04d2774e97c2a071d56bbbbbe05"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/generate.py",
+            "sha256": "4e54c6bd9814cc6205457f758a3ecd9e7dcf1e9cfc2a5c50b1fa5ddb5233f489"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/README.md",
+            "sha256": "0f8f65e3edc841fe55a02d0cbf28e1fe0d78ad569fafa50e8742825be050239e"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/transitive.mask",
+            "sha256": "7048019748a96c9f00bfdee0f8ebd02d9a01aa2e8d717366caeb49859d197889"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/transitive.png",
+            "sha256": "d8784c56ec5731d8cdce7f72f14f2f92fac28ff6cf8a2641f7f4acf06bd96278"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/cases.json",
+            "sha256": "2689e5532509a321ba37e9a6389c8eab4741f19994e775a8d2b494847104eabd"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/color-boundary.mask",
+            "sha256": "ac5880875f0de83058682ac3341ab63756633dc04d04556168f353dfe5664998"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/color-boundary.png",
+            "sha256": "25453e2ae460f8afee567b19f12a2c4b6655d66605fbefbde2f5a8293d1648ca"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/empty.png",
+            "sha256": "1bf8cc4eb9f31bf18f850bb3c9c6b41def7d5b4a74c33ace3beb136c794dc09e"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/fragment.png",
+            "sha256": "3e97dc4ec6495023db576a950bc94802315d683dd2c706336fea767016f00803"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/half-down.mask",
+            "sha256": "9f3f875d5faf6b815b87725d0fae91cdd22dba7606518f35556a5c1a39de75fb"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/half-down.png",
+            "sha256": "fede1fd230ec1cf7f17754c5562f6186a53317906c23270d90145829ac95b83c"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/half-up.mask",
+            "sha256": "adeb389e44c6dc803f998eeea8c3456f82da8b506cec558a902ebd61e431a0de"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/half-up.png",
+            "sha256": "e55e1bb3f4e1534950c4468b52dd2d12c108f088034928c9d4e55b52d4d47e78"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/inner-mark.mask",
+            "sha256": "ba68604d0230285d8bcf116d823bb304571f722c2d73d6f27b11c25b8074560b"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/inner-mark.png",
+            "sha256": "3017f8d2e788c4541d44304eb97fba2cbc037366788661d77a8a52a68544e93c"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/large.mask",
+            "sha256": "80eca53a536e073c1e293bba658435ed963adb66d03ac21bf1759ef4afce9b21"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/large.png",
+            "sha256": "bb5449472e2bc397062893daecedd73b1e6a2e8c4eadba7891f7ef50cd3059f7"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/low-channel.png",
+            "sha256": "665c64974496c0f34974945302d3770e9a884261d8de001f422a8eef748b1304"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/low-maximum.png",
+            "sha256": "971f191b4d426254754cbcdd8b05757b7da9d5c367ba2328b6908bfc1b024010"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/narrow.mask",
+            "sha256": "57a9f4e8c266497a4ae9d25cc00aef11df2451e76ef54c9428ac0390251f58dd"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/narrow.png",
+            "sha256": "92d541a63fb7aa9ffcf99b26e6645b034109b9d5b7f4cd196b7c20801a0a2a1d"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/nearest-column-boundary.mask",
+            "sha256": "648e13afa46bea4c1174dcf8ad2dd850fa9878fc853329b71ebd191867edb654"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/nearest-column-boundary.png",
+            "sha256": "2a8883dfdda9a44db8b50ac13e08bac34f4e2c05275e7bb7da3dcfe813b80461"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/nearest-row-boundary.mask",
+            "sha256": "ae47da86383281139a6826bc5830d0263a10183452cecd6f25f79d5c2957b67d"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/nearest-row-boundary.png",
+            "sha256": "b73a60c4414eb6104bed64ee579aad30dba75aee91ff8589a025f1cc0ee6446f"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/odd-margin.mask",
+            "sha256": "608bcdaf1f147fabc35a729e34d120aca99ca1c308a0b8f158f3a0cc3d6bf7e2"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/odd-margin.png",
+            "sha256": "34a458acb660521f9975dd0141c0663c9a90d4ea02e065807dfe0042b07e3f91"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/pattern.mask",
+            "sha256": "7f150c16db0912687d6ec4d2e423294d39679c11c5b5a4fd2bdd1f34db2df809"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/pattern.png",
+            "sha256": "b6ad4e8518fb1c05aef64a858a6b7cf819b2be70d03b345195e660e3e2bf6a96"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/README.md",
+            "sha256": "dff451f5d55cd3b86bf3edf001a9b3602b1c5b1d10fa58e4d27ff7bf1d66c248"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/wide.mask",
+            "sha256": "54a2e0b27c1bda32a8bd0e9bb8c7c37d5fca732c6b938f17a40fd63a2459a193"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/wide.png",
+            "sha256": "160d6b0cbac026886f2d3fa1eab3b7d35a730f365d3995da18e6c5ba05d30a6b"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-neural/affine-7.onnx",
+            "sha256": "d9006123444e2dea6dd901d57a36f58ee8c67391646c29c545057332512ec066"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-neural/nonfinite-output.onnx",
+            "sha256": "d54c4ed7f77b7af2d1b0cbdcc9d0d51412f10aec4936d3592693230669edfdc7"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-neural/README.md",
+            "sha256": "c979e6a17d14c1d4a75969e4a3969f3158030ef1469b7ccb74d1aa56b924b6b0"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-neural/wrong-channels.onnx",
+            "sha256": "81bd75d1e274e186354d63d58731238b3b7bcc4366cb2bcdd6c7f42d9d665021"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-neural/wrong-classes.onnx",
+            "sha256": "e7b72ee37d60db6ab7d187e8a20c171c54f6a6682c7a2f8183a0aab205eb516f"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural/affine-37.onnx",
+            "sha256": "8bd4a9868efb22b83afe12ef258cf76ffec31ff47ab635123bf5be633107440b"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural/classifier.json",
+            "sha256": "c919f837f56af8cb9d512fe53b1909eaaccb83d2c1a8b69e9cd9b13d8edf5fb0"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural/nonfinite-output.onnx",
+            "sha256": "5cfb5af431c2d2ce3219b477d6c1b749a625fb8ff06e67c4c8a8e2e2651b6aaf"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural/not-a-model.onnx",
+            "sha256": "cbc8fee383fc035b1ffb28fdc5566801fab48cffdd2deb1cf5bfe3c5913486be"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural/README.md",
+            "sha256": "235f51a954d3fb417ff5ff8620349fd0cf29fcd045b51cb963b9d3f2e8b38f54"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural/wrong-channels.onnx",
+            "sha256": "0faa1de3385290dc3a6a0817bdf9237c733a22747b76cef1191b1bbc4248e345"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural/wrong-classes.onnx",
+            "sha256": "cd0274d77b4eac841d5c189307d3fec1f686224fe4a30183823303abef7f138b"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/blank.png",
+            "sha256": "140a67051045725d82cb7a93e7dcb09898d24e90a0de9ede1459548d941f8261"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/blank.rgb",
+            "sha256": "d397edef4cf4719aa6670603a4abe242d870f1ac33e619dc894b24dc1eb9b413"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/cases.txt",
+            "sha256": "73c3efcbb7daa82acba3ef33bb6ff30ba084ccebed205cec4c5cd8a82a4740c5"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/equal-size.png",
+            "sha256": "822dec6363b416c126e2278a43ba165669f9ada446b7f7f55b5e16456cdc052b"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/equal-size.rgb",
+            "sha256": "831981f369a57894bcd88547eba4554cf0d4de5a023b49aaa40009fa46e03500"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/fractional-downsample.png",
+            "sha256": "6c32303cc2d80555f68c540a6897b745bc3f11585f4fbc81143f16763344fbbf"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/fractional-downsample.rgb",
+            "sha256": "ac1fd473313123b80f35893b65244785131487aef61e0de4f5c66ff7b073a06d"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/fractional-upsample.png",
+            "sha256": "3673ddf3d8beb4a443a0b0f4e1c6f794b3013997800809de7402ec0a74b49764"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/fractional-upsample.rgb",
+            "sha256": "8ea0dde237433ccda4940083e8ee29eaa8fa58daedb7a79059364d9ea9e20966"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/hint-and-red-glyph.png",
+            "sha256": "f6ffc399b0c5f3dffb71c955925dc643a2975349814891b3c3356b065c3d8b04"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/hint-and-red-glyph.rgb",
+            "sha256": "ed74c866a7cd6c350ebbd79e3d6ebc9080261d8d2973653c4f8c5bd360878737"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/hint-only.png",
+            "sha256": "7249c61216684582c2804dc6d7f2e1b63f870c34e8b95b9561b6476b71c4fbd6"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/hint-only.rgb",
+            "sha256": "d397edef4cf4719aa6670603a4abe242d870f1ac33e619dc894b24dc1eb9b413"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/preserve-red.png",
+            "sha256": "9322546caea9e683288bf93eec8f3cde3d1c8ee8322593c617fca22ff0e06f81"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/preserve-red.rgb",
+            "sha256": "7555bb04ba82a0bdcdd915edb6caf8b4de69dc5e688618c203f560170af548be"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/README.md",
+            "sha256": "cea7ae61c7a040269a6c5a60cf39b862e0997925bc27cdac12615788ddc0d0b1"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/SHA256SUMS",
+            "sha256": "2a5917b40a88a32e5d3e78633ffa475f3e12b183ab99e4a13cfa3a7c2ee31b7e"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/blank.png",
+            "sha256": "140a67051045725d82cb7a93e7dcb09898d24e90a0de9ede1459548d941f8261"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/blank.rgb",
+            "sha256": "d397edef4cf4719aa6670603a4abe242d870f1ac33e619dc894b24dc1eb9b413"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/cases.txt",
+            "sha256": "6ecb52bf1f731950b45241deb2aed22399b20d04ab3e42ad2a22d799d4598f20"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/equal-size.png",
+            "sha256": "822dec6363b416c126e2278a43ba165669f9ada446b7f7f55b5e16456cdc052b"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/equal-size.rgb",
+            "sha256": "b50de9ef3d235d203020357bd94a759b309d824a49739da5f052298adce245e3"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/extreme-tall.png",
+            "sha256": "47f181cea7e04e48d63bc630a44595df2aae64608ebb038d3cf955e128874181"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/extreme-tall.rgb",
+            "sha256": "ac0a999a5e631b6b7c5dcecb738ab6fc8c1da797cce5313fb952a936ab87e9cc"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/extreme-wide.png",
+            "sha256": "8d7ca0f460f6054f3a856bb71b9bba4a88689b1bf850f2e459cb72e0b044832e"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/extreme-wide.rgb",
+            "sha256": "35f6df3f8b22a4a1879ed84df6026c9d801b025c53cea283baa9c0125217e288"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/fractional-downsample.png",
+            "sha256": "6c32303cc2d80555f68c540a6897b745bc3f11585f4fbc81143f16763344fbbf"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/fractional-downsample.rgb",
+            "sha256": "fd2189d692488ba319bebbd38264c8b5e2605b59cca0348b7a55c1577a64c403"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/fractional-upsample.png",
+            "sha256": "3673ddf3d8beb4a443a0b0f4e1c6f794b3013997800809de7402ec0a74b49764"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/fractional-upsample.rgb",
+            "sha256": "0747d4dc9dc85ee19f2296adc6b151e5aec1c8d070ed14011ecbb9fc17db36d3"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/half-even-down.png",
+            "sha256": "869c60b42ea9f12bf386ca22644f3412a7a4d8122f4f9c09de79ab3109971181"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/half-even-down.rgb",
+            "sha256": "474bba78dfc74ba615697457a12c738d2df5a2b617a5d66c3104dd2042153a61"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/half-even.png",
+            "sha256": "0484e5e4372677bf79c3152e0f50b9594024ddd446b0a0b34b6cfedc21a16cee"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/half-even.rgb",
+            "sha256": "4c0263654ca38dca5c788144ce3ced8f2333c40bbdf35ab662e4fcab7692f727"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/hint-and-red-glyph.png",
+            "sha256": "f6ffc399b0c5f3dffb71c955925dc643a2975349814891b3c3356b065c3d8b04"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/hint-and-red-glyph.rgb",
+            "sha256": "577ef685464e6b097a2991637f198d44c552cffa32bd49af5040d1c2f3d9bfcb"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/hint-only.png",
+            "sha256": "7249c61216684582c2804dc6d7f2e1b63f870c34e8b95b9561b6476b71c4fbd6"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/hint-only.rgb",
+            "sha256": "d397edef4cf4719aa6670603a4abe242d870f1ac33e619dc894b24dc1eb9b413"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/narrow.png",
+            "sha256": "164ea872aa33f553bb3c92b0c7b155af01d9e21f1afeb690a4e13cdff33f07a5"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/narrow.rgb",
+            "sha256": "ac5b3538778c31566d954fdc211adfe49fdfbdb25fa0b63ca3d7426c660eae0d"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/odd-center.png",
+            "sha256": "2738804249192f5dcd3d3359f41e3a72b618de162219910497d66e76b06fb503"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/odd-center.rgb",
+            "sha256": "e2a4a04d17c5552d4181b0399fd32fcfe789755243c95f08fcfe51056cea385a"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/preserve-red.png",
+            "sha256": "9322546caea9e683288bf93eec8f3cde3d1c8ee8322593c617fca22ff0e06f81"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/preserve-red.rgb",
+            "sha256": "db30f90bdab76cd34610de5ad4077d50d8f2ff030c5f39cb3349f25b354a1d4f"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/SHA256SUMS",
+            "sha256": "40bdd1c48c1d9a535bd8ce2fb3f08d6897c8d12201e1fc5f717eda35d1402908"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/wide.png",
+            "sha256": "e5e44df158fb749252323a0767bef9c9b4362d00b63414c866cb631554597832"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/wide.rgb",
+            "sha256": "d60f46861152038214491e12fc8d9cdde292591333cd5ea1f85d8d90998e08a0"
+          }
+        ],
+        "local_evidence_paths": [],
+        "environment": {
+          "os": "Microsoft Windows NT 10.0.26200.0",
+          "architecture": "X64"
+        },
+        "completed_at": "2026-10-27T21:58:33.2273749Z"
+      },
+      "failure_history": [
+        {
+          "source_sha": "79ba0711d2c1550caafc8026cfa02b3ae1b763c6",
+          "ci_run": 40588587619,
+          "failed_check": "regression-tests",
+          "target": "native_neural::rejects_wrong_tensor_shapes_and_non_models",
+          "hresult": "0x80080008",
+          "reason": "Windows COM object server was stopping during LoadFromFilePath, before the existing shape check could return UnsupportedModel",
+          "log": ".local-test-data/runs/ci-failure-9e1bf94be2af49428ea34023173e4d0e/regression-tests.log",
+          "red_test_log": ".local-test-data/runs/ci-contract-red-51e2f77dc36a4b61813fef555822d884/activation.log"
+        }
+      ],
+      "validation_history": [
+        {
+          "source_sha": "41beb28eef807a6487adb55999ac46164fa77a42",
+          "source_dirty": false,
+          "version_test_run": "version-v0.0.1-fc9960747838459d9e0b0e880be683a9",
+          "regression_test_run": "all-ci-recovery-a016e70457004913b1397b89ce8f650c",
+          "passed": true,
+          "checks": 10,
+          "failed": 0,
+          "skipped": 0,
+          "summary": ".local-test-data/runs/all-ci-recovery-a016e70457004913b1397b89ce8f650c/all-tests.json",
+          "completed_at": "2026-10-27T21:53:37.0737174Z"
+        }
+      ],
+      "ci_validation_history": [
+        {
+          "source_sha": "41beb28eef807a6487adb55999ac46164fa77a42",
+          "run_id": 40590366996,
+          "url": "https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40590366996",
+          "checks": [
+            "task-schema",
+            "version-tests",
+            "regression-tests",
+            "build-smoke",
+            "package-smoke"
+          ],
+          "passed": true,
+          "observed_at": "2026-10-27T21:58:47.1488128Z"
+        }
+      ]
+    },
+    {
+      "id": "V001-013",
+      "title": "支持公共牌独立本机分类模型并保持来源切换一致性",
+      "status": "failed",
+      "depends_on": [
+        "V001-001",
+        "V001-002"
+      ],
+      "scope": [
+        "vision",
+        "integration",
+        "startup",
+        "packaging"
+      ],
+      "acceptance_criteria": [
+        "公共牌可使用独立模型清单、哈希和预处理契约，不替换手牌模型",
+        "未配置公共模型时保持现有共享模型及模板行为",
+        "公共模型存在但无效时启动报错，运行失败清除建议且不悄悄改用共享模型",
+        "更换或移除任一模型后重新进行三帧确认，不混用跨模型局终证据",
+        "只有公共模型时仍要求完整手牌模板，不能把公共模型用于手牌",
+        "新增合成配置与链路测试进入版本和完整回归；不把候选权重研究当作默认识牌验收"
+      ],
+      "version_tests": [
+        "tests/version/v0.0.1/overlay-integration.test.ps1",
+        "tests/version/v0.0.1/packaging-performance.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/regression/overlay-integration.test.ps1",
+        "tests/regression/packaging-performance.test.ps1"
+      ],
+      "regression_profile": "full",
+      "local_evidence_required": [],
+      "evidence": null,
+      "red_test_logs": [
+        ".local-test-data/runs/separate-model-red-ff57f5be4cd7474f81989f9922ff5e06/test.log",
+        ".local-test-data/runs/public-startup-red-bb73a249ffa1494d929e51ed086e6708/test.log"
+      ],
+      "failure_history": [
+        {
+          "source_sha": "46c97e9e458d2ee7724cc8851294d86c83980f1c",
+          "source_dirty": true,
+          "run_id": "version-public-models-20261028-01",
+          "summary": ".local-test-data/runs/version-public-models-20261028-01/version-tests.json",
+          "failed_test": "rules.test.ps1: independently_owned_hands_keep_exact_results_across_ten_workers",
+          "exit_code": "0xc0000005",
+          "diagnostic": "thread has overflowed its stack; unchanged archived rule binary",
+          "exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
+          "pdb_sha256": "e13dc703c17f03ee86fc45e92005e5fab9a95d0cf775b27fe4fd51e065082d0b",
+          "completed_at": "2026-10-27T22:41:20.4497336Z"
+        },
+        {
+          "source_sha": "46c97e9e458d2ee7724cc8851294d86c83980f1c",
+          "source_dirty": true,
+          "run_id": "version-gate-consistency-20261028-01",
+          "summary": ".local-test-data/runs/version-gate-consistency-20261028-01/version-tests.json",
+          "failed_test": "rules.test.ps1: independently_owned_hands_keep_exact_results_across_ten_workers",
+          "exit_code": "0xc0000005",
+          "diagnostic": "Unchanged archived rule binary; nine other version checks including six miniature gate cases passed",
+          "exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
+          "pdb_sha256": "e13dc703c17f03ee86fc45e92005e5fab9a95d0cf775b27fe4fd51e065082d0b",
+          "completed_at": "2026-10-27T22:44:56.8170335Z"
+        },
+        {
+          "source_sha": "09065fbf0f3bc9847ae3dde6ec394fe10f555bd4",
+          "source_dirty": true,
+          "run_id": "version-host-comparison-20261028-01",
+          "summary": ".local-test-data/runs/version-host-comparison-20261028-01/version-tests.json",
+          "failed_test": "rules.test.ps1: independently_owned_hands_keep_exact_results_across_ten_workers",
+          "exit_code": 101,
+          "diagnostic": "Native scoped worker panicked at riichi-core/src/lib.rs:167: attempt to subtract with overflow; ten other version checks passed",
+          "exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
+          "completed_at": "2026-10-27T22:52:32.3601518Z"
+        }
+      ],
+      "targeted_test_logs": [
+        ".local-test-data/separate-public-all-regions-20261028.log"
+      ],
+      "ci_validation_history": [
+        {
+          "source_sha": "3e444ced49c6511742d95167b251d11b91e20e54",
+          "checkout_sha": "38d51cce5238c9b625a26d9393cfe0b3511649ca",
+          "run_id": 40598298229,
+          "url": "https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40598298229",
+          "checks": [
+            "task-schema",
+            "version-tests",
+            "regression-tests",
+            "build-smoke",
+            "package-smoke"
+          ],
+          "passed": true,
+          "observed_at": "2026-10-27T23:02:11.6657218Z",
+          "local_native_resolution": false
+        }
+      ]
+    },
+    {
+      "id": "V001-014",
+      "title": "门禁完成前复核源代码、任务文件和本机证据，防止测试期间变更被覆盖",
+      "status": "failed",
+      "depends_on": [
+        "V001-001"
+      ],
+      "scope": [
+        "workflow",
+        "testing"
+      ],
+      "acceptance_criteria": [
+        "门禁在测试前后验证提交和工作区，测试中源代码或 HEAD 变化必须失败",
+        "任务文件在测试期间改变时拒绝覆盖并保留新的内容",
+        "测试完成后重新校验本机证据及 fixture 哈希",
+        "状态通过同目录临时文件与替换提交，保留原状态备份，失败不写 succeed",
+        "真实门禁在隔离微型仓库中覆盖稳定成功及源文件、HEAD、任务文件、本机证据变化的失败路径"
+      ],
+      "version_tests": [
+        "tests/version/v0.0.1/gate-consistency.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/regression/gate-consistency.test.ps1"
+      ],
+      "regression_profile": "full",
+      "local_evidence_required": [],
+      "evidence": null,
+      "red_test_logs": [
+        ".local-test-data/gate-consistency-red-20261028.log",
+        ".local-test-data/gate-consistency-red-contract-20261028.log"
+      ],
+      "targeted_test_logs": [
+        ".local-test-data/gate-consistency-green-20261028.log",
+        ".local-test-data/gate-consistency-final-20261028.log"
+      ],
+      "failure_history": [
+        {
+          "source_sha": "46c97e9e458d2ee7724cc8851294d86c83980f1c",
+          "source_dirty": true,
+          "run_id": "version-gate-consistency-20261028-01",
+          "summary": ".local-test-data/runs/version-gate-consistency-20261028-01/version-tests.json",
+          "failed_test": "rules.test.ps1: independently_owned_hands_keep_exact_results_across_ten_workers",
+          "exit_code": "0xc0000005",
+          "diagnostic": "Unchanged archived rule binary; nine other version checks including six miniature gate cases passed",
+          "exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
+          "pdb_sha256": "e13dc703c17f03ee86fc45e92005e5fab9a95d0cf775b27fe4fd51e065082d0b",
+          "completed_at": "2026-10-27T22:44:56.8170335Z"
+        },
+        {
+          "source_sha": "09065fbf0f3bc9847ae3dde6ec394fe10f555bd4",
+          "source_dirty": true,
+          "run_id": "version-host-comparison-20261028-01",
+          "summary": ".local-test-data/runs/version-host-comparison-20261028-01/version-tests.json",
+          "failed_test": "rules.test.ps1: independently_owned_hands_keep_exact_results_across_ten_workers",
+          "exit_code": 101,
+          "diagnostic": "Native scoped worker panicked at riichi-core/src/lib.rs:167: attempt to subtract with overflow; ten other version checks passed",
+          "exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
+          "completed_at": "2026-10-27T22:52:32.3601518Z"
+        }
+      ],
+      "ci_validation_history": [
+        {
+          "source_sha": "3e444ced49c6511742d95167b251d11b91e20e54",
+          "checkout_sha": "38d51cce5238c9b625a26d9393cfe0b3511649ca",
+          "run_id": 40598298229,
+          "url": "https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40598298229",
+          "checks": [
+            "task-schema",
+            "version-tests",
+            "regression-tests",
+            "build-smoke",
+            "package-smoke"
+          ],
+          "passed": true,
+          "observed_at": "2026-10-27T23:02:11.6657218Z",
+          "local_native_resolution": false
+        }
+      ]
+    },
+    {
+      "id": "V001-015",
+      "title": "同一规则二进制的跨 Windows 主机诊断与失败证据保留",
+      "status": "failed",
+      "depends_on": [
+        "V001-001"
+      ],
+      "scope": [
+        "workflow",
+        "testing",
+        "packaging"
+      ],
+      "acceptance_criteria": [
+        "从干净源提交构建十线程规则契约，不打包截图、模型、PDB 或 dump",
+        "GitHub 两种 Windows runner 下载并运行同一哈希的构建产物，本机可运行相同便携诊断包",
+        "运行前锁定并核对 exe 哈希；非零、超时、零测试或跳过结果均失败，首次失败即停止",
+        "保留 UTF-8 stdout/stderr、退出码、环境和来源 SHA；明确有限通过不是原生故障解决或产品验收",
+        "合成独立进程测试覆盖成功、失败、无测试、超时、篡改拒绝"
+      ],
+      "version_tests": [
+        "tests/version/v0.0.1/rule-diagnostic.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/regression/rule-diagnostic.test.ps1"
+      ],
+      "regression_profile": "full",
+      "local_evidence_required": [],
+      "evidence": null,
+      "targeted_test_logs": [
+        ".local-test-data/rule-diagnostic-contract-red-20261028.log",
+        ".local-test-data/rule-diagnostic-contract-green-20261028.log",
+        ".local-test-data/rule-diagnostic-contract-fixed-20261028.log",
+        ".local-test-data/package-rule-probe-dirty-control-20261028.log",
+        ".local-test-data/package-rule-probe-clean-20261028.log",
+        ".local-test-data/actionlint-host-comparison-20261028.log"
+      ],
+      "failure_history": [
+        {
+          "source_sha": "09065fbf0f3bc9847ae3dde6ec394fe10f555bd4",
+          "source_dirty": true,
+          "run_id": "version-host-comparison-20261028-01",
+          "summary": ".local-test-data/runs/version-host-comparison-20261028-01/version-tests.json",
+          "failed_test": "rules.test.ps1: independently_owned_hands_keep_exact_results_across_ten_workers",
+          "exit_code": 101,
+          "diagnostic": "Native scoped worker panicked at riichi-core/src/lib.rs:167: attempt to subtract with overflow; ten other version checks passed",
+          "exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
+          "completed_at": "2026-10-27T22:52:32.3601518Z"
+        }
+      ],
+      "ci_validation_history": [
+        {
+          "source_sha": "3e444ced49c6511742d95167b251d11b91e20e54",
+          "checkout_sha": "38d51cce5238c9b625a26d9393cfe0b3511649ca",
+          "run_id": 40598298229,
+          "url": "https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40598298229",
+          "checks": [
+            "task-schema",
+            "version-tests",
+            "regression-tests",
+            "build-smoke",
+            "package-smoke"
+          ],
+          "passed": true,
+          "observed_at": "2026-10-27T23:02:11.6657218Z",
+          "local_native_resolution": false
+        }
+      ],
+      "cross_host_history": [
+        {
+          "source_sha": "3e444ced49c6511742d95167b251d11b91e20e54",
+          "checkout_sha": "38d51cce5238c9b625a26d9393cfe0b3511649ca",
+          "ci_run_id": 40598298281,
+          "ci_url": "https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40598298281",
+          "exe_sha256": "1f1e6355caf7d92cd987ce5c8d9380cd5b1f9346c26ca760e8ade4f932ce162c",
+          "environments": [
+            "Windows Server 2022 AMD EPYC 7763 / 4 logical CPUs",
+            "Windows Server 2025 AMD EPYC 7763 / 4 logical CPUs",
+            "Windows 11 i7-13700K / 24 logical CPUs"
+          ],
+          "attempts_per_environment": 20,
+          "failed": 0,
+          "timed_out": 0,
+          "acceptance_verified": false,
+          "reproduces_original_failing_binary": false,
+          "summary": ".local-test-data/runs/ci-rule-comparison-b313b784a409408fb2262a51dd646bf0/three-host-comparison.json",
+          "document": "docs/native-rule-comparison.md"
+        }
+      ]
+    },
+    {
+      "id": "V001-016",
+      "title": "行动字形模型的类型化候选与拒识决策",
+      "status": "failed",
+      "depends_on": [
+        "V001-001"
+      ],
+      "scope": [
+        "vision",
+        "diagnostics"
+      ],
+      "acceptance_criteria": [
+        "固定七类输出，仅五类支持词可成为字形候选，Pass 与无观察保持不同语义",
+        "Unknown 和 Unsupported 无论分数多高都不转换为可执行动作",
+        "缺字形、未定位、实心亮块、非法张量和非有限 logits 一律拒绝",
+        "使用稳定 softmax 及显式阈值，诊断默认沿用 0.9/0.25/0.35，配置非法时失败",
+        "诊断输出区分候选、拒识及原始 logits，不激活未经验证的默认模型或绕过按钮底板/启用状态检查",
+        "新增契约测试纳入版本与回归，候选权重开发集表现不得当作现场验收"
+      ],
+      "version_tests": [
+        "tests/version/v0.0.1/vision.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/regression/vision.test.ps1"
+      ],
+      "regression_profile": "full",
+      "local_evidence_required": [],
+      "evidence": null,
+      "red_test_logs": [
+        ".local-test-data/action-decisions-red-20261028.log"
+      ],
+      "targeted_test_logs": [
+        ".local-test-data/action-decisions-green-20261028.log",
+        ".local-test-data/action-decisions-clippy-20261028.log"
+      ],
+      "research_document": "docs/action-word-decisions.md",
+      "validation_history": [
+        {
+          "source_sha": "22bb3292d4587618caf3456c3b79518c49b302f1",
+          "source_dirty": true,
+          "version_test_run": "version-action-word-decisions-20261028-01",
+          "summary": ".local-test-data/runs/version-action-word-decisions-20261028-01/version-tests.json",
+          "passed": true,
+          "checks": 11,
+          "completed_at": "2026-10-27T23:32:44.7031766Z"
+        },
+        {
+          "source_sha": "777d293c99e2d2af6dec12fac34f61d84e47bfaf",
+          "source_dirty": false,
+          "regression_test_run": "all-action-word-decisions-20261028-01",
+          "summary": ".local-test-data/runs/all-action-word-decisions-20261028-01/all-tests.json",
+          "passed": false,
+          "checks": 12,
+          "failed": 1,
+          "skipped": 0,
+          "completed_at": "2026-10-27T23:37:13.7227677Z"
+        }
+      ],
+      "failure_history": [
+        {
+          "source_sha": "777d293c99e2d2af6dec12fac34f61d84e47bfaf",
+          "source_dirty": false,
+          "regression_test_run": "all-action-word-decisions-20261028-01",
+          "summary": ".local-test-data/runs/all-action-word-decisions-20261028-01/all-tests.json",
+          "failure_folder": ".local-test-data/runs/neural-pipeline-heap-corruption-77db08def7314f73ad519c287001c213",
+          "failed_test": "tests/regression/overlay-integration.test.ps1",
+          "target": "runtime-core/tests/neural_pipeline.rs",
+          "process_exit_code_hex": "0xc0000374",
+          "exe_sha256": "3388681aa65ab317d017fb59058f970987ffe894df867ca4b2c4d7a32ea9107c",
+          "pdb_sha256": "82de14be726c93f82e2ef977dfe827af7cc13dc8e4b86afe935a1ecca7a0611d",
+          "checks": 12,
+          "failed": 1,
+          "skipped": 0,
+          "completed_at": "2026-10-27T23:37:13.7227677Z",
+          "application_event_count": 1,
+          "faulting_module": "ntdll.dll",
+          "faulting_offset": "0x118095",
+          "same_cause_as_prior_failures_verified": false,
+          "note": "Eight neural pipeline tests completed before natural heap-corruption termination. Uses synthetic images and mocked face classifiers; actual corrupting write and responsible test are unknown. No success gate was run.",
+          "event_query_correction": ".local-test-data/runs/neural-pipeline-heap-corruption-77db08def7314f73ad519c287001c213/event-evidence-final.json"
+        }
+      ],
+      "last_verified_stage": "self_tested"
+    }
+  ],
+  "release_gate": {
+    "version_test_command": "scripts/test-version.ps1 -Version v0.0.1",
+    "regression_test_command": "scripts/test-all.ps1",
+    "required": true
+  }
+}

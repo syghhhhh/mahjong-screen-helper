@@ -1,0 +1,10 @@
+[package]
+name = "riichi-core"
+version = "0.0.1"
+edition = "2024"
+description = "Offline riichi mahjong shanten and discard recommendation core"
+license = "MIT"
+
+[lib]
+name = "riichi_core"
+path = "src/lib.rs"
