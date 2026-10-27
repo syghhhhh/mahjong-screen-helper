@@ -1,5 +1,5 @@
 //! Offline template recognition for calibrated tile and action regions.
-//! Raw image pixels stay in memory; this crate performs no I/O.
+//! Raw screen pixels stay in memory; templates and models use explicit local I/O.
 
 use riichi_core::Tile;
 use std::fmt;
@@ -8,6 +8,8 @@ use std::io::{BufReader, BufWriter};
 use std::path::Path;
 
 mod board;
+#[cfg(windows)]
+pub mod neural;
 pub use board::{
     DetectedPublicTile, OfferedTile, PublicSnapshot, PublicTileRead, RelativeSeat, Rotation,
     detect_public_slots,

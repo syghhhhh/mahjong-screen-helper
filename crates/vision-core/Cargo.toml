@@ -9,6 +9,9 @@ license = "MIT"
 riichi-core = { path = "../riichi-core" }
 png = "=0.18.1"
 
+[target.'cfg(windows)'.dependencies]
+windows = { version = "=0.62.2", features = ["AI_MachineLearning", "Win32_System_WinRT"] }
+
 [lib]
 name = "vision_core"
 path = "src/lib.rs"

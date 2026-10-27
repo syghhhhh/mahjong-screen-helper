@@ -9,6 +9,7 @@
 | `serde` / `serde_json` | 校准配置序列化 | MIT OR Apache-2.0 |
 | `windows-capture` | Windows Graphics Capture 采集 | MIT |
 | `png` | 读取本机 PNG 识牌模板 | MIT OR Apache-2.0 |
+| `windows` | Windows 系统 ONNX 接口的 Rust 绑定 | MIT OR Apache-2.0 |
 
 间接依赖的精确版本由 `Cargo.lock` 固定。便携包构建时运行 `scripts/generate-license-bundle.ps1`，把 Cargo 元数据中的锁定注册表依赖、许可证字段、许可证原文及文件 SHA-256 写入 `licenses/DEPENDENCIES.json` 和 `licenses/texts/`。该清单包含 Cargo 返回的所有锁定注册表依赖，可能多于 Windows 实际使用的依赖。发布前仍须核对随包分发的模型、牌图、字体和其他资产；目前没有引入第三方模型或牌图。参考项目只用于架构调研，未复制其代码。
 
@@ -21,3 +22,5 @@
 另在本机评估 [mahjong-utils-app](https://github.com/ssttkkl/mahjong-utils-app) 提交 `637410ae10204fc69e4c6052a29e0e40881adac8` 的 `best.fp16.onnx`，文件 5,348,843 字节，SHA-256 为 `70caa1c6b6809345695cf3a1794a97772edb055356afccdf8e441f14e025797e`。其应用许可证为 MIT，但权重内嵌元数据及[同目录模型元数据](https://github.com/ssttkkl/mahjong-utils-app/blob/637410ae10204fc69e4c6052a29e0e40881adac8/mahjong-detector/src/wasmJsMain/resources/best_web_model/metadata.yaml)声明 AGPL-3.0。[Ultralytics 的许可说明](https://www.ultralytics.com/license)要求采用其开源许可的集成项目满足相应整体开源要求。当前项目用户已选择 MIT，因此该权重仅保存在被忽略的实验目录，没有加入仓库、依赖或便携包。
 
 该模型只有 34 类，不区分赤五。按上游灰度、对比度拉伸、黑边填充和 FP16 输入处理后，三张公开手牌样本的 41 张候选标签与人工标注一致；单线程 CPU 单次推理约 76–84 ms，牌河仍漏检或误认。第一次使用通用 RGB 预处理的失败记录位于 `.local-test-data/runs/local-small-model-4df29d3dcd144ddbb21947566332c3f6/`，修正后的结果位于 `.local-test-data/runs/local-small-model-1ecc7f0772bf4b8dbad3c0f3196c870c/`。两次均只是本机研究，不能证明全牌型准确率、赤五识别或 250 ms 端到端目标通过。
+
+另从零训练了只使用上述 FluffyStuff 公有领域牌图的小型 CNN，没有复制外部模型权重或使用游戏截图训练。当前最好的本机已知手牌探针为 39/41，仍有一索和赤五误认；训练脚本、输入哈希、权重及失败结果留在本机，尚未打包。项目新增的 Windows ML 后端只调用操作系统自带的 `Windows.AI.MachineLearning`，不分发 ONNX Runtime DLL、Python 或训练框架。提交的微型 ONNX fixture 是本项目自行构造的线性算术图，采用 MIT，不包含牌图或训练数据。细节见 [轻量模型实验](vision-model-research.md)。
