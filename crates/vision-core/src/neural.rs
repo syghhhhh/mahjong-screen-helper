@@ -2,7 +2,7 @@
 //! This is a bounded tensor backend, not a validated Mahjong recognizer. Its
 //! caller must validate the model's class map, preprocessing, and confidence.
 
-use std::{marker::PhantomData, os::windows::ffi::OsStrExt, path::Path, rc::Rc};
+use std::{io::Read, marker::PhantomData, os::windows::ffi::OsStrExt, path::Path, rc::Rc};
 use windows::{
     AI::MachineLearning::{
         ILearningModelFeatureDescriptor, LearningModel, LearningModelBinding, LearningModelDevice,
@@ -76,8 +76,25 @@ pub struct WinMlTileSession {
 
 impl WinMlTileSession {
     pub fn load(path: &Path) -> Result<Self, NeuralError> {
+        // Reject obvious non-model files before entering the system parser.
+        // This is a format sanity check, not a full ONNX protobuf validator.
+        if !path
+            .extension()
+            .and_then(|value| value.to_str())
+            .is_some_and(|value| value.eq_ignore_ascii_case("onnx"))
+        {
+            return Err(NeuralError::InvalidModel);
+        }
         let metadata = std::fs::metadata(path).map_err(|_| NeuralError::InvalidModel)?;
-        if !metadata.is_file() || metadata.len() == 0 || metadata.len() > MAX_MODEL_BYTES {
+        if !metadata.is_file() || metadata.len() < 16 || metadata.len() > MAX_MODEL_BYTES {
+            return Err(NeuralError::InvalidModel);
+        }
+        let mut prefix = [0; 2];
+        std::fs::File::open(path)
+            .and_then(|mut file| file.read_exact(&mut prefix))
+            .map_err(|_| NeuralError::InvalidModel)?;
+        // Our supported exporter writes canonical ir_version as its first field.
+        if prefix[0] != 0x08 || !(3..=10).contains(&prefix[1]) {
             return Err(NeuralError::InvalidModel);
         }
         let absolute = std::path::absolute(path).map_err(|_| NeuralError::InvalidModel)?;

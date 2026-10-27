@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "truth_revision": "2026-10-27-red-five-review",
+  "raw_images_in_repository": false,
+  "cases": [
+    {
+      "id": "public-hand-1",
+      "local_file": ".local-test-data/screenshots/public-hand-roi.rgb",
+      "source_url": "https://note.com/gkymyynpa/n/nfe7166dbb25e",
+      "width": 870,
+      "height": 99,
+      "sha256": "a792cd24e33e661a37eeca041c83d02a44a0a46aad5f3183c804d2ac06bffba8",
+      "expected_hand": "2m 2m 7m 8m 9m 2p 4p 5p 5p 6p 6p 7p 5s 1p"
+    },
+    {
+      "id": "public-hand-2",
+      "local_file": ".local-test-data/screenshots/public-second-hand-roi.rgb",
+      "source_url": "https://note.com/s_maaajan/n/n725a0849dd20",
+      "width": 720,
+      "height": 88,
+      "sha256": "8234eef5b2e5c79e6cd0a7960fe0f965591b137b66e1bfb482145bde1c6d881d",
+      "expected_hand": "3m 4m 5m 7m 7m 4p 1s 2s 3s 7s 8s 9s 5z 6z"
+    },
+    {
+      "id": "public-hand-3",
+      "local_file": ".local-test-data/screenshots/public-third-hand-roi.rgb",
+      "source_url": "https://haisousa.hatenadiary.jp/entry/2025/09/03/122500",
+      "width": 750,
+      "height": 95,
+      "sha256": "f8f1973a34b443ab90c7934fa9a728b42c4b59cf75d4fb7d2789b7aadda0de0d",
+      "expected_hand": "1p 2s 2s 3s 3s 0s 6s 7s 7s 8s 9s 1z 1z"
+    }
+  ],
+  "corrections": [
+    {
+      "case_id": "public-hand-3",
+      "one_based_tile_position": 6,
+      "previous_label": "5s",
+      "corrected_label": "0s",
+      "review": "The original crop has five red bamboo symbols and a red marker; other five tiles in all three crops were also reviewed.",
+      "historical_evidence_policy": "Keep prior run summaries unchanged and record reassessments against this truth revision."
+    }
+  ]
+}

@@ -65,6 +65,10 @@ fn rejects_wrong_tensor_shapes_and_non_models() {
         WinMlTileSession::load(&fixture("README.md")),
         Err(NeuralError::InvalidModel)
     ));
+    assert!(matches!(
+        WinMlTileSession::load(&fixture("not-a-model.onnx")),
+        Err(NeuralError::InvalidModel)
+    ));
 }
 
 #[test]

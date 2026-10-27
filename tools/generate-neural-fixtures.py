@@ -6,6 +6,7 @@ from onnx import TensorProto, helper, numpy_helper
 
 DEST = Path(__file__).resolve().parents[1] / "tests/fixtures/synthetic/neural"
 DEST.mkdir(parents=True, exist_ok=True)
+(DEST/"not-a-model.onnx").write_bytes(b"This is plain text, not an ONNX protobuf model.\n")
 for name, channels, classes in [("affine-37",3,37),("wrong-channels",1,37),("wrong-classes",3,34),("nonfinite-output",3,37)]:
     weights = np.asarray([[((index+channel)%5-2)*0.1 for index in range(classes)] for channel in range(channels)],dtype=np.float32)
     bias = np.arange(classes,dtype=np.float32)*0.03

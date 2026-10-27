@@ -19,3 +19,6 @@ Regeneration is optional developer tooling: `python tools/generate-neural-fixtur
 with `onnx==1.19.1` and NumPy installed. CI and portable users read the committed
 files and do not need Python. Successful fixture inference does not establish
 real Mahjong recognition accuracy.
+
+`not-a-model.onnx` is deliberately plain text. It and this README must be rejected
+by the file preflight without calling the native ONNX parser.
