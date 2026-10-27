@@ -85,3 +85,25 @@ tensor 文件为 1–256 个连续的 little-endian `[1,3,48,32]` float32 输入
 七组合成几何图片和 Pillow 12.2.0 参考字节保存在 `tests/fixtures/synthetic/neural-input/`；无游戏牌图、字体和模型权重。四个新增 Rust 测试检查每个像素/通道的数值一致性、边界尺寸、输入不被修改、角标去除及红色信息保留，随版本和回归测试运行。初始模块缺失的失败日志保存在 `.local-test-data/runs/neural-input-tdd-a9f96b9/initial-failure.log`。开发时可用 `tools/generate-neural-input-fixtures.py` 再生成；运行程序和 CI 不依赖 Python。
 
 诊断命令 `cargo run -p vision-core --example inspect_neural_faces --release --locked -j 1 -- <ONNX> <新tensor文件> <牌面PNG> ...` 接受 1–256 张本机 RGB/RGBA PNG，保存实际 Rust 输入并输出原生 logits。目标 tensor 文件必须不存在，旧证据不得被覆盖。它没有生产类别映射、不输出麻将推荐，也未接入浮窗；模型清单必须绑定预处理版本后才能用于后续集成。
+
+## 预处理固定提交与颜色增强
+
+干净提交 `e0d48aa475818b09848938e62932f348c160ebcd` 通过本机版本测试 8 项、全项目回归 9 项，均无失败或跳过；摘要为 `.local-test-data/runs/version-v0.0.1-2c97931c46dd4e9bb76c2b342c674cde/version-tests.json` 和 `.local-test-data/runs/all-9f81b8fc1e6b4e789c0ff38f41f65200/all-tests.json`。该提交的 [CI 40522023234](https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40522023234) 五项检查均通过，包含新增像素对照及原生生命周期测试。RGB/tensor/ONNX fixture 在 `.gitattributes` 标为二进制，避免 Windows 换行规范化破坏参考字节。
+
+同一提交对旧混合字体权重进行 112 张输入的双实现对照：三张已知手牌 41 张、开发 FAQ 图 34 张、训练源牌图 37 张。Rust tensor 与 Pillow 参考逐值相同，原生输出与 PyTorch 最大 logits 误差约 `4.97e-6`，分别为 41/41、33/34、37/37。摘要为 `.local-test-data/runs/local-neural-input-v2-3e7fef7fb30d45558beb01d3bf9d190d/summary.json`；唯一移除角标的已知手牌为四筒边缘的一小块红色，实图赤五索和训练源三种赤五均未移除红色块。该检查不能证明所有皮肤的赤五标记均安全。
+
+随后只增加蓝色墨迹向黑色变化的合成增强，保留红色和绿色信息；没有加入游戏截图训练。训练记录为 `.local-test-data/runs/local-pip-color-cnn-79cd5b2f31ea42f582d4475957d31bb2/`，权重 SHA-256 为 `9987d02875520a2327c74b32c796a7e78f06bfd0773020f3c473000504a57ec8`。在同一 112 张开发输入中，结果为 41/41、34/34、37/37；已知手牌最低分约 0.766，FAQ 最低分仍仅约 0.500。原生 tensor 完全一致、最大 logits 误差约 `4.24e-6`，摘要为 `.local-test-data/runs/local-neural-input-v2-e27aa13e6e65406b81c027a079e9a14d/summary.json`。ONNX 为 247,696 字节，SHA-256 为 `c37b86d95b3ff580b4f6c254804d8d3c61444c10fc15d22e83d51a9c4a6ae931`，仍仅在本机实验目录，未打包、未启用。
+
+## 新公开手牌与真值复核
+
+在颜色增强权重冻结后，从另一位作者的[公开四麻牌谱画面](https://note.com/okuohouko/n/nfd1e9a38abb3)取得四张未用于上述训练及调参的画面，先保存人工标签再推理。Rust 自动定位每张图的 14 个牌槽，共 56 张。初始结果为 52/56，四个不一致均为重复出现的同一种筒子；放大原图可数出“上方两黑、下方四红”六个圆，原文第三巡说明的三/四/六筒也与此一致。初始人工标签把六筒误记五筒，属于标注错误，不能作为模型高分误识的证据。
+
+旧标签及初次输出保存在 `.local-test-data/unseen-hands-preinference-truth.json` 和 `.local-test-data/runs/local-unseen-hands-0ae2a1cce9594ceabe35082c9068b1de/`，未覆盖。更正真值、ROI/原图哈希及理由保存在 `tests/fixtures/manifests/public-hands-v2.json`；复算摘要为 `.local-test-data/runs/unseen-truth-reassessment-974c5a8dfb474093924458cee973bb1b/summary.json`，包含旧摘要、新真值哈希，按更正标签为 56/56，权重、输入、预测均未改变。四张来自同一局的相关画面不等于四个独立对局，更不等于完整 37 类、赤五、行动按钮或现场验收。
+
+这次 56 次原生执行约 6.5 ms，读 PNG 与预处理合计约 11.2 ms、加载约 29 ms；这些是开发机离线探针时间，不含捕获、三帧等待、牌效与显示，不能证明 250 ms 端到端目标。
+
+## 未知输入拒识尚未通过
+
+冻结颜色增强权重，另生成 15 个非麻将字形和 4 个纯色区域作本机压力测试，记录在 `.local-test-data/runs/local-unknown-neural-probe-06e950043a4c4ed3bd1145a3f0448e8b/summary.json`。在假设的 `softmax ≥ 0.9` 且前两名差值 `≥ 0.2` 门槛下，仍有 6/19 个非牌面会通过，包括 Y→四万约 0.9998、暗区域→八筒约 0.9924；空白浅色区域也会得到白板约 0.983。该门槛仅用于暴露问题，没有写入生产配置。
+
+因此不能只凭已知与新手牌命中率启用模型。后续须补上未知输入/无效牌面拒识、白板上下文确认、模型清单及类别/预处理绑定，再进行集成和现场验收。视觉任务继续 `in_progress`；旧高分错误和本次真实的未知输入失败均保留，不能通过调低门槛或忽略失败将其标记成功。
