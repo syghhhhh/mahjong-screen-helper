@@ -10,6 +10,10 @@ Windows 浮窗已支持显式安装的本机模型回退，运行时只读取本
 
 原生 session 和模型文件锁由实时引擎持有。安装、移除或更换模型需要停止并重新开始识别，不能在旧 session 存活时覆盖被锁定的权重。调用 `RuntimeEngine::set_tile_classifier` 会重置稳定帧、旧推荐、来牌和换局视觉基线，保留当前局的规则信息；不得比较新旧模型的标签来自动推断换局。
 
+可另在 `models/public-tile-classifier/classifier.json` 安装公共牌专用模型。它有独立的权重哈希、预处理版本和阈值，只供牌河、四家副露及指示牌回退使用；手牌仍使用原模型或完整模板。未安装公共模型时维持原来的共享模型路径。已安装的公共模型无效会停止启动；推理失败会清除旧建议，不自动改用共享模型。完整模板的快速路径继续保留。只有公共模型而缺少完整手牌模板时仍无法启动。
+
+`RuntimeEngine::set_public_tile_classifier` 更换或移除公共模型也会清除稳定帧、旧推荐、来牌和换局视觉基线，重新等待连续三帧。两个模型可以使用不同的 v2/v3 输入，分别以清单为准。这个配置能力不表示已有可分发的默认模型通过验收。
+
 ## 清单
 
 JSON 最大 16 KiB；未知、重复、缺失字段均拒绝。示例见 `tests/fixtures/synthetic/neural/classifier.json`，其中权重是项目原创的线性算术图，不是可用的识牌网络。
@@ -60,9 +64,12 @@ cargo run -p vision-core --example inspect_classifier --release --locked -j 1 --
 
 ```powershell
 cargo run -p runtime-core --example inspect_model_pipeline --release --locked -j 1 -- <清单JSON> <手牌RGB> <宽> <高> [<牌河PNG> <己方副露PNG> <左家PNG> <对家PNG> <右家PNG> <指示牌PNG>]
+cargo run -p runtime-core --example inspect_model_pipeline --release --locked -j 1 -- --public-model <公共清单JSON> <手牌清单JSON> <手牌RGB> <宽> <高> <牌河PNG> <己方副露PNG> <左家PNG> <对家PNG> <右家PNG> <指示牌PNG>
 ```
 
 命令运行三帧，输出等待、拒识或局面与 Top-3。可省略全部六张公共牌图片，但那样只验证手牌链路；按钮输入始终缺席。它不捕获窗口、不验证浮窗、不模拟真实时序，处理耗时不能代替 250 ms 端到端验收。
+
+显式指定 `--public-model` 时必须提供全部六张公共区域图片，否则直接报错；没有该参数时保留原命令用法。
 
 公共牌可单独检查：
 

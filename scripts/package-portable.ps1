@@ -28,6 +28,7 @@ New-Item -ItemType Directory -Path $output -Force | Out-Null
 New-Item -ItemType Directory -Path (Join-Path $output 'config') -Force | Out-Null
 New-Item -ItemType Directory -Path (Join-Path $output 'models\template-pack') -Force | Out-Null
 New-Item -ItemType Directory -Path (Join-Path $output 'models\tile-classifier') -Force | Out-Null
+New-Item -ItemType Directory -Path (Join-Path $output 'models\public-tile-classifier') -Force | Out-Null
 New-Item -ItemType Directory -Path (Join-Path $output 'licenses') -Force | Out-Null
 Copy-Item -LiteralPath $exe -Destination (Join-Path $output 'RiichiScreenHelper.exe')
 Copy-Item -LiteralPath (Join-Path $repoRoot 'LICENSE') -Destination (Join-Path $output 'LICENSE')
@@ -38,6 +39,7 @@ Copy-Item -LiteralPath (Join-Path $repoRoot 'Cargo.lock') -Destination (Join-Pat
 if ($LASTEXITCODE -ne 0) { throw 'License bundle generation failed' }
 Copy-Item -LiteralPath (Join-Path $repoRoot 'docs\vision-template-pack.md') -Destination (Join-Path $output 'models\template-pack\README.md')
 Copy-Item -LiteralPath (Join-Path $repoRoot 'docs\model-manifest.md') -Destination (Join-Path $output 'models\tile-classifier\README.md')
+Copy-Item -LiteralPath (Join-Path $repoRoot 'docs\model-manifest.md') -Destination (Join-Path $output 'models\public-tile-classifier\README.md')
 $intro = @(
     "Riichi Screen Helper $Version ($Configuration)"
     'Double-click RiichiScreenHelper.exe to start. No Python, Node, or Rust installation is required.'

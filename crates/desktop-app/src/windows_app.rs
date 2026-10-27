@@ -1,4 +1,4 @@
-use crate::recognition_setup::prepare_runtime;
+use crate::recognition_setup::prepare_runtime_with_public;
 use game_state::GameTracker;
 use riichi_core::Tile;
 use runtime_core::{PipelineOutput, PublicImages, RuntimeEngine};
@@ -162,6 +162,7 @@ struct AppState {
     config_path: PathBuf,
     pack_path: PathBuf,
     model_manifest: PathBuf,
+    public_model_manifest: PathBuf,
     runtime: Option<RuntimeEngine>,
     manual_tracker: GameTracker,
     capture_stream: Option<CaptureStream>,
@@ -214,6 +215,10 @@ pub fn run(smoke: bool) -> Result<(), String> {
         .join("models")
         .join("tile-classifier")
         .join("classifier.json");
+    let public_model_manifest = base
+        .join("models")
+        .join("public-tile-classifier")
+        .join("classifier.json");
     let profile = CalibrationProfile::load(&config_path).ok();
     let active_query = profile
         .as_ref()
@@ -228,6 +233,7 @@ pub fn run(smoke: bool) -> Result<(), String> {
             config_path,
             pack_path,
             model_manifest,
+            public_model_manifest,
             runtime: None,
             manual_tracker: GameTracker::new(),
             capture_stream: None,
@@ -805,7 +811,11 @@ impl AppState {
             self.status = "请重新校准，补齐三家副露区域".into();
             return;
         };
-        let (runtime, mode) = match prepare_runtime(&self.pack_path, &self.model_manifest) {
+        let (runtime, mode) = match prepare_runtime_with_public(
+            &self.pack_path,
+            &self.model_manifest,
+            Some(&self.public_model_manifest),
+        ) {
             Ok(prepared) => prepared,
             Err(error) => {
                 self.status = error.to_string();

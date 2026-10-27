@@ -3,14 +3,28 @@
 #[cfg(windows)]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     use runtime_core::{PipelineOutput, PublicImages, RuntimeEngine};
-    use std::{env, fs, path::Path, time::Instant};
+    use std::{
+        env, fs,
+        path::{Path, PathBuf},
+        time::Instant,
+    };
     use vision_core::{
         ActionLabel, MatchConfig, RgbImage, TemplateBank, classifier::CLASS_ORDER,
         neural_classifier::LocalTileClassifier,
     };
-    let args: Vec<_> = env::args().collect();
+    let mut args: Vec<_> = env::args().collect();
+    let public_manifest = if args.get(1).is_some_and(|arg| arg == "--public-model") {
+        let path = PathBuf::from(args.get(2).ok_or("missing public model manifest")?);
+        args.drain(1..3);
+        Some(path)
+    } else {
+        None
+    };
     if args.len() != 5 && args.len() != 11 {
-        return Err("usage: inspect_model_pipeline manifest.json hand.rgb width height [river.png own.png left.png across.png right.png dora.png]".into());
+        return Err("usage: inspect_model_pipeline [--public-model public.json] manifest.json hand.rgb width height [river.png own.png left.png across.png right.png dora.png]".into());
+    }
+    if public_manifest.is_some() && args.len() != 11 {
+        return Err("--public-model requires all six public region images".into());
     }
     let width: u32 = args[3].parse()?;
     let height: u32 = args[4].parse()?;
@@ -39,6 +53,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     )])?;
     let mut engine = RuntimeEngine::new(bank, vec![], MatchConfig::default(), 3)?;
     engine.set_tile_classifier(Some(Box::new(classifier)));
+    if let Some(path) = public_manifest {
+        let started = Instant::now();
+        engine.set_public_tile_classifier(Some(Box::new(LocalTileClassifier::load(&path)?)));
+        println!(
+            "public_model_load_ms: {:.3}",
+            started.elapsed().as_secs_f64() * 1000.0
+        );
+    }
     println!(
         "scope: {}; action images absent",
         if public_images.is_empty() {

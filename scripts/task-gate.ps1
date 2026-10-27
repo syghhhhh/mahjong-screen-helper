@@ -9,10 +9,19 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $taskRelative = ('tasks/{0}/task.json' -f $Version)
 $taskPath = Join-Path $repoRoot $taskRelative
+$localRoot = Join-Path $repoRoot '.local-test-data'
+New-Item -ItemType Directory -Path $localRoot -Force | Out-Null
+# Serialize gates for a release; other editors remain free to work, but their
+# changes will invalidate this run at the final checkpoint.
+$lockPath = Join-Path $localRoot ("task-gate-$Version.lock")
+$gateLock = [IO.File]::Open($lockPath, [IO.FileMode]::OpenOrCreate, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
+$temporaryTaskPath = $null
+try {
 
 & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'validate-task.ps1') -Version $Version
 if ($LASTEXITCODE -ne 0) { throw 'Task schema validation failed' }
-$document = Get-Content -LiteralPath $taskPath -Raw -Encoding utf8 | ConvertFrom-Json
+$originalTaskBytes = [Convert]::ToBase64String([IO.File]::ReadAllBytes($taskPath))
+$document = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($originalTaskBytes)).TrimStart([char]0xfeff) | ConvertFrom-Json
 $task = @($document.tasks | Where-Object id -Eq $TaskId) | Select-Object -First 1
 if ($null -eq $task) { throw "Task not found: $TaskId" }
 if ($task.status -ne 'regression_tested') { throw "Task $TaskId must be regression_tested" }
@@ -32,6 +41,24 @@ foreach ($entry in $dirty) {
 }
 $sourceSha = (& git -C $repoRoot rev-parse HEAD).Trim()
 if ($LASTEXITCODE -ne 0 -or $sourceSha -notmatch '^[0-9a-f]{40}$') { throw 'Source commit is missing' }
+
+function Assert-GateSnapshot {
+    $currentSha = (& git -C $repoRoot rev-parse HEAD).Trim()
+    if ($LASTEXITCODE -ne 0 -or $currentSha -cne $sourceSha) { throw 'Source commit changed during gate; task state was not changed' }
+    $currentDirty = @(git -C $repoRoot -c core.quotepath=false status --porcelain=v1 --untracked-files=all)
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot recheck Git working tree state' }
+    foreach ($entry in $currentDirty) {
+        $changed = $entry.Substring(3).Trim().Replace('\','/')
+        if ($changed -ne $taskRelative -and $changed -ne $script:temporaryTaskRelative) {
+            throw "Source or tests changed during gate: $changed"
+        }
+    }
+    if ([Convert]::ToBase64String([IO.File]::ReadAllBytes($taskPath)) -cne $originalTaskBytes) {
+        throw 'Task file changed during gate; concurrent edits were preserved'
+    }
+    & (Join-Path $PSScriptRoot 'validate-local-evidence.ps1') -SourceSha $sourceSha -RequiredKinds @($task.local_evidence_required) -Paths $LocalEvidencePaths
+}
+
 & (Join-Path $PSScriptRoot 'validate-local-evidence.ps1') -SourceSha $sourceSha -RequiredKinds @($task.local_evidence_required) -Paths $LocalEvidencePaths
 
 $versionRunId = 'gate-version-{0}-{1}' -f $Version, [guid]::NewGuid().ToString('N')
@@ -77,6 +104,7 @@ foreach ($fixture in @($versionSummary.fixture_hashes)) {
     if ((Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant() -ne $fixture.sha256) { throw "Fixture hash mismatch: $($fixture.path)" }
 }
 
+Assert-GateSnapshot
 $task.evidence = [pscustomobject]@{
     source_sha = $sourceSha
     version_test_run = $versionRunId
@@ -90,5 +118,22 @@ $task.evidence = [pscustomobject]@{
     completed_at = (Get-Date).ToUniversalTime().ToString('o')
 }
 $task.status = 'succeed'
-$document | ConvertTo-Json -Depth 30 | Set-Content -LiteralPath $taskPath -Encoding utf8
+$temporaryTaskRelative = ('tasks/{0}/.task-gate-{1}.tmp' -f $Version, [guid]::NewGuid().ToString('N'))
+$temporaryTaskPath = Join-Path $repoRoot $temporaryTaskRelative
+$serialized = ($document | ConvertTo-Json -Depth 30) + [Environment]::NewLine
+[IO.File]::WriteAllText($temporaryTaskPath, $serialized, (New-Object Text.UTF8Encoding($false)))
+& powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'validate-task.ps1') -Version $Version -TaskPath $temporaryTaskPath
+if ($LASTEXITCODE -ne 0) { throw 'Generated task state is invalid; task state was not changed' }
+Assert-GateSnapshot
+$backupPath = Join-Path (Split-Path -Parent $allSummaryPath) 'task-before-gate.json'
+# Atomic replacement avoids a partially written task.json if the process exits
+# during persistence. Keep the exact original bytes beside the run evidence.
+[IO.File]::Replace($temporaryTaskPath, $taskPath, $backupPath)
 Write-Output "Task $TaskId marked succeed for source commit $sourceSha"
+} finally {
+    try {
+        if ($temporaryTaskPath -and (Test-Path -LiteralPath $temporaryTaskPath -PathType Leaf)) {
+            Remove-Item -LiteralPath $temporaryTaskPath
+        }
+    } finally { $gateLock.Dispose() }
+}

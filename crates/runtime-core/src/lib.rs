@@ -36,6 +36,7 @@ pub struct PublicImages<'a> {
 pub struct RuntimeEngine {
     bank: TemplateBank,
     tile_classifier: Option<Box<dyn FaceClassifier>>,
+    public_tile_classifier: Option<Box<dyn FaceClassifier>>,
     action_slots: Vec<Rect>,
     match_config: MatchConfig,
     filter: StabilityFilter,
@@ -60,6 +61,7 @@ impl RuntimeEngine {
         Ok(Self {
             bank,
             tile_classifier: None,
+            public_tile_classifier: None,
             action_slots,
             match_config,
             filter: StabilityFilter::new(stable_frames)?,
@@ -83,6 +85,14 @@ impl RuntimeEngine {
         self.tile_classifier = classifier;
         // Round transitions need evidence from one recognition source; model
         // replacement must not compare its labels with the old model's baseline.
+        self.round_baseline = None;
+        self.reset_recognition();
+    }
+    /// Override only public-face inference. Without an override, public faces
+    /// use the shared tile classifier as before. A failing override is never
+    /// replaced by the shared model during inference.
+    pub fn set_public_tile_classifier(&mut self, classifier: Option<Box<dyn FaceClassifier>>) {
+        self.public_tile_classifier = classifier;
         self.round_baseline = None;
         self.reset_recognition();
     }
@@ -345,12 +355,16 @@ impl RuntimeEngine {
             (read.actions?, read.confidence)
         };
         let (public_info, public_confidence) = if let Some(public) = public {
+            let public_classifier = self
+                .public_tile_classifier
+                .as_deref()
+                .or(self.tile_classifier.as_deref());
             let mut visible_tiles = Vec::new();
             let mut confidence = 1.0f32;
             let river = self.bank.recognize_public_tiles_with_fallback(
                 public.river,
                 self.match_config,
-                self.tile_classifier.as_deref(),
+                public_classifier,
             );
             confidence = confidence.min(river.confidence);
             let offered = river.offered.map(|offer| (offer.tile, offer.source));
@@ -358,7 +372,7 @@ impl RuntimeEngine {
             let own = self.bank.recognize_public_tiles_with_fallback(
                 public.own_melds,
                 self.match_config,
-                self.tile_classifier.as_deref(),
+                public_classifier,
             );
             confidence = confidence.min(own.confidence);
             let mut own_meld_tiles: Vec<_> = own.tiles?.into_iter().map(|tile| tile.tile).collect();
@@ -371,7 +385,7 @@ impl RuntimeEngine {
                 let read = self.bank.recognize_public_tiles_with_fallback(
                     image,
                     self.match_config,
-                    self.tile_classifier.as_deref(),
+                    public_classifier,
                 );
                 confidence = confidence.min(read.confidence);
                 visible_tiles.extend(read.tiles?.into_iter().map(|tile| tile.tile));
@@ -379,7 +393,7 @@ impl RuntimeEngine {
             let dora = self.bank.recognize_public_tiles_with_fallback(
                 public.dora,
                 self.match_config,
-                self.tile_classifier.as_deref(),
+                public_classifier,
             );
             confidence = confidence.min(dora.confidence);
             let dora_indicators: Vec<_> = dora.tiles?.into_iter().map(|tile| tile.tile).collect();

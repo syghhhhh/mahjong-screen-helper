@@ -7,6 +7,13 @@ $exe = Join-Path $output 'RiichiScreenHelper.exe'
 if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) { throw 'Portable executable missing' }
 if (-not (Test-Path -LiteralPath "$output.zip" -PathType Leaf)) { throw 'Portable zip missing' }
 if (-not (Test-Path -LiteralPath (Join-Path $output 'LICENSE') -PathType Leaf)) { throw 'Project MIT license missing' }
+$modelHelpHash = (Get-FileHash -LiteralPath (Join-Path $repoRoot 'docs\model-manifest.md') -Algorithm SHA256).Hash
+foreach ($modelDirectory in @('tile-classifier', 'public-tile-classifier')) {
+    $help = Join-Path $output ("models\$modelDirectory\README.md")
+    if (-not (Test-Path -LiteralPath $help -PathType Leaf)) { throw "Model installation help missing: $modelDirectory" }
+    if ((Get-FileHash -LiteralPath $help -Algorithm SHA256).Hash -ne $modelHelpHash) { throw "Model installation help is stale: $modelDirectory" }
+}
+if (@(Get-ChildItem -LiteralPath (Join-Path $output 'models') -Filter '*.onnx' -Recurse -File).Count -ne 0) { throw 'Unaccepted research weights were packaged' }
 if (-not (Test-Path -LiteralPath (Join-Path $output 'licenses\README.md') -PathType Leaf)) { throw 'License inventory missing' }
 $inventoryPath = Join-Path $output 'licenses\DEPENDENCIES.json'
 if (-not (Test-Path -LiteralPath $inventoryPath -PathType Leaf)) { throw 'Dependency license inventory missing' }

@@ -95,7 +95,7 @@
           "os": "Microsoft Windows NT 10.0.26200.0",
           "architecture": "X64"
         },
-        "completed_at": "2026-10-27T09:19:26.4897370Z"
+        "completed_at": "2026-10-27T09:19:26.489737Z"
       }
     },
     {
@@ -138,7 +138,7 @@
           "red_test_log": ".local-test-data/runs/component-contract-red-98d291b1a5474f6d8bfb11b075c00b73/test.log",
           "native_parity_run": "native-action-complete-component-parity-b5fb922cb3674b87bc46f8e8859898b3",
           "native_input_differing_values": 0,
-          "max_native_pytorch_logit_error": 1.191930175892253e-06,
+          "max_native_pytorch_logit_error": 1.191930175892253E-06,
           "native_classifier_probe_exit_code": 1,
           "component_comparison_run": "action-component-closure-afd15d273f94465c84f433273cb17065",
           "font_candidate": {
@@ -174,7 +174,7 @@
           "rejected": 12,
           "primary_five_complete": false,
           "input_differing_values": 0,
-          "max_native_pytorch_logit_error": 2.741411804230154e-06,
+          "max_native_pytorch_logit_error": 2.741411804230154E-06,
           "probe_exit_code": 1,
           "acceptance_verified": false,
           "production_integrated": false,
@@ -198,7 +198,17 @@
           "completed_at": "2026-10-27T21:38:20.1669374Z",
           "limitations": "Six new geometry tests pass, but the full suite naturally failed in the unchanged rule concurrency binary. No success gate was run; visual acceptance also remains incomplete."
         }
-      ]
+      ],
+      "research_20261028": {
+        "document": "docs/research-2026-10-28-public-models.md",
+        "acceptance_verified": false,
+        "public_v6_old": "15/18 accepted, zero errors; existing seed model remains 17/18",
+        "public_v6_new": "7/10 accepted, zero errors, incomplete",
+        "public_v7": "rejected due to accepted errors",
+        "background_hull": "rejected due to regression",
+        "medium_ocr": "five major actions incomplete, developer CPU median 488.23 ms per word",
+        "weights_shipped": false
+      }
     },
     {
       "id": "V001-004",
@@ -560,7 +570,7 @@
             "architecture": "x64",
             "rustc": "1.93.1"
           },
-          "completed_at": "2026-10-27T20:50:20.3468100Z"
+          "completed_at": "2026-10-27T20:50:20.34681Z"
         },
         {
           "source_sha": "b6c4a0fc7559697df872fabb8b059ea975e6a358",
@@ -589,6 +599,30 @@
             "rustc": "1.93.1"
           },
           "completed_at": "2026-10-27T21:38:20.1669374Z"
+        },
+        {
+          "source_sha": "46c97e9e458d2ee7724cc8851294d86c83980f1c",
+          "source_dirty": true,
+          "run_id": "version-public-models-20261028-01",
+          "summary": ".local-test-data/runs/version-public-models-20261028-01/version-tests.json",
+          "failed_test": "rules.test.ps1: independently_owned_hands_keep_exact_results_across_ten_workers",
+          "exit_code": "0xc0000005",
+          "diagnostic": "thread has overflowed its stack; unchanged archived rule binary",
+          "exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
+          "pdb_sha256": "e13dc703c17f03ee86fc45e92005e5fab9a95d0cf775b27fe4fd51e065082d0b",
+          "completed_at": "2026-10-27T22:41:20.4497336Z"
+        },
+        {
+          "source_sha": "46c97e9e458d2ee7724cc8851294d86c83980f1c",
+          "source_dirty": true,
+          "run_id": "version-gate-consistency-20261028-01",
+          "summary": ".local-test-data/runs/version-gate-consistency-20261028-01/version-tests.json",
+          "failed_test": "rules.test.ps1: independently_owned_hands_keep_exact_results_across_ten_workers",
+          "exit_code": "0xc0000005",
+          "diagnostic": "Unchanged archived rule binary; nine other version checks including six miniature gate cases passed",
+          "exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
+          "pdb_sha256": "e13dc703c17f03ee86fc45e92005e5fab9a95d0cf775b27fe4fd51e065082d0b",
+          "completed_at": "2026-10-27T22:44:56.8170335Z"
         }
       ]
     },
@@ -1635,6 +1669,123 @@
           ],
           "passed": true,
           "observed_at": "2026-10-27T21:58:47.1488128Z"
+        }
+      ]
+    },
+    {
+      "id": "V001-013",
+      "title": "支持公共牌独立本机分类模型并保持来源切换一致性",
+      "status": "failed",
+      "depends_on": [
+        "V001-001",
+        "V001-002"
+      ],
+      "scope": [
+        "vision",
+        "integration",
+        "startup",
+        "packaging"
+      ],
+      "acceptance_criteria": [
+        "公共牌可使用独立模型清单、哈希和预处理契约，不替换手牌模型",
+        "未配置公共模型时保持现有共享模型及模板行为",
+        "公共模型存在但无效时启动报错，运行失败清除建议且不悄悄改用共享模型",
+        "更换或移除任一模型后重新进行三帧确认，不混用跨模型局终证据",
+        "只有公共模型时仍要求完整手牌模板，不能把公共模型用于手牌",
+        "新增合成配置与链路测试进入版本和完整回归；不把候选权重研究当作默认识牌验收"
+      ],
+      "version_tests": [
+        "tests/version/v0.0.1/overlay-integration.test.ps1",
+        "tests/version/v0.0.1/packaging-performance.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/regression/overlay-integration.test.ps1",
+        "tests/regression/packaging-performance.test.ps1"
+      ],
+      "regression_profile": "full",
+      "local_evidence_required": [],
+      "evidence": null,
+      "red_test_logs": [
+        ".local-test-data/runs/separate-model-red-ff57f5be4cd7474f81989f9922ff5e06/test.log",
+        ".local-test-data/runs/public-startup-red-bb73a249ffa1494d929e51ed086e6708/test.log"
+      ],
+      "failure_history": [
+        {
+          "source_sha": "46c97e9e458d2ee7724cc8851294d86c83980f1c",
+          "source_dirty": true,
+          "run_id": "version-public-models-20261028-01",
+          "summary": ".local-test-data/runs/version-public-models-20261028-01/version-tests.json",
+          "failed_test": "rules.test.ps1: independently_owned_hands_keep_exact_results_across_ten_workers",
+          "exit_code": "0xc0000005",
+          "diagnostic": "thread has overflowed its stack; unchanged archived rule binary",
+          "exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
+          "pdb_sha256": "e13dc703c17f03ee86fc45e92005e5fab9a95d0cf775b27fe4fd51e065082d0b",
+          "completed_at": "2026-10-27T22:41:20.4497336Z"
+        },
+        {
+          "source_sha": "46c97e9e458d2ee7724cc8851294d86c83980f1c",
+          "source_dirty": true,
+          "run_id": "version-gate-consistency-20261028-01",
+          "summary": ".local-test-data/runs/version-gate-consistency-20261028-01/version-tests.json",
+          "failed_test": "rules.test.ps1: independently_owned_hands_keep_exact_results_across_ten_workers",
+          "exit_code": "0xc0000005",
+          "diagnostic": "Unchanged archived rule binary; nine other version checks including six miniature gate cases passed",
+          "exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
+          "pdb_sha256": "e13dc703c17f03ee86fc45e92005e5fab9a95d0cf775b27fe4fd51e065082d0b",
+          "completed_at": "2026-10-27T22:44:56.8170335Z"
+        }
+      ],
+      "targeted_test_logs": [
+        ".local-test-data/separate-public-all-regions-20261028.log"
+      ]
+    },
+    {
+      "id": "V001-014",
+      "title": "门禁完成前复核源代码、任务文件和本机证据，防止测试期间变更被覆盖",
+      "status": "failed",
+      "depends_on": [
+        "V001-001"
+      ],
+      "scope": [
+        "workflow",
+        "testing"
+      ],
+      "acceptance_criteria": [
+        "门禁在测试前后验证提交和工作区，测试中源代码或 HEAD 变化必须失败",
+        "任务文件在测试期间改变时拒绝覆盖并保留新的内容",
+        "测试完成后重新校验本机证据及 fixture 哈希",
+        "状态通过同目录临时文件与替换提交，保留原状态备份，失败不写 succeed",
+        "真实门禁在隔离微型仓库中覆盖稳定成功及源文件、HEAD、任务文件、本机证据变化的失败路径"
+      ],
+      "version_tests": [
+        "tests/version/v0.0.1/gate-consistency.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/regression/gate-consistency.test.ps1"
+      ],
+      "regression_profile": "full",
+      "local_evidence_required": [],
+      "evidence": null,
+      "red_test_logs": [
+        ".local-test-data/gate-consistency-red-20261028.log",
+        ".local-test-data/gate-consistency-red-contract-20261028.log"
+      ],
+      "targeted_test_logs": [
+        ".local-test-data/gate-consistency-green-20261028.log",
+        ".local-test-data/gate-consistency-final-20261028.log"
+      ],
+      "failure_history": [
+        {
+          "source_sha": "46c97e9e458d2ee7724cc8851294d86c83980f1c",
+          "source_dirty": true,
+          "run_id": "version-gate-consistency-20261028-01",
+          "summary": ".local-test-data/runs/version-gate-consistency-20261028-01/version-tests.json",
+          "failed_test": "rules.test.ps1: independently_owned_hands_keep_exact_results_across_ten_workers",
+          "exit_code": "0xc0000005",
+          "diagnostic": "Unchanged archived rule binary; nine other version checks including six miniature gate cases passed",
+          "exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
+          "pdb_sha256": "e13dc703c17f03ee86fc45e92005e5fab9a95d0cf775b27fe4fd51e065082d0b",
+          "completed_at": "2026-10-27T22:44:56.8170335Z"
         }
       ]
     }

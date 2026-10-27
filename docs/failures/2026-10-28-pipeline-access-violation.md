@@ -141,3 +141,5 @@ cargo test -p runtime-core --test pipeline --locked --no-run --target-dir .local
 V001-011 已由 `task-gate.ps1` 在源提交 `41beb28eef807a6487adb55999ac46164fa77a42` 上完成独立版本及全回归门禁，版本运行 `gate-version-v0.0.1-179bc5a5f4d2452db8feaa100174dd27`，回归运行 `gate-all-03b01c99dfd34332a1ccdb16ca3c3233`。这只确认该项修正，不把 V001-009 改为成功。
 
 V001-012 已由 `task-gate.ps1` 在源提交 `41beb28eef807a6487adb55999ac46164fa77a42` 上完成独立版本及全回归门禁，版本运行 `gate-version-v0.0.1-ed2451e735d3409295390bf496a4b640`，回归运行 `gate-all-9ee9250cd76a4960aef049e7abfe15c9`。这只确认该项修正，不把 V001-009 改为成功。
+
+同一归档规则二进制在分组亲和性实验及两轮新版本测试中继续自然退出 `0xc0000005`，其中一次还打印线程栈溢出。DIA 符号映射、调试器附加未复现的局限、运行编号和保存位置见[本机研究补充](../research-2026-10-28-public-models.md)。V001-009、V001-013、V001-014 的失败记录保留，定向测试及历史 CI 通过均不覆盖这些失败。

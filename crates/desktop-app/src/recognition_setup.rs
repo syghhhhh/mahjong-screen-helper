@@ -25,6 +25,8 @@ impl RecognitionMode {
 pub(crate) enum SetupError {
     ManifestAccess,
     Model(ClassifierLoadError),
+    PublicModel(ClassifierLoadError),
+    PublicManifestAccess,
     Templates(TemplatePackProgress),
     Engine(VisionError),
 }
@@ -32,13 +34,9 @@ impl std::fmt::Display for SetupError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::ManifestAccess => f.write_str("无法读取本机模型目录"),
-            Self::Model(error) => f.write_str(match error {
-                ClassifierLoadError::Manifest => "本机模型清单无法读取或格式不符",
-                ClassifierLoadError::ModelFile => "本机模型文件缺失或大小不受支持",
-                ClassifierLoadError::ModelHashMismatch => "本机模型与清单不一致，请检查文件",
-                ClassifierLoadError::HashUnavailable => "系统模型校验服务不可用",
-                ClassifierLoadError::Backend(_) => "Windows 无法加载此本机模型",
-            }),
+            Self::Model(error) => f.write_str(model_error_message(error)),
+            Self::PublicModel(error) => write!(f, "公共牌模型：{}", model_error_message(error)),
+            Self::PublicManifestAccess => f.write_str("无法读取公共牌模型目录"),
             Self::Templates(progress) => write!(
                 f,
                 "本机模板：牌图 {}/37、按钮 {}/5；可点击学习模板",
@@ -49,9 +47,28 @@ impl std::fmt::Display for SetupError {
     }
 }
 
+fn model_error_message(error: &ClassifierLoadError) -> &'static str {
+    match error {
+        ClassifierLoadError::Manifest => "本机模型清单无法读取或格式不符",
+        ClassifierLoadError::ModelFile => "本机模型文件缺失或大小不受支持",
+        ClassifierLoadError::ModelHashMismatch => "本机模型与清单不一致，请检查文件",
+        ClassifierLoadError::HashUnavailable => "系统模型校验服务不可用",
+        ClassifierLoadError::Backend(_) => "Windows 无法加载此本机模型",
+    }
+}
+
+#[cfg(test)]
 pub(crate) fn prepare_runtime(
     pack: &Path,
     model_manifest: &Path,
+) -> Result<(RuntimeEngine, RecognitionMode), SetupError> {
+    prepare_runtime_with_public(pack, model_manifest, None)
+}
+
+pub(crate) fn prepare_runtime_with_public(
+    pack: &Path,
+    model_manifest: &Path,
+    public_model_manifest: Option<&Path>,
 ) -> Result<(RuntimeEngine, RecognitionMode), SetupError> {
     let classifier = if model_manifest
         .try_exists()
@@ -61,10 +78,22 @@ pub(crate) fn prepare_runtime(
     } else {
         None
     };
+    let public_classifier = if let Some(path) = public_model_manifest {
+        if path
+            .try_exists()
+            .map_err(|_| SetupError::PublicManifestAccess)?
+        {
+            Some(LocalTileClassifier::load(path).map_err(SetupError::PublicModel)?)
+        } else {
+            None
+        }
+    } else {
+        None
+    };
     let (bank, mode) = match TemplateBank::load_dir(pack) {
         Ok(bank) => (
             bank,
-            if classifier.is_some() {
+            if classifier.is_some() || public_classifier.is_some() {
                 RecognitionMode::TemplatesAndModel
             } else {
                 RecognitionMode::Templates
@@ -81,6 +110,9 @@ pub(crate) fn prepare_runtime(
         RuntimeEngine::new(bank, vec![], MatchConfig::default(), 3).map_err(SetupError::Engine)?;
     if let Some(classifier) = classifier {
         runtime.set_tile_classifier(Some(Box::new(classifier) as Box<dyn FaceClassifier>));
+    }
+    if let Some(classifier) = public_classifier {
+        runtime.set_public_tile_classifier(Some(Box::new(classifier) as Box<dyn FaceClassifier>));
     }
     Ok((runtime, mode))
 }
@@ -199,5 +231,48 @@ mod tests {
             Err(SetupError::Model(_))
         ));
         assert!(prepare_runtime(&f.0, &f.no_model()).is_ok());
+    }
+
+    #[test]
+    fn public_model_is_optional_but_cannot_supply_missing_hand_data() {
+        let f = Fixture::new();
+        f.buttons();
+        assert!(matches!(
+            prepare_runtime_with_public(&f.0, &f.no_model(), Some(&model_manifest())),
+            Err(SetupError::Templates(_))
+        ));
+        f.all_tiles();
+        let (_, mode) =
+            prepare_runtime_with_public(&f.0, &f.no_model(), Some(&model_manifest())).unwrap();
+        assert_eq!(mode, RecognitionMode::TemplatesAndModel);
+        let (_, mode) =
+            prepare_runtime_with_public(&f.0, &f.no_model(), Some(&f.no_model())).unwrap();
+        assert_eq!(mode, RecognitionMode::Templates);
+    }
+
+    #[test]
+    fn distinct_public_and_hand_models_can_start_with_actions_only() {
+        let f = Fixture::new();
+        f.buttons();
+        let (_, mode) =
+            prepare_runtime_with_public(&f.0, &model_manifest(), Some(&model_manifest())).unwrap();
+        assert_eq!(mode, RecognitionMode::ModelAndActions);
+    }
+
+    #[test]
+    fn invalid_public_model_is_reported_without_falling_back_to_other_sources() {
+        let f = Fixture::new();
+        f.buttons();
+        f.all_tiles();
+        let bad = f.0.join("bad-model.json");
+        fs::write(&bad, b"{}").unwrap();
+        for hand in [f.no_model(), model_manifest()] {
+            let error = match prepare_runtime_with_public(&f.0, &hand, Some(&bad)) {
+                Err(error) => error,
+                Ok(_) => panic!("invalid public model was ignored"),
+            };
+            assert!(matches!(error, SetupError::PublicModel(_)));
+            assert!(error.to_string().contains("公共牌"));
+        }
     }
 }
