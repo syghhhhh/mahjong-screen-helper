@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "truth_revision": "2026-10-28-independent-source-preinference",
+  "truth_revision": "2026-10-28-independent-source-honor-code-review",
   "source_url": "https://note.com/ymdesign/n/n5e7c34e4b3a2",
   "source_image_url": "https://assets.st-note.com/img/1772623272-f237yXqkKMJtxYB0CjHWS6El.png",
   "local_original": ".local-test-data/screenshots/new-public-source-20261028/scene-00.png",
@@ -134,7 +134,8 @@
       "height": 35
     }
   },
-  "expected_hand": "0m 5m 5m 7m 1p 3p 7p 2s 7s 9s 9s 4z 6z 2p",
+  "expected_hand": "0m 5m 5m 7m 1p 3p 7p 2s 7s 9s 9s 3z 6z 2p",
+  "observed_honors": [{"one_based_tile_position": 12, "observed_honor": "west"}, {"one_based_tile_position": 13, "observed_honor": "green"}],
   "hand_occlusions": [
     {
       "one_based_tile_position": 8,
@@ -200,7 +201,8 @@
         64,
         34
       ],
-      "tile": "4z"
+      "tile": "4z",
+      "observed_honor": "north"
     },
     {
       "id": "new-river-05",
@@ -220,7 +222,8 @@
         63,
         36
       ],
-      "tile": "7z"
+      "tile": "7z",
+      "observed_honor": "red"
     },
     {
       "id": "new-river-07",
@@ -240,7 +243,8 @@
         49,
         51
       ],
-      "tile": "7z"
+      "tile": "7z",
+      "observed_honor": "red"
     },
     {
       "id": "new-river-09",
@@ -250,9 +254,21 @@
         53,
         51
       ],
-      "tile": "2z"
+      "tile": "2z",
+      "observed_honor": "south"
     }
   ],
   "public_geometry_matching": "Each detected center, translated by the river ROI origin, must belong to exactly one manually reviewed source_box; require one candidate per face. Boxes include a small border and are not detector-produced exact face bounds.",
-  "acceptance_verified": false
+  "acceptance_verified": false,
+  "corrections": [
+    {
+      "one_based_tile_position": 12,
+      "previous_label": "4z",
+      "corrected_label": "3z",
+      "observed_honor": "west",
+      "review": "Visible Xi/West glyph was read correctly but its numeric honor code was transcribed as North. West is 3z and North is 4z. The separate river North remains 4z. Model predictions are not used to choose the correction.",
+      "previous_truth_sha256": "4575411edde93d3ee580400a2bffa7538bfc1a1731401ca6e01fae9db1d762b1",
+      "historical_evidence_policy": "Keep previous predictions/logs and the original frozen truth unchanged. Last committed truth is also archived as .local-test-data/runs/honor-code-review-e25da5f0dae84c8f9d037e2b5b3a23f3/previous-public-scene-v1.json."
+    }
+  ]
 }

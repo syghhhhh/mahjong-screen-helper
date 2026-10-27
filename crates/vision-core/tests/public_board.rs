@@ -243,6 +243,29 @@ fn a_large_shadowed_surface_is_unknown_rather_than_an_empty_table() {
 }
 
 #[test]
+fn thin_public_strips_cannot_match_even_when_diagnostic_score_limits_are_zero() {
+    let image = RgbImage::new(100, 40, vec![240; 100 * 40 * 3]).unwrap();
+    let region = vision_core::Rect {
+        x: 5,
+        y: 5,
+        width: 80,
+        height: 12,
+    };
+    let read = bank()
+        .recognize_public_regions(
+            &image,
+            &[region],
+            MatchConfig {
+                min_confidence: 0.0,
+                min_margin: 0.0,
+            },
+        )
+        .unwrap();
+    assert!(read.tiles.is_none());
+    assert!(read.uncertain_regions.contains(&region));
+}
+
+#[test]
 fn rejects_unknown_tiles_and_impossible_public_counts() {
     let bank = bank();
     let mut image = RgbImage::new(160, 50, vec![38; 160 * 50 * 3]).unwrap();

@@ -74,8 +74,9 @@ impl TemplateBank {
     }
 }
 
-/// Consensus across accepted rotations avoids treating a confident inverted
-/// interpretation as proof of the upright label. A backend failure rejects all.
+/// Consensus across shape-eligible rotations avoids treating a confident
+/// interpretation as proof. Near-square faces keep all four alternatives.
+/// A backend failure in an eligible view rejects the face.
 pub(crate) fn neural_public_tile(
     image: &RgbImage,
     rect: Rect,
@@ -83,7 +84,10 @@ pub(crate) fn neural_public_tile(
     config: MatchConfig,
 ) -> Option<DetectedPublicTile> {
     let mut selected: Option<DetectedPublicTile> = None;
-    for rotation in Rotation::ALL {
+    for rotation in Rotation::ALL
+        .into_iter()
+        .filter(|rotation| rotation.plausible_for_public_face(rect))
+    {
         let face = FaceObservation::in_public(image, rect, rotation).ok()?;
         let decision = classifier.classify(&face).ok()?;
         if let ClassifierDecision::Accepted { tile, scores } = decision {

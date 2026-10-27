@@ -19,6 +19,20 @@ impl Rotation {
         Self::HalfTurn,
         Self::CounterClockwise,
     ];
+
+    /// Shape eligibility, not proof of which end of a face is upright.
+    /// Near-square projections retain all four alternatives; an elongated
+    /// face retains its two inverted upright alternatives.
+    pub fn plausible_for_public_face(self, rect: Rect) -> bool {
+        let (width, height) = match self {
+            Self::Clockwise | Self::CounterClockwise => (rect.height, rect.width),
+            _ => (rect.width, rect.height),
+        };
+        width != 0
+            && height != 0
+            && height as u64 * 10 >= width as u64 * 9
+            && height as u64 * 10 <= width as u64 * 25
+    }
 }
 
 impl RgbImage {
@@ -191,8 +205,8 @@ fn detect_public_slots_using(image: &RgbImage, accepts: impl Fn(&[u8]) -> bool) 
 }
 
 impl TemplateBank {
-    /// Classify separated public tiles, comparing all rotations per class before
-    /// computing the class margin. Repeated rotations of one label are not rivals.
+    /// Compare shape-eligible rotations per class before computing the margin.
+    /// Repeated rotations of one label are not rivals.
     pub fn recognize_public_tiles(&self, image: &RgbImage, config: MatchConfig) -> PublicTileRead {
         self.recognize_public_tiles_with_fallback(image, config, None)
     }
@@ -304,12 +318,18 @@ impl TemplateBank {
             let crop = image.crop(rect)?;
             let rotations: Vec<_> = Rotation::ALL
                 .into_iter()
+                .filter(|rotation| rotation.plausible_for_public_face(rect))
                 .map(|rotation| {
                     let rotated = crop.rotated(rotation);
                     let descriptor = glyph_descriptor(&rotated);
                     (rotation, rotated, descriptor)
                 })
                 .collect();
+            if rotations.is_empty() {
+                uncertain_regions.push(rect);
+                confidence = 0.0;
+                continue;
+            }
             let score = |candidate: usize,
                          _template: &RgbImage,
                          _rotated: &RgbImage,

@@ -24,7 +24,8 @@
       "width": 920,
       "height": 110,
       "sha256": "421d308b57c05eb1356d2d0770b2d5111d617813027380e206d311271338d52b",
-      "expected_hand": "3m 7m 3p 6p 9p 5s 8s 1z 2z 3z 4z 5z 6z 2s"
+      "expected_hand": "3m 7m 3p 6p 9p 5s 8s 1z 2z 3z 4z 5z 6z 2s",
+      "observed_honors": [{"one_based_tile_position": 8, "observed_honor": "east"}, {"one_based_tile_position": 9, "observed_honor": "south"}, {"one_based_tile_position": 10, "observed_honor": "west"}, {"one_based_tile_position": 11, "observed_honor": "north"}, {"one_based_tile_position": 12, "observed_honor": "white"}, {"one_based_tile_position": 13, "observed_honor": "green"}]
     },
     {
       "id": "public-hand-5",
@@ -42,7 +43,8 @@
       "width": 920,
       "height": 110,
       "sha256": "43783c025448d158f34aa4e58951b5763958b0b03234d3db20c799c893c92f8a",
-      "expected_hand": "3m 7m 3p 6p 9p 2s 5s 8s 1z 2z 5z 5z 6z 4p"
+      "expected_hand": "3m 7m 3p 6p 9p 2s 5s 8s 1z 2z 5z 5z 6z 4p",
+      "observed_honors": [{"one_based_tile_position": 9, "observed_honor": "east"}, {"one_based_tile_position": 10, "observed_honor": "south"}, {"one_based_tile_position": 11, "observed_honor": "white"}, {"one_based_tile_position": 12, "observed_honor": "white"}, {"one_based_tile_position": 13, "observed_honor": "green"}]
     },
     {
       "id": "public-hand-6",
@@ -60,7 +62,8 @@
       "width": 920,
       "height": 110,
       "sha256": "7ff72fd8d9b51fe7b5d09530df64cdbc27848a2d5acc21e5cc37cef53077938d",
-      "expected_hand": "3m 7m 3p 4p 6p 2s 5s 8s 1z 2z 5z 5z 6z 7s"
+      "expected_hand": "3m 7m 3p 4p 6p 2s 5s 8s 1z 2z 5z 5z 6z 7s",
+      "observed_honors": [{"one_based_tile_position": 9, "observed_honor": "east"}, {"one_based_tile_position": 10, "observed_honor": "south"}, {"one_based_tile_position": 11, "observed_honor": "white"}, {"one_based_tile_position": 12, "observed_honor": "white"}, {"one_based_tile_position": 13, "observed_honor": "green"}]
     },
     {
       "id": "public-hand-7",
@@ -78,7 +81,8 @@
       "width": 920,
       "height": 110,
       "sha256": "e90d591e025fcbd9286829232dda48c08d4e4ce60adc97306814711422bf2d33",
-      "expected_hand": "3m 7m 3p 4p 6p 2s 5s 7s 8s 1z 2z 5z 5z 2p"
+      "expected_hand": "3m 7m 3p 4p 6p 2s 5s 7s 8s 1z 2z 5z 5z 2p",
+      "observed_honors": [{"one_based_tile_position": 10, "observed_honor": "east"}, {"one_based_tile_position": 11, "observed_honor": "south"}, {"one_based_tile_position": 12, "observed_honor": "white"}, {"one_based_tile_position": 13, "observed_honor": "white"}]
     }
   ],
   "corrections": [

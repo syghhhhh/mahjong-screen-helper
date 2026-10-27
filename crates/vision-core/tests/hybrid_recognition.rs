@@ -210,13 +210,93 @@ fn repeated_rotations_of_one_label_are_allowed_but_conflicting_labels_are_not() 
     );
     assert_eq!(read.tiles.unwrap()[0].tile, tile("0s"));
     assert!(read.offered.is_some());
-    assert_eq!(classifier.calls.get(), 4);
+    // The sideways face has two shape-eligible inverted interpretations.
+    assert_eq!(classifier.calls.get(), 2);
     let mut conflict = mock();
     conflict.conflict = true;
     let read =
         bank.recognize_public_tiles_with_fallback(&image, MatchConfig::default(), Some(&conflict));
     assert!(read.tiles.is_none());
     assert!(read.offered.is_none());
+}
+
+#[test]
+fn invalid_axis_scores_cannot_override_a_public_faces_upright_interpretations() {
+    struct AxisClassifier {
+        only_wrong_axis: bool,
+    }
+    impl FaceClassifier for AxisClassifier {
+        fn classify(
+            &self,
+            face: &FaceObservation,
+        ) -> Result<ClassifierDecision, ClassifierFailure> {
+            let glyph = face.glyph_bounds().unwrap();
+            if glyph.width > glyph.height {
+                Ok(accepted("1m"))
+            } else if self.only_wrong_axis {
+                Ok(ClassifierDecision::Rejected {
+                    reason: RejectReason::LowProbability,
+                    scores: None,
+                })
+            } else {
+                Ok(accepted("0s"))
+            }
+        }
+    }
+    let mut rgb = vec![240; 18 * 26 * 3];
+    for y in 5..21 {
+        for x in 7..11 {
+            rgb[(y * 18 + x) * 3..(y * 18 + x) * 3 + 3].copy_from_slice(&[20, 30, 40]);
+        }
+    }
+    let art = RgbImage::new(18, 26, rgb).unwrap();
+    let bank = TemplateBank::actions_only(actions()).unwrap();
+    for rotation in Rotation::ALL {
+        let mut image = RgbImage::new(100, 100, vec![38; 100 * 100 * 3]).unwrap();
+        paste(&mut image, &art.rotated(rotation), 35, 35, false);
+        let read = bank.recognize_public_tiles_with_fallback(
+            &image,
+            MatchConfig::default(),
+            Some(&AxisClassifier {
+                only_wrong_axis: false,
+            }),
+        );
+        assert_eq!(
+            read.tiles.expect("upright views agree")[0].tile,
+            tile("0s"),
+            "{rotation:?}"
+        );
+        let read = bank.recognize_public_tiles_with_fallback(
+            &image,
+            MatchConfig::default(),
+            Some(&AxisClassifier {
+                only_wrong_axis: true,
+            }),
+        );
+        assert!(
+            read.tiles.is_none(),
+            "only an implausible axis supplied a label: {rotation:?}"
+        );
+    }
+    // Near-square projections provide no long-axis evidence, so conflicting
+    // interpretations must remain uncertain rather than silently choose one.
+    let mut square = RgbImage::new(80, 80, vec![38; 80 * 80 * 3]).unwrap();
+    let mut face = RgbImage::new(30, 30, vec![240; 30 * 30 * 3]).unwrap();
+    for y in 6..24 {
+        for x in 13..17 {
+            let at = ((y * 30 + x) * 3) as usize;
+            face.pixels_mut()[at..at + 3].copy_from_slice(&[20, 30, 40]);
+        }
+    }
+    paste(&mut square, &face, 20, 20, false);
+    let read = bank.recognize_public_tiles_with_fallback(
+        &square,
+        MatchConfig::default(),
+        Some(&AxisClassifier {
+            only_wrong_axis: false,
+        }),
+    );
+    assert!(read.tiles.is_none());
 }
 
 #[test]

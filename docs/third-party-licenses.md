@@ -26,3 +26,7 @@
 另从零训练了只使用上述 FluffyStuff 公有领域牌图的小型 CNN，没有复制外部模型权重或使用游戏截图训练。修正赤五真值后，当前最好的本机已知手牌探针为 40/41，仍有一索误认；训练脚本、输入哈希、权重及失败结果留在本机，尚未打包。项目新增的 Windows ML 后端只调用操作系统自带的 `Windows.AI.MachineLearning`，不分发 ONNX Runtime DLL、Python 或训练框架。提交的微型 ONNX fixture 是本项目自行构造的线性算术图，采用 MIT，不包含牌图或训练数据。细节见 [轻量模型实验](vision-model-research.md)。
 
 再增加本机用 OFL-1.1 的 Noto CJK 字体生成的字形、及公有领域鸟形的合成变化后，同一组已知牌面候选达到 41/41，仍存在低分拒识和独立数据不足。该实验的字体文件、合成数据和权重均未打包；字体来源、哈希及实验边界同样记录在上述研究文档。
+
+新增合成字体来源为 [Ma Shan Zheng](https://github.com/google/fonts/tree/ddf386ba1b9fbc6b2c818f1ddcd9148f54ced94b/ofl/mashanzheng) 与 [LXGW WenKai](https://github.com/lxgw/LxgwWenKai/tree/db34daf997d8f38e3f5595db0a56e00368d1323f)，分别固定提交 `ddf386ba1b9fbc6b2c818f1ddcd9148f54ced94b`、`db34daf997d8f38e3f5595db0a56e00368d1323f`。本机保存原始 OFL-1.1 文本及文件 SHA-256，不安装字体、不随包分发。生成器检查字体 CMap，只从确实支持的字形中取样，防止缺字方框被当作训练牌码。相应候选使用自绘透视、阴影及原有原创负例，未使用游戏截图像素训练，但实图表现未通过，仍不打包。
+
+重新调研的 [Camerash 数据集](https://github.com/Camerash/mahjong-dataset) 虽标注 MIT，README 同时说明图像主要由 Google、Ebay、Alibaba 搜索抓取，未提供本轮所需的逐图来源记录；本轮未用作训练输入。另只读取了 [pjura 34 类 ViT 模型卡与配置](https://huggingface.co/pjura/mahjong_soul_vision)：其声明 Apache-2.0，训练数据说明尚未填写，类别及架构与当前 37 类小分类器不同。本轮没有下载该模型权重或将其集成。

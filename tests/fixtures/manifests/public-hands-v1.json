@@ -10,7 +10,8 @@
       "width": 870,
       "height": 99,
       "sha256": "a792cd24e33e661a37eeca041c83d02a44a0a46aad5f3183c804d2ac06bffba8",
-      "expected_hand": "2m 2m 7m 8m 9m 2p 4p 5p 5p 6p 6p 7p 5s 1p"
+      "expected_hand": "2m 2m 7m 8m 9m 2p 4p 5p 5p 6p 6p 7p 5s 1p",
+      "observed_honors": []
     },
     {
       "id": "public-hand-2",
@@ -19,7 +20,8 @@
       "width": 720,
       "height": 88,
       "sha256": "8234eef5b2e5c79e6cd0a7960fe0f965591b137b66e1bfb482145bde1c6d881d",
-      "expected_hand": "3m 4m 5m 7m 7m 4p 1s 2s 3s 7s 8s 9s 5z 6z"
+      "expected_hand": "3m 4m 5m 7m 7m 4p 1s 2s 3s 7s 8s 9s 5z 6z",
+      "observed_honors": [{"one_based_tile_position": 13, "observed_honor": "white"}, {"one_based_tile_position": 14, "observed_honor": "green"}]
     },
     {
       "id": "public-hand-3",
@@ -28,7 +30,8 @@
       "width": 750,
       "height": 95,
       "sha256": "f8f1973a34b443ab90c7934fa9a728b42c4b59cf75d4fb7d2789b7aadda0de0d",
-      "expected_hand": "1p 2s 2s 3s 3s 0s 6s 7s 7s 8s 9s 1z 1z"
+      "expected_hand": "1p 2s 2s 3s 3s 0s 6s 7s 7s 8s 9s 1z 1z",
+      "observed_honors": [{"one_based_tile_position": 12, "observed_honor": "east"}, {"one_based_tile_position": 13, "observed_honor": "east"}]
     }
   ],
   "corrections": [

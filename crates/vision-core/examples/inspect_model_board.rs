@@ -70,14 +70,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let face = FaceObservation::in_public(&scene, rect, rotation)?;
             match classifier.classify(&face)? {
                 ClassifierDecision::Accepted { tile, scores } => println!(
-                    "rotation {index} {rotation:?}: {} probability={:.6} margin={:.6} entropy={:.6}",
+                    "rotation {index} {rotation:?} eligible={}: {} probability={:.6} margin={:.6} entropy={:.6}",
+                    rotation.plausible_for_public_face(rect),
                     code(tile),
                     scores.probability,
                     scores.margin,
                     scores.normalized_entropy,
                 ),
                 ClassifierDecision::Rejected { reason, scores } => {
-                    println!("rotation {index} {rotation:?}: rejected={reason:?} scores={scores:?}")
+                    println!(
+                        "rotation {index} {rotation:?} eligible={}: rejected={reason:?} scores={scores:?}",
+                        rotation.plausible_for_public_face(rect)
+                    )
                 }
             }
         }
