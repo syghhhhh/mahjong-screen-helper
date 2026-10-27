@@ -259,6 +259,25 @@
           "root_cause": "unresolved",
           "completed_at": "2026-10-27T19:59:49.8367807Z"
         }
+      ],
+      "diagnostic_history": [
+        {
+          "source_sha": "4a0ae8c893981049897deefa3eff4110c62d9f74",
+          "source_dirty": false,
+          "kind": "native-crash-reproduction-and-clean-build-comparison",
+          "status": "unresolved",
+          "natural_failure_summary": ".local-test-data/runs/pipeline-standard-heap-75dc039b84e8457f92a28c6f7ee6f025/debug-results.json",
+          "native_exit_code": "0xc0000005",
+          "first_fault_summary": ".local-test-data/runs/pipeline-first-fault-050b807a421b4579b60da25c2ca2a785/debug-results.json",
+          "clean_build_summary": ".local-test-data/runs/pipeline-clean-reproduction-d85a949d1b3246488c8761771fab41a9/debug-results.json",
+          "clean_exe_sha256": "3379900af9cf658583a48e3c52cd57d183068276b96280354ae4d035b1958259",
+          "identical_text_sha256": "c5bef746818db03a0792201ab5d6b1828ca8b15eb1239bb1edf8a75166091f92",
+          "independent_rule_attempts_passed": 10,
+          "original_rule_library_attempts_passed": 20,
+          "limitations": "First-fault capture intentionally stops the child after dumping; its forced exit is not a natural test result. Raw stack symbols are not a verified unwind. Passing diagnostics and CI do not fix or erase the reproduced access violation.",
+          "record": "docs/failures/2026-10-28-pipeline-access-violation.md",
+          "recorded_at": "2026-10-27T20:32:03Z"
+        }
       ]
     },
     {
