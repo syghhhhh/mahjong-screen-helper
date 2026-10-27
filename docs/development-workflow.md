@@ -16,6 +16,8 @@
 
 ## 2. 目录约定
 
+Windows PowerShell 5 下，测试入口必须以显式 UTF-8 写入命令及每一行 stdout/stderr，不得将默认使用 UTF-16 的 `Tee-Object` 追加到 UTF-8 日志。日志写入失败必须导致入口失败，不能生成成功证据。日志编码、写入失败及退出码传播由最小仓库集成测试持续验证；旧的失败原始日志保留，不原地转换或覆盖。
+
 ```text
 docs/
   development-workflow.md

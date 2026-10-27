@@ -25,7 +25,11 @@ function Invoke-CheckedScript([string]$Path) {
     try {
         $ErrorActionPreference = 'Continue'
         & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $Path 2>&1 |
-            ForEach-Object { [string]$_ } | Tee-Object -FilePath $logPath -Append
+            ForEach-Object {
+                $line = [string]$_
+                Add-Content -LiteralPath $logPath -Value $line -Encoding utf8 -ErrorAction Stop
+                Write-Output $line
+            }
         $code = $LASTEXITCODE
     } finally { $ErrorActionPreference = $previousPreference }
     $script:results += [pscustomobject]@{ test = $Path; command = $command; exit_code = $code; skipped = $false }

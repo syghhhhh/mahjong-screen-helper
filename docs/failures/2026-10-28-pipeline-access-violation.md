@@ -77,3 +77,11 @@ cargo test -p runtime-core --test pipeline --locked --no-run --target-dir .local
 另用 MSVC 14.41.34120 编译独立 C++ 普通手搜索对照，10 个线程、每次递归检查计数恢复，10 次运行通过，目录 `cpp-rule-control-da1c4d602112482e92d41096363aa06d`。它不是完整牌效实现，代码、栈布局和时序不同，不能凭其通过判定 Rust 有缺陷或本机硬件正常。
 
 为持续保留这条风险路径，新增 `crates/riichi-core/tests/concurrency.rs` 并纳入版本及规则回归。格式化和该 crate 的 Clippy 通过；新契约直接正常启动（无调试器、无亲和性修改）的有界 10 次检查通过，记录为 `concurrency-contract-a3452dc4d3c74fd6b9370f0dd6a11c8b`，保留未提交测试源码 SHA 和构建哈希。这是新增测试的验证，**不是故障修复证据**。新增 V001-009 继续 `in_progress`，要求根因与本机 `native-parallel-resolution` 证据；CI 通过不能单独完成它。
+
+## 干净提交后的完整回归再次自然失败
+
+提交 `62c757eb4dfc39010877db4ec85fbc8d71d990b1`、工作树干净时执行 `scripts/test-all.ps1 -Version v0.0.1`。运行 `all-0996c22b41d644199ac8b76417d8daea` 于 `2026-10-27T20:43:30.8721206Z` 结束，9 项中 8 项通过、1 项失败，无跳过。完整版本套件、浮窗集成及新增规则并行契约通过，但 `tests/regression/state-actions.test.ps1` 的 `game-state/tests/public_contract.rs` 进程以 `0xc0000005 STATUS_ACCESS_VIOLATION` 自然退出。本次未附加调试器、未改堆或处理器亲和性。
+
+原始摘要/日志保持原样；本机 `state-access-violation-d54ba5e3b41c4956a1915b8395ad70af` 保存 exe、PDB、完整控制台副本和失败 JSON。exe SHA-256 为 `a05c91da902bfb70f5da479215990e0591a28307e5caacd74263da7f5cfb76cb`，PDB 为 `a5fe53f583a3fd2c105d3dc46b81285891176e63dbf2f597f82e5ef921f3ee02`。V001-009 置为 `failed` 并追加失败历史，原 V001-006 失败不删除；这些结果不能证明两进程故障一定同因。
+
+这次日志还暴露了独立流程缺陷：PowerShell 5 的 UTF-8 命令头与 `Tee-Object` 默认 UTF-16 内容混入同一日志，原文件 93,818 字节中有 46,155 个 NUL 字节，直接文本检索漏掉失败行。另存的原控制台为正常 UTF-8，可确认上面的自然退出。原日志不转换；新增 V001-010 专门修复两个入口的逐行编码并测试失败传播，不把日志修正当作原生故障修复。
