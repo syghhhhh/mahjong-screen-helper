@@ -241,6 +241,7 @@ fn context(
         open_melds,
         concealed_kans: 0,
         own_meld_tiles: vec![],
+        drawn_tile: None,
         riichi_declared: false,
         known_yaku: false,
         confidence: 0.97,
@@ -359,6 +360,185 @@ fn self_drawn_concealed_kan_returns_a_before_and_after_comparison() {
     assert!(advice.reason.contains("暗杠"));
     assert!(!advice.recommended);
     assert_comparison(&advice);
+}
+
+fn riichi_tracker_with_draw(base: Vec<Tile>, drawn: Tile) -> GameTracker {
+    let mut tracker = GameTracker::new();
+    let mut declaration = base.clone();
+    declaration.push(Tile::from_code("9p").unwrap());
+    tracker.observe(observation(1, declaration, vec![ActionLabel::Riichi]));
+    tracker.confirm_riichi().unwrap();
+    assert_eq!(
+        tracker.observe(observation(2, base.clone(), vec![])).phase,
+        Phase::AwaitDraw
+    );
+    let mut hand = base;
+    hand.push(drawn);
+    assert_eq!(
+        tracker
+            .observe(observation(3, hand, vec![ActionLabel::Kan]))
+            .phase,
+        Phase::AwaitDiscard
+    );
+    tracker
+}
+
+#[test]
+fn post_riichi_kan_requires_the_new_draw_and_preserves_waits() {
+    let base = tiles(&[
+        "1m", "1m", "1m", "2m", "3m", "4m", "5p", "6p", "7p", "2s", "3s", "5z", "5z",
+    ]);
+    let tile = Tile::from_code("1m").unwrap();
+    let mut tracker = riichi_tracker_with_draw(base, tile);
+    let advice = tracker
+        .action_advice(ActionLabel::Kan, None, ClaimSource::SelfDraw)
+        .expect("legal post-riichi concealed kan must have a comparison");
+    assert!(advice.reason.contains("立直后待牌不变"));
+    assert_eq!(advice.before_shanten, 0);
+    assert_eq!(advice.after_shanten, 0);
+    assert!(!advice.recommended);
+    assert!(tracker.discard_recommendations().is_empty());
+    tracker.confirm_self_kan(&[tile; 4]).unwrap();
+    assert!(tracker.riichi_declared());
+    assert!(tracker.is_closed());
+    assert_eq!(tracker.phase(), Phase::AwaitDraw);
+}
+
+#[test]
+fn mahjong_soul_allows_changed_decomposition_when_waits_stay_the_same() {
+    // 11+123+444 and 111+234+44: fixing 111 removes one interpretation,
+    // but both before and after still wait on 4p/7p. Mahjong Soul allows it.
+    let base = tiles(&[
+        "1m", "1m", "1m", "2m", "3m", "4m", "4m", "4m", "2s", "2s", "2s", "5p", "6p",
+    ]);
+    let tile = Tile::from_code("1m").unwrap();
+    let mut tracker = riichi_tracker_with_draw(base, tile);
+    assert!(
+        tracker
+            .action_advice(ActionLabel::Kan, None, ClaimSource::SelfDraw)
+            .is_some()
+    );
+    tracker.confirm_self_kan(&[tile; 4]).unwrap();
+}
+
+#[test]
+fn post_riichi_kan_rejects_changed_waits_and_a_quad_unrelated_to_the_draw() {
+    // Before kan waits on 2m/3m/5m/6m; after fixing 111 only 2m/5m
+    // survive. The drawn 1m does not already complete a winning hand.
+    let changed_waits = tiles(&[
+        "1m", "1m", "1m", "2m", "3m", "4m", "5m", "6p", "7p", "8p", "6s", "7s", "8s",
+    ]);
+    let tile = Tile::from_code("1m").unwrap();
+    let mut changed = riichi_tracker_with_draw(changed_waits, tile);
+    let mut hand_counts = [0; 34];
+    for tile in changed.hand().unwrap() {
+        hand_counts[tile.index() as usize] += 1;
+    }
+    assert_ne!(riichi_core::shanten(&hand_counts, 0).unwrap(), -1);
+    assert!(
+        changed
+            .action_advice(ActionLabel::Kan, None, ClaimSource::SelfDraw)
+            .is_none()
+    );
+    assert!(changed.confirm_self_kan(&[tile; 4]).is_err());
+    let after: Vec<_> = changed
+        .hand()
+        .unwrap()
+        .iter()
+        .copied()
+        .filter(|tile| tile.index() != 0)
+        .collect();
+    let mut visible = [0; 34];
+    visible[0] = 4;
+    assert_eq!(
+        changed
+            .observe_table(
+                observation(4, after, vec![]),
+                visible,
+                vec![],
+                vec![tile; 4]
+            )
+            .phase,
+        Phase::Uncertain
+    );
+
+    let existing_quad = tiles(&[
+        "1m", "1m", "1m", "1m", "2m", "3m", "5p", "6p", "7p", "2s", "3s", "5z", "5z",
+    ]);
+    let mut unrelated = riichi_tracker_with_draw(existing_quad, Tile::from_code("9p").unwrap());
+    assert!(
+        unrelated
+            .action_advice(ActionLabel::Kan, None, ClaimSource::SelfDraw)
+            .is_none()
+    );
+    assert!(unrelated.confirm_self_kan(&[tile; 4]).is_err());
+}
+
+#[test]
+fn post_riichi_kan_needs_continuous_draw_evidence_after_correction_or_reconnect() {
+    let base = tiles(&[
+        "1m", "1m", "1m", "2m", "3m", "4m", "5p", "6p", "7p", "2s", "3s", "5z", "5z",
+    ]);
+    let tile = Tile::from_code("1m").unwrap();
+    let mut tracker = riichi_tracker_with_draw(base, tile);
+    let hand = tracker.hand().unwrap().to_vec();
+    tracker.window_lost();
+    tracker.observe(observation(1, hand.clone(), vec![ActionLabel::Kan]));
+    assert!(
+        tracker
+            .action_advice(ActionLabel::Kan, None, ClaimSource::SelfDraw)
+            .is_none()
+    );
+    assert!(tracker.confirm_self_kan(&[tile; 4]).is_err());
+    tracker.correct_hand(hand.clone(), 0.99).unwrap();
+    tracker.observe(observation(2, hand, vec![ActionLabel::Kan]));
+    assert!(
+        tracker
+            .action_advice(ActionLabel::Kan, None, ClaimSource::SelfDraw)
+            .is_none()
+    );
+    assert!(tracker.confirm_self_kan(&[tile; 4]).is_err());
+}
+
+#[test]
+fn second_concealed_kan_after_riichi_accepts_a_red_five_quad() {
+    let mut tracker = GameTracker::new();
+    let hand = tiles(&[
+        "1s", "1s", "1s", "1s", "0m", "5m", "5m", "2p", "3p", "4p", "2s", "3s", "5z", "5z",
+    ]);
+    tracker.observe(observation(1, hand, vec![ActionLabel::Kan]));
+    tracker
+        .confirm_self_kan(&tiles(&["1s", "1s", "1s", "1s"]))
+        .unwrap();
+    let base = tracker.hand().unwrap().to_vec();
+    let mut declaration = base.clone();
+    declaration.push(Tile::from_code("9p").unwrap());
+    tracker.observe(observation(2, declaration, vec![ActionLabel::Riichi]));
+    tracker.confirm_riichi().unwrap();
+    tracker.observe(observation(3, base.clone(), vec![]));
+    let mut drawn = base;
+    drawn.push(Tile::from_code("5m").unwrap());
+    tracker.observe(observation(4, drawn.clone(), vec![ActionLabel::Kan]));
+    let advice = tracker
+        .action_advice(ActionLabel::Kan, None, ClaimSource::SelfDraw)
+        .unwrap();
+    assert_eq!(advice.tiles_from_hand.len(), 4);
+    assert!(advice.tiles_from_hand.iter().any(|tile| tile.is_red()));
+    // Confirmation and visual reconciliation must apply the same legality rule.
+    let mut observed = tracker.clone();
+    let mut own = tiles(&["1s", "1s", "1s", "1s"]);
+    own.extend_from_slice(&advice.tiles_from_hand);
+    let mut visible = [0; 34];
+    visible[18] = 4;
+    visible[4] = 4;
+    let remaining: Vec<_> = drawn.into_iter().filter(|tile| tile.index() != 4).collect();
+    let result = observed.observe_table(observation(5, remaining, vec![]), visible, vec![], own);
+    assert_eq!(result.phase, Phase::AwaitDraw);
+    assert_eq!(observed.concealed_kans(), 2);
+    assert!(observed.is_closed());
+    assert!(observed.riichi_declared());
+    tracker.confirm_self_kan(&advice.tiles_from_hand).unwrap();
+    assert_eq!(tracker.concealed_kans(), 2);
 }
 
 #[test]

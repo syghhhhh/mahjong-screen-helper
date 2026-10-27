@@ -262,6 +262,77 @@ fn self_kan_overrides_a_stale_river_highlight_and_preserves_closed_riichi_eligib
 }
 
 #[test]
+fn pixels_after_confirmed_riichi_keep_legal_kan_waits_and_suppress_discards() {
+    let bank = bank();
+    let mut engine = RuntimeEngine::new(bank.clone(), vec![], MatchConfig::default(), 1).unwrap();
+    let base: Vec<_> = [
+        "1m", "1m", "1m", "2m", "3m", "4m", "2p", "3p", "4p", "2s", "3s", "7z", "7z",
+    ]
+    .into_iter()
+    .map(|code| Tile::from_code(code).unwrap())
+    .collect();
+    let empty = RgbImage::new(60, 60, vec![38; 60 * 60 * 3]).unwrap();
+    let public = PublicImages {
+        river: &empty,
+        own_melds: &empty,
+        opponent_melds: [&empty; 3],
+        dora: &empty,
+    };
+    let mut declaration = base.clone();
+    declaration.push(Tile::from_code("9p").unwrap());
+    assert!(matches!(
+        engine.process_with_public(
+            1,
+            &scene(&bank, &declaration),
+            Some(&action_scene(&bank, ActionLabel::Riichi)),
+            &public
+        ),
+        PipelineOutput::Ready { .. }
+    ));
+    engine.tracker_mut().confirm_riichi().unwrap();
+    engine.process_with_public(2, &scene(&bank, &base), None, &public);
+    let mut drawn = base;
+    drawn.push(Tile::from_code("1m").unwrap());
+    match engine.process_with_public(
+        3,
+        &scene(&bank, &drawn),
+        Some(&action_scene(&bank, ActionLabel::Kan)),
+        &public,
+    ) {
+        PipelineOutput::Ready {
+            actions, discards, ..
+        } => {
+            assert!(discards.is_empty());
+            assert_eq!(actions.len(), 1);
+            assert!(actions[0].reason.contains("立直后待牌不变"));
+        }
+        other => panic!("expected legal post-riichi kan, got {other:?}"),
+    }
+    let melds = scene(&bank, &[Tile::from_code("1m").unwrap(); 4]);
+    let public = PublicImages {
+        river: &empty,
+        own_melds: &melds,
+        opponent_melds: [&empty; 3],
+        dora: &empty,
+    };
+    let mut remaining: Vec<_> = drawn.into_iter().filter(|tile| tile.index() != 0).collect();
+    assert!(matches!(
+        engine.process_with_public(4, &scene(&bank, &remaining), None, &public),
+        PipelineOutput::Ready {
+            phase: Phase::AwaitDraw,
+            ..
+        }
+    ));
+    remaining.push(Tile::from_code("9p").unwrap());
+    match engine.process_with_public(5, &scene(&bank, &remaining), None, &public) {
+        PipelineOutput::Ready { discards, .. } => assert!(discards.is_empty()),
+        other => panic!("expected replacement draw after kan, got {other:?}"),
+    }
+    assert!(engine.tracker().riichi_declared());
+    assert_eq!(engine.tracker().concealed_kans(), 1);
+}
+
+#[test]
 fn public_tiles_reduce_ukeire_and_impossible_combined_counts_stop_output() {
     let bank = bank();
     let mut hand = hand_tiles();
