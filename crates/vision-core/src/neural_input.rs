@@ -2,12 +2,13 @@
 //!
 //! This only prepares a tightly cropped, upright tile face. It does not detect
 //! tiles, validate a model's class map, or establish recognition confidence.
-//! Callers must match PREPROCESSING_ID to their model manifest. In particular,
+//! Callers must match the preprocessing version to their model manifest. In particular,
 //! a zero tensor is a blank face, not evidence that the tile is White Dragon.
 
 use crate::{Rect, RgbImage, VisionError};
 
 pub const PREPROCESSING_ID: &str = "rgb-inverse-glyph-box-v2";
+pub const LETTERBOX_PREPROCESSING_ID: &str = "rgb-inverse-glyph-letterbox-v3";
 pub const INPUT_WIDTH: usize = 32;
 pub const INPUT_HEIGHT: usize = 48;
 pub const INPUT_FLOATS: usize = 3 * INPUT_WIDTH * INPUT_HEIGHT;
@@ -25,6 +26,16 @@ pub struct PreparedTile {
 /// Normalize a bounded RGB face without changing caller pixels or doing I/O.
 /// PNG alpha, if present, must already have been composited onto white.
 pub fn prepare_tile(image: &RgbImage) -> Result<PreparedTile, VisionError> {
+    prepare(image, false)
+}
+
+/// Fit the glyph into 28x44 without stretching, centered on a white 32x48
+/// canvas. This is a separate model contract; v2 weights must keep v2 inputs.
+pub fn prepare_tile_letterbox(image: &RgbImage) -> Result<PreparedTile, VisionError> {
+    prepare(image, true)
+}
+
+fn prepare(image: &RgbImage, letterbox: bool) -> Result<PreparedTile, VisionError> {
     let width = image.width() as usize;
     let height = image.height() as usize;
     if !(8..=1024).contains(&width) || !(8..=1024).contains(&height) {
@@ -35,10 +46,19 @@ pub fn prepare_tile(image: &RgbImage) -> Result<PreparedTile, VisionError> {
     let glyph_bounds = glyph_bounds(&rgb, width, height);
     let mut pixels = vec![0.0; INPUT_FLOATS];
     if let Some(bounds) = glyph_bounds {
-        let resized = resize_glyph(&rgb, width, bounds);
+        let (out_width, out_height) = if letterbox {
+            letterbox_size(bounds.width as usize, bounds.height as usize)
+        } else {
+            (INPUT_WIDTH, INPUT_HEIGHT)
+        };
+        let resized = resize_glyph(&rgb, width, bounds, out_width, out_height);
+        let offset_x = (INPUT_WIDTH - out_width) / 2;
+        let offset_y = (INPUT_HEIGHT - out_height) / 2;
         for (index, pixel) in resized.chunks_exact(3).enumerate() {
+            let destination =
+                (offset_y + index / out_width) * INPUT_WIDTH + offset_x + index % out_width;
             for channel in 0..3 {
-                pixels[channel * INPUT_WIDTH * INPUT_HEIGHT + index] =
+                pixels[channel * INPUT_WIDTH * INPUT_HEIGHT + destination] =
                     1.0 - pixel[channel] as f32 / 255.0;
             }
         }
@@ -48,6 +68,25 @@ pub fn prepare_tile(image: &RgbImage) -> Result<PreparedTile, VisionError> {
         glyph_bounds,
         removed_corner_hints,
     })
+}
+
+fn letterbox_size(width: usize, height: usize) -> (usize, usize) {
+    // Exact nearest/ties-to-even integer sizing, matching Python's Fraction
+    // oracle without depending on floating-point boundary behavior.
+    let round_ratio = |numerator: usize, denominator: usize| {
+        let whole = numerator / denominator;
+        let remainder = numerator % denominator;
+        (whole
+            + usize::from(
+                remainder * 2 > denominator || (remainder * 2 == denominator && whole % 2 == 1),
+            ))
+        .max(1)
+    };
+    if width * 44 >= height * 28 {
+        (28, round_ratio(height * 28, width))
+    } else {
+        (round_ratio(width * 44, height), 44)
+    }
 }
 
 fn red(pixel: &[u8]) -> bool {
@@ -204,10 +243,16 @@ fn box_taps(input: usize, output: usize) -> Vec<Vec<(usize, u64)>> {
         .collect()
 }
 
-fn resize_glyph(rgb: &[u8], width: usize, bounds: Rect) -> Vec<u8> {
-    let x_taps = box_taps(bounds.width as usize, INPUT_WIDTH);
-    let y_taps = box_taps(bounds.height as usize, INPUT_HEIGHT);
-    let mut intermediate = vec![0u8; bounds.height as usize * INPUT_WIDTH * 3];
+fn resize_glyph(
+    rgb: &[u8],
+    width: usize,
+    bounds: Rect,
+    output_width: usize,
+    output_height: usize,
+) -> Vec<u8> {
+    let x_taps = box_taps(bounds.width as usize, output_width);
+    let y_taps = box_taps(bounds.height as usize, output_height);
+    let mut intermediate = vec![0u8; bounds.height as usize * output_width * 3];
     let rounded = |sum: u64| ((sum + (1 << 21)) >> 22).min(255) as u8;
     for y in 0..bounds.height as usize {
         for (x, taps) in x_taps.iter().enumerate() {
@@ -220,22 +265,22 @@ fn resize_glyph(rgb: &[u8], width: usize, bounds: Rect) -> Vec<u8> {
                         rgb[index + channel] as u64 * coefficient
                     })
                     .sum();
-                intermediate[(y * INPUT_WIDTH + x) * 3 + channel] = rounded(sum);
+                intermediate[(y * output_width + x) * 3 + channel] = rounded(sum);
             }
         }
     }
-    let mut resized = vec![0u8; INPUT_WIDTH * INPUT_HEIGHT * 3];
+    let mut resized = vec![0u8; output_width * output_height * 3];
     for (y, taps) in y_taps.iter().enumerate() {
-        for x in 0..INPUT_WIDTH {
+        for x in 0..output_width {
             for channel in 0..3 {
                 let sum = taps
                     .iter()
                     .map(|&(source_y, coefficient)| {
-                        intermediate[(source_y * INPUT_WIDTH + x) * 3 + channel] as u64
+                        intermediate[(source_y * output_width + x) * 3 + channel] as u64
                             * coefficient
                     })
                     .sum();
-                resized[(y * INPUT_WIDTH + x) * 3 + channel] = rounded(sum);
+                resized[(y * output_width + x) * 3 + channel] = rounded(sum);
             }
         }
     }

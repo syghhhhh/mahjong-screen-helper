@@ -4,6 +4,7 @@ use crate::{
         ClassifierDecision, ClassifierFailure, FaceClassifier, FaceObservation, ModelManifest,
     },
     neural::{NeuralError, WinMlTileSession},
+    neural_input::{LETTERBOX_PREPROCESSING_ID, prepare_tile_letterbox},
 };
 use std::{
     fs::{File, OpenOptions},
@@ -92,7 +93,18 @@ impl LocalTileClassifier {
         &self.manifest
     }
     pub fn classify(&self, face: &FaceObservation) -> Result<ClassifierDecision, NeuralError> {
-        let logits = self.session.evaluate(face.input())?;
+        let letterbox = if self.manifest.preprocessing() == LETTERBOX_PREPROCESSING_ID {
+            Some(
+                prepare_tile_letterbox(face.source_image())
+                    .map_err(|_| NeuralError::InvalidInput)?,
+            )
+        } else {
+            None
+        };
+        let pixels = letterbox
+            .as_ref()
+            .map_or_else(|| face.input(), |prepared| prepared.pixels.as_slice());
+        let logits = self.session.evaluate(pixels)?;
         Ok(self.manifest.decide(face, &logits))
     }
 }

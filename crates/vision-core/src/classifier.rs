@@ -2,7 +2,7 @@
 //! A declared class map and softmax score do not prove a model's accuracy.
 use crate::{
     Rect, RgbImage, Rotation, VisionError, detect_hand_slots, detect_public_slots,
-    neural_input::{PREPROCESSING_ID, PreparedTile, prepare_tile},
+    neural_input::{LETTERBOX_PREPROCESSING_ID, PREPROCESSING_ID, PreparedTile, prepare_tile},
 };
 use riichi_core::Tile;
 use serde::Deserialize;
@@ -70,7 +70,10 @@ impl ModelManifest {
                 && (stem.starts_with("COM") || stem.starts_with("LPT"))
                 && matches!(stem.as_bytes()[3], b'1'..=b'9'));
         if raw.schema_version != "1.0"
-            || raw.preprocessing != PREPROCESSING_ID
+            || !matches!(
+                raw.preprocessing.as_str(),
+                PREPROCESSING_ID | LETTERBOX_PREPROCESSING_ID
+            )
             || raw.class_order != CLASS_ORDER
             || !safe_name(&raw.model_id)
             || !safe_name(&raw.model_file)
@@ -105,6 +108,9 @@ impl ModelManifest {
     }
     pub fn license(&self) -> &str {
         &self.0.license
+    }
+    pub fn preprocessing(&self) -> &str {
+        &self.0.preprocessing
     }
 
     /// Scores are model probabilities, not calibrated real-world accuracy.
@@ -196,12 +202,14 @@ pub trait FaceClassifier {
 /// Keeping these private prevents passing a previous face's blank evidence.
 pub struct FaceObservation {
     input: PreparedTile,
+    source: RgbImage,
     enclosed_blank: bool,
 }
 impl FaceObservation {
     pub fn isolated(image: &RgbImage) -> Result<Self, VisionError> {
         Ok(Self {
             input: prepare_tile(image)?,
+            source: image.clone(),
             enclosed_blank: false,
         })
     }
@@ -221,6 +229,7 @@ impl FaceObservation {
             && enclosing_blank_edges(scene, rect);
         Ok(Self {
             input,
+            source: image,
             enclosed_blank,
         })
     }
@@ -244,11 +253,15 @@ impl FaceObservation {
             && enclosing_blank_edges(scene, rect);
         Ok(Self {
             input,
+            source: image,
             enclosed_blank,
         })
     }
     pub fn input(&self) -> &[f32] {
         &self.input.pixels
+    }
+    pub(crate) fn source_image(&self) -> &RgbImage {
+        &self.source
     }
     pub fn glyph_bounds(&self) -> Option<Rect> {
         self.input.glyph_bounds

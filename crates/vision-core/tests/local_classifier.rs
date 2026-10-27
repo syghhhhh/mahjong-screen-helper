@@ -65,6 +65,54 @@ fn local_manifest_loads_bounded_model_and_routes_native_scores_through_rejection
 }
 
 #[test]
+fn local_manifest_selects_letterbox_pixels_instead_of_stretching_old_inputs() {
+    use vision_core::{
+        classifier::ModelManifest,
+        neural::WinMlTileSession,
+        neural_input::{prepare_tile, prepare_tile_letterbox},
+    };
+    let dir = Temporary::new();
+    let path = dir.manifest("affine-37.onnx", None);
+    let mut value: serde_json::Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+    value["preprocessing"] = "rgb-inverse-glyph-letterbox-v3".into();
+    let bytes = serde_json::to_vec(&value).unwrap();
+    fs::write(&path, &bytes).unwrap();
+    let expected_manifest = ModelManifest::parse(&bytes).unwrap();
+    let classifier = LocalTileClassifier::load(&path).unwrap();
+    let source = fixture("../neural-letterbox/narrow.png");
+    let image = RgbImage::read_png(&source).unwrap();
+    let face = FaceObservation::isolated(&image).unwrap();
+    let direct = WinMlTileSession::load(&fixture("affine-37.onnx")).unwrap();
+    let expected = expected_manifest.decide(
+        &face,
+        &direct
+            .evaluate(&prepare_tile_letterbox(&image).unwrap().pixels)
+            .unwrap(),
+    );
+    let old = expected_manifest.decide(
+        &face,
+        &direct
+            .evaluate(&prepare_tile(&image).unwrap().pixels)
+            .unwrap(),
+    );
+    let scores = |decision| match decision {
+        ClassifierDecision::Rejected {
+            scores: Some(scores),
+            ..
+        } => scores,
+        other => panic!("expected finite low-confidence arithmetic fixture, got {other:?}"),
+    };
+    let actual = scores(classifier.classify(&face).unwrap());
+    let expected = scores(expected);
+    assert!((actual.probability - expected.probability).abs() < 1e-7);
+    assert!((actual.normalized_entropy - expected.normalized_entropy).abs() < 1e-7);
+    assert!(
+        (actual.probability - scores(old).probability).abs() > 1e-4,
+        "fixture must distinguish selecting the wrong preprocessing"
+    );
+}
+
+#[test]
 fn changed_bytes_and_invalid_shapes_cannot_inherit_a_valid_manifest() {
     let dir = Temporary::new();
     let path = dir.manifest("affine-37.onnx", Some(&"0".repeat(64)));

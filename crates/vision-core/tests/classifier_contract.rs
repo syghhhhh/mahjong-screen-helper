@@ -85,6 +85,37 @@ fn manifest_binds_exact_class_map_preprocessing_and_file_identity() {
 }
 
 #[test]
+fn letterbox_is_an_explicit_contract_and_preserves_blank_rejection() {
+    let mut value = json();
+    value["preprocessing"] = "rgb-inverse-glyph-letterbox-v3".into();
+    let model = manifest(&value);
+    assert_eq!(model.preprocessing(), "rgb-inverse-glyph-letterbox-v3");
+    let face = FaceObservation::isolated(&ink()).unwrap();
+    rejected(
+        model.decide(&face, &peaked(31)),
+        RejectReason::UnexpectedGlyphForWhite,
+    );
+    let blank =
+        FaceObservation::isolated(&RgbImage::new(32, 48, vec![255; 32 * 48 * 3]).unwrap()).unwrap();
+    rejected(
+        model.decide(&blank, &peaked(31)),
+        RejectReason::UnverifiedBlank,
+    );
+    rejected(
+        model.decide(&blank, &peaked(0)),
+        RejectReason::UnverifiedBlank,
+    );
+    for unknown in [
+        "rgb-inverse-glyph-letterbox-v4",
+        "rgb-inverse-glyph-box-v2 ",
+        "letterbox",
+    ] {
+        value["preprocessing"] = unknown.into();
+        assert!(ModelManifest::parse(&serde_json::to_vec(&value).unwrap()).is_err());
+    }
+}
+
+#[test]
 fn rejects_unknown_duplicate_missing_oversized_and_unsafe_threshold_fields() {
     let good = json();
     let mut changed = good.clone();

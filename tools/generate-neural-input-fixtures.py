@@ -12,7 +12,7 @@ import PIL
 DEST = Path(__file__).resolve().parents[1] / "tests/fixtures/synthetic/neural-input"
 
 
-def reference(image):
+def glyph_face(image):
     pixels = np.asarray(image.convert("RGB")).copy()
     height, width = pixels.shape[:2]
     r, g, b = [pixels[:, :, i].astype(np.int16) for i in range(3)]
@@ -57,6 +57,11 @@ def reference(image):
         image = Image.fromarray(pixels).crop(bounds)
     else:
         image = Image.new("RGB", (32, 48), "white")
+    return image, bounds, removed
+
+
+def reference(image):
+    image, bounds, removed = glyph_face(image)
     return image.resize((32, 48), Image.Resampling.BOX).tobytes(), bounds, removed
 
 

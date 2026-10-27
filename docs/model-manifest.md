@@ -22,12 +22,14 @@ JSON 最大 16 KiB；未知、重复、缺失字段均拒绝。示例见 `tests/
 | `model_id` | 1–64 个 ASCII 字母、数字、连字符、下划线或点，以字母或数字开头，不含连续点 |
 | `model_file` | 清单同目录下的 `.onnx` 文件名；上述字符限制，不接受目录、流名和 Windows 保留设备名 |
 | `model_sha256` | 64 位小写十六进制，必须与实际文件一致 |
-| `preprocessing` | `rgb-inverse-glyph-box-v2` |
+| `preprocessing` | `rgb-inverse-glyph-box-v2` 或 `rgb-inverse-glyph-letterbox-v3`，必须对应权重训练输入 |
 | `class_order` | 严格为 `1m…9m, 1p…9p, 1s…9s, 1z…7z, 0m, 0p, 0s` |
 | `license` | 非空的可显示许可说明，最大 120 字节；字段本身不证明素材授权 |
 | `thresholds` | 必须显式指定下面三个有限数值 |
 
 `thresholds.min_probability` 范围为 `[0.5,1]`，`min_margin` 和 `max_normalized_entropy` 范围为 `(0,1]`。示例中的 0.8 / 0.1 / 0.4 仅为契约测试参数，不是经过现场校准的生产阈值。清单只绑定所声明的类别顺序，不能证明外部网络确实按该顺序训练；必须另外审计训练与导出来源。
+
+v2 继续把字形边界直接 BOX 缩放到 32×48。v3 保留相同字形边界与角标清理，保持长宽比放进 28×44，再居中放在白色 32×48 画布；尺寸用精确整数的就近偶数舍入，奇数留白的多余一像素在右/下侧。两个版本都输出 float32 CHW `1-RGB/255`，空白仍为零张量。模型加载后按清单选择输入，不能只把旧权重的 ID 改成 v3。白板仍需同一观察中的边界证据，改换预处理不能绕过该限制。当前没有经过验收的 v3 训练权重随包提供。
 
 `LocalTileClassifier::load` 使用 Windows 系统 CNG SHA-256 校验实际模型，限制模型 16 字节至 16 MiB。文件在哈希、加载和 session 存活期间保持只读共享，防止校验后被写入或替换；原生 session 在文件锁前释放。后端继续核验一个 float32 `[1,3,48,32]` 输入、一个 `[1,37]` 输出及有限值。[CNG 哈希接口](https://learn.microsoft.com/en-us/windows/win32/api/bcrypt/nf-bcrypt-bcrypthash)与[pseudo-handle 文档](https://learn.microsoft.com/en-us/windows/win32/seccng/cng-algorithm-pseudo-handles)说明这条系统路径从 Windows 10 提供。
 
@@ -69,3 +71,5 @@ cargo run -p vision-core --example inspect_model_board --release --locked -j 1 -
 ```
 
 该命令使用实际原生后端，输出整组是否被接受、候选边界、每个方向的标签或拒识原因及 `eligible` 外形标记。诊断仍打印全部方向的原始决定，整组判断只使用符合外形的方向。逐候选诊断仅用于解释整组失败，不能把部分接受当成完整公共牌结果。尺寸与 RGB 长度约束沿用上面的诊断约定；日志留在本机。
+
+只比较输入和原始 logits 时，也可使用开发诊断 `inspect_neural_faces [--letterbox] <模型ONNX> <新建f32le文件> <牌面PNG> ...`。默认仍为 v2，显式 `--letterbox` 才采用 v3；该工具不读模型清单、不做置信度/白板验收，调用者必须先审计模型的输入版本。使用 `inspect_classifier`、实时链路和浮窗时由模型清单选择，不能通过命令行覆盖。

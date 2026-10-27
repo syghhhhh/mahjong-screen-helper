@@ -1,0 +1,15 @@
+# name x y width height removed_corner_hints; -1 means no glyph
+blank -1 -1 0 0 0
+hint-only -1 -1 0 0 1
+hint-and-red-glyph 24 37 29 71 1
+fractional-downsample 3 4 81 105 21
+fractional-upsample 0 0 17 23 3
+equal-size 0 1 32 46 3
+preserve-red 17 12 59 84 0
+narrow 36 16 6 96 0
+wide 8 56 63 5 0
+odd-center 18 19 41 54 0
+half-even 16 29 56 27 0
+half-even-down 16 29 56 25 0
+extreme-tall 3 255 3 515 0
+extreme-wide 511 1 3 7 0
