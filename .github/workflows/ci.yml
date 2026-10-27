@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  task-schema:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Validate task schema and evidence
+        shell: pwsh
+        run: .\scripts\validate-task.ps1 -Version v0.0.1
+
+  version-tests:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Run v0.0.1 tests
+        shell: pwsh
+        run: .\scripts\test-version.ps1 -Version v0.0.1
+      - name: Collect test evidence
+        if: always()
+        shell: pwsh
+        run: .\scripts\collect-ci-evidence.ps1 -Destination ci-artifacts
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: version-test-evidence
+          path: ci-artifacts/
+          if-no-files-found: ignore
+
+  regression-tests:
+    runs-on: windows-2022
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Run full regression suite
+        shell: pwsh
+        run: .\scripts\test-all.ps1 -Version v0.0.1
+      - name: Collect test evidence
+        if: always()
+        shell: pwsh
+        run: .\scripts\collect-ci-evidence.ps1 -Destination ci-artifacts
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: regression-test-evidence
+          path: ci-artifacts/
+          if-no-files-found: ignore
+
+  build-smoke:
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Build and launch smoke test
+        shell: pwsh
+        run: |
+          cargo build --locked -j 1 -p riichi-screen-helper
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $process = Start-Process -FilePath .\target\debug\RiichiScreenHelper.exe -ArgumentList '--smoke' -WindowStyle Hidden -PassThru -Wait
+          if ($process.ExitCode -ne 0) { exit $process.ExitCode }
+
+  package-smoke:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Build portable package and launch it
+        shell: pwsh
+        run: .\tests\version\v0.0.1\packaging-performance.test.ps1
+      - name: Stage development package
+        if: success()
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path ci-artifacts -Force | Out-Null
+          $zip = Get-ChildItem .local-test-data\packages -Filter RiichiScreenHelper.zip -Recurse | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $zip) { throw 'Portable zip missing' }
+          Copy-Item -LiteralPath $zip.FullName -Destination ci-artifacts\RiichiScreenHelper-development.zip
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: success()
+        with:
+          name: development-portable-windows-x64
+          path: ci-artifacts/RiichiScreenHelper-development.zip
+          if-no-files-found: error

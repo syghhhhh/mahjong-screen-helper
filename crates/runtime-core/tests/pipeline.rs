@@ -1,7 +1,7 @@
 use game_state::{Phase, StateEvent};
 use riichi_core::Tile;
 use runtime_core::{PipelineOutput, RuntimeEngine};
-use vision_core::{ActionLabel, MatchConfig, Rect, RgbImage, TemplateBank};
+use vision_core::{ActionLabel, MatchConfig, RgbImage, TemplateBank};
 
 const W: u32 = 16;
 const H: u32 = 20;
@@ -76,18 +76,7 @@ fn action_scene(bank: &TemplateBank, action: ActionLabel) -> RgbImage {
 #[test]
 fn requires_stable_frames_before_recommending_and_clears_on_uncertainty() {
     let bank = bank();
-    let mut engine = RuntimeEngine::new(
-        bank.clone(),
-        vec![Rect {
-            x: 0,
-            y: 0,
-            width: W,
-            height: H,
-        }],
-        MatchConfig::default(),
-        3,
-    )
-    .unwrap();
+    let mut engine = RuntimeEngine::new(bank.clone(), vec![], MatchConfig::default(), 3).unwrap();
     let base = hand_tiles();
     for frame in 1..=2 {
         assert!(matches!(

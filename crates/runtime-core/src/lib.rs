@@ -18,6 +18,7 @@ pub enum PipelineOutput {
         phase: Phase,
         events: Vec<StateEvent>,
         discards: Vec<Recommendation>,
+        available_actions: Vec<ActionLabel>,
         actions: Vec<ActionAdvice>,
     },
 }
@@ -67,6 +68,10 @@ impl RuntimeEngine {
     }
     pub fn is_paused(&self) -> bool {
         self.paused
+    }
+    pub fn reset_recognition(&mut self) {
+        self.filter = StabilityFilter::new(self.stable_frames).expect("validated frame count");
+        self.tracker.mark_uncertain();
     }
     pub fn set_offer(&mut self, offered: Option<(Tile, ClaimSource)>) {
         self.offered = offered;
@@ -137,10 +142,15 @@ impl RuntimeEngine {
                     phase: result.phase,
                     events: result.events,
                     discards,
+                    available_actions: self.tracker_actions(),
                     actions,
                 }
             }
         }
+    }
+
+    fn tracker_actions(&self) -> Vec<ActionLabel> {
+        self.tracker.available_actions().to_vec()
     }
 
     fn read_candidate(
@@ -155,7 +165,12 @@ impl RuntimeEngine {
             .ok()?;
         let hand = hand.tiles.map(|tiles| (tiles, hand.confidence))?;
         let (actions, action_confidence) = if self.action_slots.is_empty() {
-            (Vec::new(), 1.0)
+            if let Some(image) = action_image {
+                let read = self.bank.scan_actions(image, self.match_config);
+                (read.actions?, read.confidence)
+            } else {
+                (Vec::new(), 1.0)
+            }
         } else {
             let image = action_image?;
             let read = self

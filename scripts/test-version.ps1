@@ -5,6 +5,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$env:CARGO_BUILD_JOBS = '1'
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $runRoot = Join-Path $repoRoot ('.local-test-data\runs\{0}' -f $RunId)
 if (Test-Path -LiteralPath $runRoot) { throw "Run id already exists: $RunId" }

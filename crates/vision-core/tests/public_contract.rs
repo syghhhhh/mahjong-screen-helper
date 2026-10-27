@@ -201,6 +201,31 @@ fn recognizes_action_buttons_and_blank_slot() {
 }
 
 #[test]
+fn scans_action_region_without_fixed_button_coordinates() {
+    let bank = bank();
+    let width = 96;
+    let height = 42;
+    let mut rgb = vec![38; (width * height * 3) as usize];
+    let template = &bank
+        .action_templates
+        .iter()
+        .find(|(label, _)| *label == ActionLabel::Riichi)
+        .unwrap()
+        .1;
+    paste(&mut rgb, width, template, 48, 10, 1);
+    let image = RgbImage::new(width, height, rgb).unwrap();
+    let scan = bank.scan_actions(&image, MatchConfig::default());
+    assert_eq!(scan.actions, Some(vec![ActionLabel::Riichi]));
+    assert!(scan.confidence > 0.9);
+    assert_eq!(scan.regions.len(), 1);
+    assert!((scan.regions[0].x as i32 - 48).abs() <= 2);
+
+    let blank = RgbImage::new(width, height, vec![38; (width * height * 3) as usize]).unwrap();
+    let scan = bank.scan_actions(&blank, MatchConfig::default());
+    assert_eq!(scan.actions, Some(vec![]));
+}
+
+#[test]
 fn requires_three_distinct_consecutive_stable_frames() {
     let hand = vec![Tile::from_code("1m").unwrap(); 13];
     let snapshot = VisionSnapshot {

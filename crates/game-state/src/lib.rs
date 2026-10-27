@@ -89,6 +89,9 @@ impl GameTracker {
     pub fn hand(&self) -> Option<&[Tile]> {
         self.hand.as_deref()
     }
+    pub fn available_actions(&self) -> &[ActionLabel] {
+        &self.actions
+    }
     pub fn open_melds(&self) -> u8 {
         self.open_melds
     }

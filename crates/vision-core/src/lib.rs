@@ -253,6 +253,13 @@ pub struct ActionRead {
     pub confidence: f32,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct ScannedActionRead {
+    pub actions: Option<Vec<ActionLabel>>,
+    pub regions: Vec<Rect>,
+    pub confidence: f32,
+}
+
 #[derive(Clone, Debug)]
 pub struct TemplateBank {
     pub tile_templates: Vec<(Tile, RgbImage)>,
@@ -395,6 +402,140 @@ impl TemplateBank {
             confidence: if slots.is_empty() { 0.0 } else { confidence },
         })
     }
+
+    /// Locate individual action buttons anywhere in a calibrated action region.
+    /// An ambiguous overlap suppresses the whole action result.
+    pub fn scan_actions(&self, image: &RgbImage, config: MatchConfig) -> ScannedActionRead {
+        if !config.min_confidence.is_finite() || !config.min_margin.is_finite() {
+            return ScannedActionRead {
+                actions: None,
+                regions: vec![],
+                confidence: 0.0,
+            };
+        }
+        let mut candidates = Vec::new();
+        for (label, template) in &self.action_templates {
+            if *label == ActionLabel::None {
+                continue;
+            }
+            let mut best = (
+                0.0f32,
+                Rect {
+                    x: 0,
+                    y: 0,
+                    width: 1,
+                    height: 1,
+                },
+            );
+            for scale in [80u32, 100, 125] {
+                let width = (template.width * scale / 100).max(1);
+                let height = (template.height * scale / 100).max(1);
+                if width > image.width || height > image.height {
+                    continue;
+                }
+                let xs = scan_positions(image.width - width, (width / 24).max(1));
+                let ys = scan_positions(image.height - height, (height / 10).max(1));
+                for y in ys {
+                    for &x in &xs {
+                        let rect = Rect {
+                            x,
+                            y,
+                            width,
+                            height,
+                        };
+                        let score = sampled_similarity(image, rect, template);
+                        if score > best.0 {
+                            best = (score, rect);
+                        }
+                    }
+                }
+            }
+            candidates.push((*label, best.0, best.1));
+        }
+        candidates.sort_by(|a, b| b.1.total_cmp(&a.1));
+        let mut actions = Vec::new();
+        let mut regions = Vec::new();
+        let mut confidence = 1.0f32;
+        for (label, score, rect) in &candidates {
+            if *score < config.min_confidence {
+                continue;
+            }
+            for (other_label, other_score, other_rect) in &candidates {
+                if other_label == label {
+                    continue;
+                }
+                if overlap(*rect, *other_rect) > 0.5
+                    && (*score - *other_score).abs() < config.min_margin
+                {
+                    return ScannedActionRead {
+                        actions: None,
+                        regions: vec![],
+                        confidence: *score,
+                    };
+                }
+            }
+            if regions
+                .iter()
+                .any(|selected| overlap(*rect, *selected) > 0.5)
+            {
+                continue;
+            }
+            actions.push(*label);
+            regions.push(*rect);
+            confidence = confidence.min(*score);
+        }
+        ScannedActionRead {
+            actions: Some(actions),
+            regions,
+            confidence,
+        }
+    }
+}
+
+fn scan_positions(max: u32, step: u32) -> Vec<u32> {
+    let mut positions: Vec<u32> = (0..=max).step_by(step as usize).collect();
+    if positions.last().copied() != Some(max) {
+        positions.push(max);
+    }
+    positions
+}
+
+fn sampled_similarity(image: &RgbImage, rect: Rect, template: &RgbImage) -> f32 {
+    const GRID_WIDTH: u32 = 16;
+    const GRID_HEIGHT: u32 = 12;
+    let mut squared = 0.0f64;
+    for gy in 0..GRID_HEIGHT {
+        let image_y =
+            rect.y + ((gy * 2 + 1) * rect.height / (GRID_HEIGHT * 2)).min(rect.height - 1);
+        let template_y =
+            ((gy * 2 + 1) * template.height / (GRID_HEIGHT * 2)).min(template.height - 1);
+        for gx in 0..GRID_WIDTH {
+            let image_x =
+                rect.x + ((gx * 2 + 1) * rect.width / (GRID_WIDTH * 2)).min(rect.width - 1);
+            let template_x =
+                ((gx * 2 + 1) * template.width / (GRID_WIDTH * 2)).min(template.width - 1);
+            let a = ((image_y * image.width + image_x) * 3) as usize;
+            let b = ((template_y * template.width + template_x) * 3) as usize;
+            for channel in 0..3 {
+                let delta = image.rgb[a + channel] as f64 - template.rgb[b + channel] as f64;
+                squared += delta * delta;
+            }
+        }
+    }
+    (1.0 - (squared / (GRID_WIDTH as f64 * GRID_HEIGHT as f64 * 3.0 * 255.0 * 255.0)).sqrt()) as f32
+}
+
+fn overlap(a: Rect, b: Rect) -> f32 {
+    let left = a.x.max(b.x);
+    let top = a.y.max(b.y);
+    let right = (a.x + a.width).min(b.x + b.width);
+    let bottom = (a.y + a.height).min(b.y + b.height);
+    if right <= left || bottom <= top {
+        return 0.0;
+    }
+    let intersection = (right - left) as f32 * (bottom - top) as f32;
+    let union = (a.width * a.height + b.width * b.height) as f32 - intersection;
+    intersection / union
 }
 
 fn best_match<T: Copy + Eq>(

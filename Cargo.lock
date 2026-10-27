@@ -223,6 +223,17 @@ name = "riichi-core"
 version = "0.0.1"
 
 [[package]]
+name = "riichi-screen-helper"
+version = "0.0.1"
+dependencies = [
+ "game-state",
+ "riichi-core",
+ "runtime-core",
+ "screen-capture",
+ "vision-core",
+]
+
+[[package]]
 name = "runtime-core"
 version = "0.0.1"
 dependencies = [

@@ -1,3 +1,8 @@
 [workspace]
-members = ["crates/riichi-core", "crates/screen-capture", "crates/vision-core", "crates/game-state", "crates/runtime-core"]
+members = ["crates/riichi-core", "crates/screen-capture", "crates/vision-core", "crates/game-state", "crates/runtime-core", "crates/desktop-app"]
 resolver = "2"
+
+[profile.release]
+opt-level = 2
+debug = false
+strip = "symbols"
