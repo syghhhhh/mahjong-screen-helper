@@ -262,11 +262,20 @@ pub struct ScannedActionRead {
 
 #[derive(Clone, Debug)]
 pub struct TemplateBank {
-    pub tile_templates: Vec<(Tile, RgbImage)>,
-    pub action_templates: Vec<(ActionLabel, RgbImage)>,
+    tile_templates: Vec<(Tile, RgbImage)>,
+    action_templates: Vec<(ActionLabel, RgbImage)>,
+    tile_descriptors: Vec<TileDescriptor>,
 }
 
 impl TemplateBank {
+    pub fn tile_templates(&self) -> &[(Tile, RgbImage)] {
+        &self.tile_templates
+    }
+
+    pub fn action_templates(&self) -> &[(ActionLabel, RgbImage)] {
+        &self.action_templates
+    }
+
     pub fn new(
         tile_templates: Vec<(Tile, RgbImage)>,
         action_templates: Vec<(ActionLabel, RgbImage)>,
@@ -274,9 +283,14 @@ impl TemplateBank {
         if tile_templates.is_empty() || action_templates.is_empty() {
             return Err(VisionError::EmptyTemplates);
         }
+        let tile_descriptors = tile_templates
+            .iter()
+            .map(|(_, image)| TileDescriptor::new(image))
+            .collect();
         Ok(Self {
             tile_templates,
             action_templates,
+            tile_descriptors,
         })
     }
 
@@ -336,7 +350,18 @@ impl TemplateBank {
         let mut confidence = 1.0f32;
         for (index, &rect) in slots.iter().enumerate() {
             let crop = image.crop(rect)?;
-            let result = best_match(&crop, &self.tile_templates);
+            let descriptor = TileDescriptor::new(&crop);
+            let result = best_match(&self.tile_templates, |candidate, template| {
+                if crop.width < 32
+                    || crop.height < 32
+                    || template.width < 32
+                    || template.height < 32
+                {
+                    similarity(&crop, template)
+                } else {
+                    descriptor.similarity(&self.tile_descriptors[candidate])
+                }
+            });
             match result {
                 Some((tile, score, margin)) if config.accepts(score, margin) => {
                     tiles.push(tile);
@@ -374,7 +399,9 @@ impl TemplateBank {
         let mut confidence = 1.0f32;
         for (index, &rect) in slots.iter().enumerate() {
             let crop = image.crop(rect)?;
-            let result = best_match(&crop, &self.action_templates);
+            let result = best_match(&self.action_templates, |_, template| {
+                similarity(&crop, template)
+            });
             match result {
                 Some((label, score, margin)) if config.accepts(score, margin) => {
                     if label != ActionLabel::None {
@@ -539,13 +566,13 @@ fn overlap(a: Rect, b: Rect) -> f32 {
 }
 
 fn best_match<T: Copy + Eq>(
-    image: &RgbImage,
     templates: &[(T, RgbImage)],
+    mut compare: impl FnMut(usize, &RgbImage) -> f32,
 ) -> Option<(T, f32, f32)> {
     let mut best: Option<(T, f32)> = None;
     let mut second = 0.0f32;
-    for (label, template) in templates {
-        let score = similarity(image, template);
+    for (index, (label, template)) in templates.iter().enumerate() {
+        let score = compare(index, template);
         match best {
             None => best = Some((*label, score)),
             Some((current, current_score)) if score > current_score => {
@@ -559,6 +586,99 @@ fn best_match<T: Copy + Eq>(
         }
     }
     best.map(|(label, score)| (label, score, score - second))
+}
+
+// The upper glyph carries the rank of a suited tile. A shared lower glyph
+// (notably the 萬 character) can otherwise overwhelm the smaller difference.
+// Descriptors are cached for templates because they are compared every frame.
+#[derive(Clone, Debug)]
+struct TileDescriptor {
+    full: Vec<[u8; 3]>,
+    upper: Vec<[u8; 3]>,
+}
+
+impl TileDescriptor {
+    fn new(image: &RgbImage) -> Self {
+        Self {
+            full: box_region(image, 0, 100, 0, 100),
+            upper: box_region(image, 12, 83, 19, 48),
+        }
+    }
+
+    fn similarity(&self, other: &Self) -> f32 {
+        fn score(a: &[[u8; 3]], b: &[[u8; 3]]) -> f32 {
+            let mut squared = 0.0f64;
+            for (first, second) in a.iter().zip(b) {
+                for channel in 0..3 {
+                    let delta = first[channel] as f64 - second[channel] as f64;
+                    squared += delta * delta;
+                }
+            }
+            (1.0 - (squared / (a.len() as f64 * 3.0 * 255.0 * 255.0)).sqrt()) as f32
+        }
+        score(&self.full, &other.full) * 0.55 + score(&self.upper, &other.upper) * 0.45
+    }
+}
+
+fn box_region(
+    image: &RgbImage,
+    left_percent: u32,
+    right_percent: u32,
+    top_percent: u32,
+    bottom_percent: u32,
+) -> Vec<[u8; 3]> {
+    let mut result = Vec::with_capacity(36 * 56);
+    for gy in 0..56u32 {
+        for gx in 0..36u32 {
+            result.push(box_pixel(
+                image,
+                left_percent,
+                right_percent,
+                top_percent,
+                bottom_percent,
+                gx,
+                gy,
+            ));
+        }
+    }
+    result
+}
+
+#[allow(clippy::too_many_arguments)]
+fn box_pixel(
+    image: &RgbImage,
+    left_percent: u32,
+    right_percent: u32,
+    top_percent: u32,
+    bottom_percent: u32,
+    gx: u32,
+    gy: u32,
+) -> [u8; 3] {
+    let left = image.width * left_percent / 100;
+    let right = (image.width * right_percent / 100).max(left + 1);
+    let top = image.height * top_percent / 100;
+    let bottom = (image.height * bottom_percent / 100).max(top + 1);
+    let x0 = left + (right - left) * gx / 36;
+    let x1 = (left + (right - left) * (gx + 1) / 36).max(x0 + 1);
+    let y0 = top + (bottom - top) * gy / 56;
+    let y1 = (top + (bottom - top) * (gy + 1) / 56).max(y0 + 1);
+    let mut rgb = [0u32; 3];
+    let mut count = 0u32;
+    for y in y0..y1.min(image.height) {
+        for x in x0..x1.min(image.width) {
+            let offset = ((y * image.width + x) * 3) as usize;
+            for (c, channel) in rgb.iter_mut().enumerate() {
+                *channel += image.rgb[offset + c] as u32;
+            }
+            count += 1;
+        }
+    }
+    if count > 0 {
+        for channel in &mut rgb {
+            *channel /= count;
+        }
+    }
+    rgb.map(|channel| channel as u8)
 }
 
 fn similarity(image: &RgbImage, template: &RgbImage) -> f32 {

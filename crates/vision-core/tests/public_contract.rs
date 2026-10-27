@@ -80,7 +80,7 @@ fn hand_scene(scale: u32) -> (RgbImage, Vec<Rect>, Vec<Tile>) {
         let x = (index as u32 * (W + 2) + 2 + if index == 13 { 8 } else { 0 }) * scale;
         let y = 2 * scale;
         let template = bank
-            .tile_templates
+            .tile_templates()
             .iter()
             .find(|(label, _)| label == tile)
             .unwrap();
@@ -166,7 +166,7 @@ fn recognizes_action_buttons_and_blank_slot() {
     for (index, label) in labels.iter().enumerate() {
         let x = index as u32 * (W + 2);
         let art = &bank
-            .action_templates
+            .action_templates()
             .iter()
             .find(|(candidate, _)| candidate == label)
             .unwrap()
@@ -207,7 +207,7 @@ fn scans_action_region_without_fixed_button_coordinates() {
     let height = 42;
     let mut rgb = vec![38; (width * height * 3) as usize];
     let template = &bank
-        .action_templates
+        .action_templates()
         .iter()
         .find(|(label, _)| *label == ActionLabel::Riichi)
         .unwrap()
@@ -321,8 +321,8 @@ fn loads_only_a_complete_local_template_pack() {
         );
     }
     let loaded = TemplateBank::load_dir(&root).unwrap();
-    assert_eq!(loaded.tile_templates.len(), 37);
-    assert_eq!(loaded.action_templates.len(), 5);
+    assert_eq!(loaded.tile_templates().len(), 37);
+    assert_eq!(loaded.action_templates().len(), 5);
     assert_eq!(
         RgbImage::read_png(&root.join("tiles").join("0m.png")).unwrap(),
         picture(1, true)

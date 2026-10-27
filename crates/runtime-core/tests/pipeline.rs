@@ -48,7 +48,7 @@ fn scene(bank: &TemplateBank, hand: &[Tile]) -> RgbImage {
     let mut rgb = vec![31; (width * height * 3) as usize];
     for (index, tile) in hand.iter().enumerate() {
         let template = &bank
-            .tile_templates
+            .tile_templates()
             .iter()
             .find(|(label, _)| label == tile)
             .unwrap()
@@ -65,7 +65,7 @@ fn scene(bank: &TemplateBank, hand: &[Tile]) -> RgbImage {
 }
 
 fn action_scene(bank: &TemplateBank, action: ActionLabel) -> RgbImage {
-    bank.action_templates
+    bank.action_templates()
         .iter()
         .find(|(label, _)| *label == action)
         .unwrap()
