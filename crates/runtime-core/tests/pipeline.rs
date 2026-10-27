@@ -31,6 +31,7 @@ fn hand_tiles() -> Vec<Tile> {
 fn bank() -> TemplateBank {
     let mut tiles: Vec<Tile> = hand_tiles();
     tiles.push(Tile::from_code("9p").unwrap());
+    tiles.push(Tile::from_code("1s").unwrap());
     tiles.sort();
     tiles.dedup();
     let tile_templates = tiles
@@ -42,6 +43,7 @@ fn bank() -> TemplateBank {
         (ActionLabel::None, art(30)),
         (ActionLabel::Riichi, art(31)),
         (ActionLabel::Pon, art(32)),
+        (ActionLabel::Kan, art(33)),
     ];
     TemplateBank::new(tile_templates, action_templates).unwrap()
 }
@@ -191,6 +193,71 @@ fn pixels_after_a_pon_reconcile_the_open_hand_and_resume_discard_advice() {
             assert!(!discards.is_empty());
         }
         output => panic!("expected an open-hand recommendation, got {output:?}"),
+    }
+}
+
+#[test]
+fn self_kan_overrides_a_stale_river_highlight_and_preserves_closed_riichi_eligibility() {
+    let bank = bank();
+    let mut engine = RuntimeEngine::new(bank.clone(), vec![], MatchConfig::default(), 1).unwrap();
+    let hand: Vec<_> = [
+        "1s", "1s", "1s", "1s", "1m", "2m", "3m", "4m", "5m", "6m", "2p", "3p", "7z", "7z",
+    ]
+    .into_iter()
+    .map(|code| Tile::from_code(code).unwrap())
+    .collect();
+    let empty = RgbImage::new(60, 60, vec![38; 60 * 60 * 3]).unwrap();
+    let river = public_scene(&bank, Tile::from_code("7z").unwrap(), true);
+    let public = PublicImages {
+        river: &river,
+        own_melds: &empty,
+        opponent_melds: [&empty; 3],
+        dora: &empty,
+    };
+    match engine.process_with_public(
+        1,
+        &scene(&bank, &hand),
+        Some(&action_scene(&bank, ActionLabel::Kan)),
+        &public,
+    ) {
+        PipelineOutput::Ready { actions, .. } => assert!(
+            actions
+                .iter()
+                .any(|advice| advice.tiles_from_hand.len() == 4 && advice.reason.contains("暗杠"))
+        ),
+        output => panic!("expected self-kan advice, got {output:?}"),
+    }
+    let after: Vec<_> = hand.into_iter().filter(|tile| tile.index() != 18).collect();
+    let melds = scene(&bank, &[Tile::from_code("1s").unwrap(); 4]);
+    let public = PublicImages {
+        river: &river,
+        own_melds: &melds,
+        opponent_melds: [&empty; 3],
+        dora: &empty,
+    };
+    assert!(matches!(
+        engine.process_with_public(2, &scene(&bank, &after), None, &public),
+        PipelineOutput::Ready {
+            phase: Phase::AwaitDraw,
+            ..
+        }
+    ));
+    assert_eq!(engine.tracker().concealed_kans(), 1);
+    assert!(engine.tracker().is_closed());
+    let mut drawn = after;
+    drawn.push(Tile::from_code("9p").unwrap());
+    match engine.process_with_public(
+        3,
+        &scene(&bank, &drawn),
+        Some(&action_scene(&bank, ActionLabel::Riichi)),
+        &public,
+    ) {
+        PipelineOutput::Ready { actions, .. } => assert!(
+            actions
+                .iter()
+                .any(|advice| advice.action == ActionLabel::Riichi)
+        ),
+        output => panic!("expected riichi advice after concealed kan, got {output:?}"),
     }
 }
 

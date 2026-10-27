@@ -1,6 +1,8 @@
 #![cfg_attr(windows, windows_subsystem = "windows")]
 
 #[cfg(windows)]
+mod presentation;
+#[cfg(windows)]
 mod windows_app;
 
 #[cfg(windows)]

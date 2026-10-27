@@ -239,6 +239,8 @@ fn context(
         offered,
         source,
         open_melds,
+        concealed_kans: 0,
+        own_meld_tiles: vec![],
         riichi_declared: false,
         known_yaku: false,
         confidence: 0.97,
@@ -341,6 +343,97 @@ fn kan_requires_three_matching_tiles_and_riichi_requires_closed_tenpai() {
         )
         .is_none()
     );
+}
+
+#[test]
+fn self_drawn_concealed_kan_returns_a_before_and_after_comparison() {
+    let hand = tiles(&[
+        "1s", "1s", "1s", "1s", "1m", "2m", "3m", "4m", "5m", "6m", "2p", "3p", "7z", "7z",
+    ]);
+    let advice = advise_action(
+        &context(hand, None, ClaimSource::SelfDraw, 0),
+        ActionLabel::Kan,
+    )
+    .expect("concealed kan comparison");
+    assert_eq!(advice.tiles_from_hand.len(), 4);
+    assert!(advice.reason.contains("暗杠"));
+    assert!(!advice.recommended);
+    assert_comparison(&advice);
+}
+
+#[test]
+fn concealed_kan_keeps_menzen_and_allows_riichi_after_the_replacement_draw() {
+    let mut tracker = GameTracker::new();
+    let hand = tiles(&[
+        "1s", "1s", "1s", "1s", "1m", "2m", "3m", "4m", "5m", "6m", "2p", "3p", "7z", "7z",
+    ]);
+    let quad = tiles(&["1s", "1s", "1s", "1s"]);
+    tracker.observe(observation(1, hand.clone(), vec![]));
+    assert!(tracker.confirm_self_kan(&quad).is_err());
+    tracker.observe(observation(2, hand, vec![ActionLabel::Kan]));
+    assert_eq!(
+        tracker.confirm_self_kan(&quad).unwrap(),
+        StateEvent::CallDeclared(ActionLabel::Kan)
+    );
+    assert_eq!(tracker.phase(), Phase::AwaitDraw);
+    assert_eq!(tracker.open_melds(), 1);
+    assert_eq!(tracker.concealed_kans(), 1);
+    assert!(tracker.is_closed());
+    let mut drawn = tracker.hand().unwrap().to_vec();
+    drawn.push(Tile::from_code("9p").unwrap());
+    assert_eq!(
+        tracker
+            .observe(observation(3, drawn, vec![ActionLabel::Riichi]))
+            .phase,
+        Phase::AwaitDiscard
+    );
+    assert!(
+        tracker
+            .action_advice(ActionLabel::Riichi, None, ClaimSource::SelfDraw)
+            .unwrap()
+            .recommended
+    );
+    assert_eq!(
+        tracker.confirm_riichi().unwrap(),
+        StateEvent::RiichiDeclared
+    );
+    tracker.round_end();
+    assert_eq!(tracker.concealed_kans(), 0);
+    assert!(tracker.is_closed());
+}
+
+#[test]
+fn added_kan_uses_one_concealed_tile_and_keeps_the_existing_group_count() {
+    let mut tracker = GameTracker::new();
+    let hand = tiles(&[
+        "1m", "2m", "3m", "4m", "5m", "6m", "2p", "3p", "9p", "9p", "7z",
+    ]);
+    let mut visible = [0; 34];
+    visible[33] = 3;
+    let meld = tiles(&["7z", "7z", "7z"]);
+    assert_eq!(
+        tracker
+            .observe_table(
+                observation(1, hand, vec![ActionLabel::Kan]),
+                visible,
+                vec![],
+                meld
+            )
+            .phase,
+        Phase::AwaitDiscard
+    );
+    let advice = tracker
+        .action_advice(ActionLabel::Kan, None, ClaimSource::SelfDraw)
+        .unwrap();
+    assert_eq!(advice.tiles_from_hand, tiles(&["7z"]));
+    assert!(advice.reason.contains("加杠"));
+    assert!(!advice.recommended);
+    assert_comparison(&advice);
+    tracker.confirm_self_kan(&tiles(&["7z"])).unwrap();
+    assert_eq!(tracker.open_melds(), 1);
+    assert_eq!(tracker.concealed_kans(), 0);
+    assert!(!tracker.is_closed());
+    assert_eq!(tracker.hand().unwrap().len(), 10);
 }
 
 #[test]

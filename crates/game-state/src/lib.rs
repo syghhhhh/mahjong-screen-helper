@@ -55,6 +55,7 @@ pub struct GameTracker {
     confidence: f32,
     last_frame_id: Option<u64>,
     open_melds: u8,
+    concealed_kans: u8,
     riichi_declared: bool,
     known_yaku: bool,
     visible: [u8; 34],
@@ -77,6 +78,7 @@ impl GameTracker {
             confidence: 0.0,
             last_frame_id: None,
             open_melds: 0,
+            concealed_kans: 0,
             riichi_declared: false,
             known_yaku: false,
             visible: [0; 34],
@@ -94,8 +96,15 @@ impl GameTracker {
     pub fn available_actions(&self) -> &[ActionLabel] {
         &self.actions
     }
+    /// Number of fixed groups, including declared concealed quads.
     pub fn open_melds(&self) -> u8 {
         self.open_melds
+    }
+    pub fn concealed_kans(&self) -> u8 {
+        self.concealed_kans
+    }
+    pub fn is_closed(&self) -> bool {
+        self.open_melds == self.concealed_kans
     }
     pub fn riichi_declared(&self) -> bool {
         self.riichi_declared
@@ -178,6 +187,8 @@ impl GameTracker {
             offered,
             source,
             open_melds: self.open_melds,
+            concealed_kans: self.concealed_kans,
+            own_meld_tiles: self.own_meld_tiles.clone(),
             riichi_declared: self.riichi_declared,
             known_yaku: self.known_yaku,
             confidence: self.confidence,
@@ -273,6 +284,11 @@ impl GameTracker {
         if open == self.open_melds && own_meld_tiles == self.own_meld_tiles {
             return self.observe_with_public(observation, visible, dora_indicators);
         }
+        let mut concealed_kans = if self.hand.is_some() {
+            self.concealed_kans
+        } else {
+            0
+        };
         let event = if let Some(previous) = self.hand.as_ref() {
             let Some(added) = added_tiles(&self.own_meld_tiles, &own_meld_tiles) else {
                 return self.enter_uncertain();
@@ -308,12 +324,20 @@ impl GameTracker {
             if !call_hand_matches(previous, &observation.hand, &added, action) {
                 return self.enter_uncertain();
             }
+            if action == ActionLabel::Kan
+                && open == self.open_melds + 1
+                && added.len() == 4
+                && self_kan_hand_matches(previous, &observation.hand, &added)
+            {
+                concealed_kans += 1;
+            }
             Some(StateEvent::CallDeclared(action))
         } else {
             None
         };
         let mut staged = self.clone();
         staged.open_melds = open;
+        staged.concealed_kans = concealed_kans;
         staged.own_meld_tiles = own_meld_tiles;
         staged.hand = None;
         staged.known_yaku |= (31..34).any(|index| own_counts[index] >= 3);
@@ -384,7 +408,7 @@ impl GameTracker {
     }
 
     pub fn confirm_riichi(&mut self) -> Result<StateEvent, StateError> {
-        if self.open_melds != 0
+        if !self.is_closed()
             || self.phase != Phase::AwaitDiscard
             || self.riichi_declared
             || !self.actions.contains(&ActionLabel::Riichi)
@@ -392,14 +416,14 @@ impl GameTracker {
             return Err(StateError::InvalidAction);
         }
         let hand = self.hand.as_ref().ok_or(StateError::InvalidHand)?;
-        if shanten(&counts(hand), 0).map_err(|_| StateError::InvalidHand)? < 0 {
+        if shanten(&counts(hand), self.open_melds).map_err(|_| StateError::InvalidHand)? < 0 {
             return Err(StateError::InvalidAction);
         }
         let candidates = recommend_discards(
             hand,
             &self.visible,
             &self.dora_indicators,
-            0,
+            self.open_melds,
             self.confidence,
         )
         .map_err(|_| StateError::InvalidHand)?;
@@ -408,6 +432,60 @@ impl GameTracker {
         }
         self.riichi_declared = true;
         Ok(StateEvent::RiichiDeclared)
+    }
+
+    /// Confirm a self-drawn concealed or added kan only after a visible Kan
+    /// button and physical tile validation. Post-riichi kan needs a separate
+    /// wait/interpretation check and is deliberately not confirmed here.
+    pub fn confirm_self_kan(&mut self, tiles_from_hand: &[Tile]) -> Result<StateEvent, StateError> {
+        if self.phase != Phase::AwaitDiscard
+            || self.riichi_declared
+            || !self.actions.contains(&ActionLabel::Kan)
+            || !matches!(tiles_from_hand.len(), 1 | 4)
+        {
+            return Err(StateError::InvalidAction);
+        }
+        let tile = tiles_from_hand[0];
+        if !tiles_from_hand
+            .iter()
+            .all(|candidate| candidate.index() == tile.index())
+        {
+            return Err(StateError::InvalidAction);
+        }
+        let concealed = tiles_from_hand.len() == 4;
+        if concealed && self.open_melds >= 4
+            || !concealed && counts(&self.own_meld_tiles)[tile.index() as usize] != 3
+        {
+            return Err(StateError::InvalidAction);
+        }
+        let mut hand = self.hand.clone().ok_or(StateError::InvalidHand)?;
+        for tile in tiles_from_hand {
+            hand.remove(
+                hand.iter()
+                    .position(|candidate| candidate == tile)
+                    .ok_or(StateError::InvalidAction)?,
+            );
+        }
+        let next_melds = self.open_melds + u8::from(concealed);
+        let mut visible = self.visible;
+        for tile in tiles_from_hand {
+            visible[tile.index() as usize] = visible[tile.index() as usize].saturating_add(1);
+        }
+        if !valid_hand(&hand, next_melds)
+            || !valid_visible(&hand, &visible)
+            || visible.iter().any(|count| *count > 4)
+        {
+            return Err(StateError::InvalidHand);
+        }
+        self.hand = Some(hand);
+        self.visible = visible;
+        self.own_meld_tiles.extend_from_slice(tiles_from_hand);
+        self.own_meld_tiles.sort();
+        self.open_melds = next_melds;
+        self.concealed_kans += u8::from(concealed);
+        self.phase = Phase::AwaitDraw;
+        self.actions.clear();
+        Ok(StateEvent::CallDeclared(ActionLabel::Kan))
     }
 
     pub fn window_lost(&mut self) -> StateEvent {
@@ -427,6 +505,7 @@ impl GameTracker {
         self.confidence = 0.0;
         self.last_frame_id = None;
         self.open_melds = 0;
+        self.concealed_kans = 0;
         self.riichi_declared = false;
         self.known_yaku = false;
         self.visible = [0; 34];
@@ -514,6 +593,16 @@ fn call_hand_matches(
             || (action == ActionLabel::Kan
                 && matches!(hand_change(&remaining, after), HandChange::Draw(_)))
     })
+}
+
+fn self_kan_hand_matches(before: &[Tile], after: &[Tile], consumed: &[Tile]) -> bool {
+    let Some(remaining) = added_tiles(consumed, before) else {
+        return false;
+    };
+    matches!(
+        hand_change(&remaining, after),
+        HandChange::Same | HandChange::Draw(_)
+    )
 }
 
 fn valid_confidence(confidence: f32) -> bool {
@@ -628,6 +717,9 @@ pub struct ActionContext {
     pub offered: Option<Tile>,
     pub source: ClaimSource,
     pub open_melds: u8,
+    /// Fixed concealed quads preserve menzen even though they reduce hand size.
+    pub concealed_kans: u8,
+    pub own_meld_tiles: Vec<Tile>,
     pub riichi_declared: bool,
     /// True only when an already secured yaku has been confirmed by state or user.
     pub known_yaku: bool,
@@ -652,6 +744,7 @@ pub struct ActionAdvice {
 /// low confidence, and incomplete hand counts suppress deterministic advice.
 pub fn advise_action(context: &ActionContext, action: ActionLabel) -> Option<ActionAdvice> {
     if !valid_confidence(context.confidence)
+        || context.concealed_kans > context.open_melds
         || !valid_hand(&context.hand, context.open_melds)
         || !valid_visible(&context.hand, &context.visible)
         || context.riichi_declared
@@ -660,6 +753,7 @@ pub fn advise_action(context: &ActionContext, action: ActionLabel) -> Option<Act
     }
     match action {
         ActionLabel::Riichi => advise_riichi(context),
+        ActionLabel::Kan if context.source == ClaimSource::SelfDraw => advise_self_kan(context),
         ActionLabel::Chi | ActionLabel::Pon | ActionLabel::Kan => advise_call(context, action),
         ActionLabel::None => None,
     }
@@ -674,13 +768,13 @@ fn counts(hand: &[Tile]) -> [u8; 34] {
 }
 
 fn advise_riichi(context: &ActionContext) -> Option<ActionAdvice> {
-    if context.open_melds != 0
+    if context.open_melds != context.concealed_kans
         || context.source != ClaimSource::SelfDraw
-        || context.hand.len() != 14
+        || context.hand.len() != 14 - 3 * context.open_melds as usize
     {
         return None;
     }
-    let before = shanten(&counts(&context.hand), 0).ok()?;
+    let before = shanten(&counts(&context.hand), context.open_melds).ok()?;
     if before < 0 {
         return None;
     }
@@ -688,7 +782,7 @@ fn advise_riichi(context: &ActionContext) -> Option<ActionAdvice> {
         &context.hand,
         &context.visible,
         &context.dora_indicators,
-        0,
+        context.open_melds,
         context.confidence,
     )
     .ok()?;
@@ -822,4 +916,82 @@ fn advise_call(context: &ActionContext, action: ActionLabel) -> Option<ActionAdv
             .then_with(|| b.after_ukeire.cmp(&a.after_ukeire))
     });
     advice.into_iter().next()
+}
+
+fn advise_self_kan(context: &ActionContext) -> Option<ActionAdvice> {
+    if context.hand.len() != 14 - 3 * context.open_melds as usize
+        || context.own_meld_tiles.len() > 16
+        || shanten(&counts(&context.hand), context.open_melds).ok()? < 0
+    {
+        return None;
+    }
+    let own = counts(&context.own_meld_tiles);
+    if (0..34).any(|index| own[index] > context.visible[index]) {
+        return None;
+    }
+    let hand_counts = counts(&context.hand);
+    let before = recommend_discards(
+        &context.hand,
+        &context.visible,
+        &context.dora_indicators,
+        context.open_melds,
+        context.confidence,
+    )
+    .ok()?
+    .into_iter()
+    .next()?;
+    let mut options = Vec::new();
+    for index in 0..34 {
+        let concealed = hand_counts[index] == 4 && context.open_melds < 4;
+        let added = own[index] == 3 && hand_counts[index] == 1;
+        if !concealed && !added {
+            continue;
+        }
+        let consumed: Vec<_> = context
+            .hand
+            .iter()
+            .copied()
+            .filter(|tile| tile.index() as usize == index)
+            .collect();
+        let remaining: Vec<_> = context
+            .hand
+            .iter()
+            .copied()
+            .filter(|tile| tile.index() as usize != index)
+            .collect();
+        let next_melds = context.open_melds + u8::from(concealed);
+        let mut visible = context.visible;
+        visible[index] += consumed.len() as u8;
+        let after = ukeire(&counts(&remaining), &visible, next_melds).ok()?;
+        let label = tile_label(consumed[0]);
+        options.push(ActionAdvice {
+            action: ActionLabel::Kan,
+            tiles_from_hand: consumed,
+            discard_after_action: None,
+            before_shanten: before.shanten,
+            after_shanten: after.shanten,
+            before_ukeire: before.ukeire,
+            after_ukeire: after.count,
+            recommended: false,
+            confidence: context.confidence,
+            reason: format!("{} {label}：杠前最优切牌后 {} 向听/{} 张，杠后补牌前 {} 向听/{} 张；补牌与新宝牌未知", if concealed { "暗杠" } else { "加杠" }, before.shanten, before.ukeire, after.shanten, after.count),
+        });
+    }
+    options.sort_by(|a, b| {
+        a.after_shanten
+            .cmp(&b.after_shanten)
+            .then_with(|| b.after_ukeire.cmp(&a.after_ukeire))
+    });
+    options.into_iter().next()
+}
+
+fn tile_label(tile: Tile) -> String {
+    let index = tile.index();
+    let (rank, suit) = match index {
+        0..=8 => (index + 1, 'm'),
+        9..=17 => (index - 8, 'p'),
+        18..=26 => (index - 17, 's'),
+        _ => (index - 26, 'z'),
+    };
+    format!("{}{}", if tile.is_red() { 0 } else { rank }, suit)
 }

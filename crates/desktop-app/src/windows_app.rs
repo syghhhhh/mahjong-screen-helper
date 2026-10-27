@@ -263,7 +263,7 @@ pub fn run(smoke: bool) -> Result<(), String> {
             90,
             90,
             470,
-            330,
+            410,
             0,
             0,
             instance,
@@ -303,6 +303,52 @@ pub fn run(smoke: bool) -> Result<(), String> {
             state.edit = edit;
         }
     });
+    #[cfg(debug_assertions)]
+    if std::env::args().any(|argument| argument == "--layout-fixture") {
+        let sample = wide("1m 2m 3m 4m 5m 6m 2p 3p 4p 2s 3s 7z 7z 9p");
+        unsafe {
+            SetWindowTextW(edit, sample.as_ptr());
+        }
+        APP.with(|cell| {
+            if let Some(state) = cell.borrow_mut().as_mut() {
+                state.correct_hand();
+                if let Some(PipelineOutput::Ready {
+                    available_actions,
+                    actions,
+                    ..
+                }) = state.last_output.as_mut()
+                {
+                    use vision_core::ActionLabel;
+                    *available_actions = vec![
+                        ActionLabel::Chi,
+                        ActionLabel::Pon,
+                        ActionLabel::Kan,
+                        ActionLabel::Riichi,
+                    ];
+                    *actions = [
+                        (ActionLabel::Chi, false, "未确认役种"),
+                        (ActionLabel::Pon, true, "牌效改善"),
+                        (ActionLabel::Kan, false, "暗杠 1s：补牌未知"),
+                    ]
+                    .into_iter()
+                    .map(|(action, recommended, reason)| game_state::ActionAdvice {
+                        action,
+                        tiles_from_hand: vec![],
+                        discard_after_action: None,
+                        before_shanten: 1,
+                        after_shanten: 0,
+                        before_ukeire: 8,
+                        after_ukeire: 12,
+                        recommended,
+                        confidence: 1.0,
+                        reason: reason.into(),
+                    })
+                    .collect();
+                }
+                state.status = "合成布局验收：未连接游戏".into();
+            }
+        });
+    }
     unsafe {
         SetLayeredWindowAttributes(window, 0, 250, LWA_ALPHA);
         SetTimer(window, 1, 50, std::ptr::null());
@@ -1064,7 +1110,11 @@ fn paint(window: isize) {
                     dc,
                     12,
                     203,
-                    &format!("状态：{:?}  识别置信度：{:.0}%", phase, confidence * 100.0),
+                    &format!(
+                        "状态：{}  识别置信度：{:.0}%",
+                        crate::presentation::phase_label(*phase),
+                        confidence * 100.0
+                    ),
                     color(182, 214, 234),
                 );
                 for (i, item) in discards.iter().take(3).enumerate() {
@@ -1086,29 +1136,20 @@ fn paint(window: isize) {
                         },
                     );
                 }
-                if let Some(advice) = actions.first() {
+                for (index, row) in crate::presentation::action_rows(available_actions, actions)
+                    .iter()
+                    .enumerate()
+                {
                     draw_text(
                         dc,
                         12,
-                        296,
-                        &short(
-                            &format!("行动：{}；{}", action_name(advice.action), advice.reason),
-                            44,
-                        ),
-                        color(255, 217, 147),
-                    );
-                } else if !available_actions.is_empty() {
-                    let names = available_actions
-                        .iter()
-                        .map(|action| action_name(*action))
-                        .collect::<Vec<_>>()
-                        .join("/");
-                    draw_text(
-                        dc,
-                        12,
-                        296,
-                        &format!("按钮：{names}；来牌或役种未确认，暂不建议"),
-                        color(255, 217, 147),
+                        296 + index as i32 * 22,
+                        &row.text,
+                        if row.recommended == Some(true) {
+                            color(139, 232, 182)
+                        } else {
+                            color(255, 217, 147)
+                        },
                     );
                 }
             }
@@ -1171,14 +1212,4 @@ fn tile_code(tile: Tile) -> String {
         (index - 26, 'z')
     };
     format!("{}{}", if tile.is_red() { 0 } else { number }, suit)
-}
-
-fn action_name(action: vision_core::ActionLabel) -> &'static str {
-    match action {
-        vision_core::ActionLabel::None => "无",
-        vision_core::ActionLabel::Chi => "吃",
-        vision_core::ActionLabel::Pon => "碰",
-        vision_core::ActionLabel::Kan => "杠",
-        vision_core::ActionLabel::Riichi => "立直",
-    }
 }

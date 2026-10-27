@@ -217,7 +217,9 @@ impl RuntimeEngine {
                 }
                 let mut actions = Vec::new();
                 for action in snapshot.actions {
-                    let (offered, source) = if action == ActionLabel::Riichi {
+                    let (offered, source) = if action == ActionLabel::Riichi
+                        || (action == ActionLabel::Kan && result.phase == Phase::AwaitDiscard)
+                    {
                         (None, ClaimSource::SelfDraw)
                     } else {
                         self.offered
