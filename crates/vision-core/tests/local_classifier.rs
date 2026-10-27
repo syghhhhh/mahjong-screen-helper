@@ -11,6 +11,9 @@ use vision_core::{
     neural_classifier::{ClassifierLoadError, LocalTileClassifier},
 };
 
+#[path = "../../../tests/support/temp-directory.rs"]
+mod temp_directory;
+
 fn fixture(name: &str) -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../../tests/fixtures/synthetic/neural")
@@ -23,9 +26,7 @@ impl Temporary {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let path =
-            std::env::temp_dir().join(format!("msh-classifier-{}-{nonce}", std::process::id()));
-        fs::create_dir(&path).unwrap();
+        let path = temp_directory::create("msh-classifier", nonce).unwrap();
         Self(path)
     }
     fn manifest(&self, model: &str, hash: Option<&str>) -> PathBuf {

@@ -558,6 +558,67 @@
       ],
       "blocked_reason": "Logging contracts remain passed. The latest clean full run at b6c4a0f passed 9/10 checks but naturally failed in the unchanged rule concurrency binary with 0xc0000005. Declared dependency V001-009 remains failed; prior successful logging validation is historical and no success gate has run.",
       "blocking_run": "all-components-0026fd17ca554ea490c136dede73531a"
+    },
+    {
+      "id": "V001-011",
+      "title": "修复 Windows 同时刻测试临时目录冲突",
+      "status": "self_tested",
+      "depends_on": ["V001-001"],
+      "scope": ["testing", "startup", "vision"],
+      "acceptance_criteria": [
+        "启动和本机分类器测试使用原子序号及排他创建，不依赖时钟精度保证唯一性",
+        "相同时钟和并行创建均得到独立目录，不复用或删除既有目录",
+        "权限等非重名错误立即返回，重名恢复次数有界",
+        "保留非法模型拒绝断言，通过版本和完整回归后才执行成功门禁"
+      ],
+      "version_tests": ["tests/version/v0.0.1/overlay-integration.test.ps1", "tests/version/v0.0.1/vision.test.ps1"],
+      "affected_tests": ["tests/regression/overlay-integration.test.ps1", "tests/regression/vision.test.ps1"],
+      "regression_profile": "full",
+      "local_evidence_required": [],
+      "evidence": null,
+      "failure_history": [
+        {
+          "source_sha": "79ba0711d2c1550caafc8026cfa02b3ae1b763c6",
+          "ci_run": 40588587619,
+          "failed_check": "version-tests",
+          "target": "recognition_setup::tests::an_installed_invalid_model_never_silently_downgrades_to_templates",
+          "reason": "create_dir returned Windows error 183 AlreadyExists for a PID plus SystemTime-only test directory",
+          "log": ".local-test-data/runs/ci-failure-9e1bf94be2af49428ea34023173e4d0e/version-tests.log",
+          "red_test_log": ".local-test-data/runs/ci-contract-red-51e2f77dc36a4b61813fef555822d884/clock.log",
+          "red_test_exit_code": 101
+        }
+      ]
+    },
+    {
+      "id": "V001-012",
+      "title": "处理 WinML 模型加载期间的服务暂时停止错误",
+      "status": "self_tested",
+      "depends_on": ["V001-001"],
+      "scope": ["vision", "testing"],
+      "acceptance_criteria": [
+        "仅模型加载的 CO_E_SERVER_STOPPING 允许至多三次有界恢复等待，总等待不超过 160 ms",
+        "立即成功不重试，其他错误不重试，持续停止仍失败并保留错误",
+        "恢复后仍检查原有模型维度、类型、有限值和调用线程契约，不修改拒绝断言",
+        "注入式测试覆盖恢复、耗尽和非重试错误；原生版本及回归测试保持运行",
+        "不得把 COM 服务恢复视为规则原生访问异常的修复"
+      ],
+      "version_tests": ["tests/version/v0.0.1/vision.test.ps1"],
+      "affected_tests": ["tests/regression/vision.test.ps1"],
+      "regression_profile": "full",
+      "local_evidence_required": [],
+      "evidence": null,
+      "failure_history": [
+        {
+          "source_sha": "79ba0711d2c1550caafc8026cfa02b3ae1b763c6",
+          "ci_run": 40588587619,
+          "failed_check": "regression-tests",
+          "target": "native_neural::rejects_wrong_tensor_shapes_and_non_models",
+          "hresult": "0x80080008",
+          "reason": "Windows COM object server was stopping during LoadFromFilePath, before the existing shape check could return UnsupportedModel",
+          "log": ".local-test-data/runs/ci-failure-9e1bf94be2af49428ea34023173e4d0e/regression-tests.log",
+          "red_test_log": ".local-test-data/runs/ci-contract-red-51e2f77dc36a4b61813fef555822d884/activation.log"
+        }
+      ]
     }
   ],
   "release_gate": {

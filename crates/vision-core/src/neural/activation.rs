@@ -27,6 +27,33 @@ unsafe fn created<T: Interface>(code: HRESULT, raw: *mut c_void) -> Result<T> {
 }
 
 pub(super) fn load_model(path: &HSTRING) -> Result<LearningModel> {
+    retry_stopping_server(|| load_model_once(path), std::thread::sleep)
+}
+
+// A just-stopped COM object server can reject a new activation on Windows
+// Server. Retry only that explicit HRESULT, never format/shape/inference errors.
+// Keep every attempt inside the caller's live apartment, with no cached factory.
+fn retry_stopping_server<T>(
+    mut operation: impl FnMut() -> Result<T>,
+    mut wait: impl FnMut(std::time::Duration),
+) -> Result<T> {
+    let mut delays = [10, 50, 100].into_iter();
+    loop {
+        match operation() {
+            Err(error) if error.code().0 as u32 == 0x80080008 => {
+                let Some(delay) = delays.next() else {
+                    return Err(error);
+                };
+                #[cfg(debug_assertions)]
+                eprintln!("WinML activation: CO_E_SERVER_STOPPING; bounded retry after {delay} ms");
+                wait(std::time::Duration::from_millis(delay));
+            }
+            result => return result,
+        }
+    }
+}
+
+fn load_model_once(path: &HSTRING) -> Result<LearningModel> {
     let factory = factory::<LearningModel, ILearningModelStatics>()?;
     let mut result = null_mut();
     // HSTRING's borrowed ABI representation matches the generated projection;
@@ -88,5 +115,68 @@ pub(super) fn binding(session: &LearningModelSession) -> Result<LearningModelBin
         let code =
             (factory.vtable().CreateFromSession)(factory.as_raw(), session.as_raw(), &mut result);
         created(code, result)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{cell::Cell, time::Duration};
+
+    #[test]
+    fn stopping_server_recovery_is_bounded_and_preserves_the_actual_result() {
+        let calls = Cell::new(0);
+        let waits = std::cell::RefCell::new(Vec::new());
+        let result = retry_stopping_server(
+            || {
+                calls.set(calls.get() + 1);
+                if calls.get() < 3 {
+                    Err(windows::core::Error::from_hresult(HRESULT(
+                        0x80080008u32 as i32,
+                    )))
+                } else {
+                    Ok(17)
+                }
+            },
+            |duration| waits.borrow_mut().push(duration),
+        );
+        assert_eq!(result.unwrap(), 17);
+        assert_eq!(calls.get(), 3);
+        assert_eq!(
+            *waits.borrow(),
+            [Duration::from_millis(10), Duration::from_millis(50)]
+        );
+    }
+
+    #[test]
+    fn persistent_shutdown_and_other_errors_remain_failures() {
+        for (code, expected_calls, expected_waits) in [(0x80080008u32, 4, 3), (0x80070057, 1, 0)] {
+            let calls = Cell::new(0);
+            let waits = Cell::new(0);
+            let result: Result<()> = retry_stopping_server(
+                || {
+                    calls.set(calls.get() + 1);
+                    Err(windows::core::Error::from_hresult(HRESULT(code as i32)))
+                },
+                |_| waits.set(waits.get() + 1),
+            );
+            assert_eq!(result.unwrap_err().code().0 as u32, code);
+            assert_eq!(calls.get(), expected_calls);
+            assert_eq!(waits.get(), expected_waits);
+        }
+    }
+
+    #[test]
+    fn immediate_success_never_sleeps_or_repeats() {
+        let calls = Cell::new(0);
+        let result = retry_stopping_server(
+            || {
+                calls.set(calls.get() + 1);
+                Ok(31)
+            },
+            |_| panic!("unexpected wait"),
+        );
+        assert_eq!(result.unwrap(), 31);
+        assert_eq!(calls.get(), 1);
     }
 }

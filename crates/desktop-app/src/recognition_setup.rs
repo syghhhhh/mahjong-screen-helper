@@ -86,6 +86,10 @@ pub(crate) fn prepare_runtime(
 }
 
 #[cfg(test)]
+#[path = "../../../tests/support/temp-directory.rs"]
+mod temp_directory;
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use std::{
@@ -101,9 +105,10 @@ mod tests {
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
                 .as_nanos();
-            let p =
-                std::env::temp_dir().join(format!("msh-startup-{}-{nonce}", std::process::id()));
-            fs::create_dir(&p).unwrap();
+            Self::at_clock(nonce)
+        }
+        fn at_clock(nonce: u128) -> Self {
+            let p = temp_directory::create("msh-startup", nonce).unwrap();
             fs::create_dir(p.join("actions")).unwrap();
             fs::create_dir(p.join("tiles")).unwrap();
             Self(p)
@@ -145,6 +150,19 @@ mod tests {
     fn model_manifest() -> PathBuf {
         Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../../tests/fixtures/synthetic/neural/classifier.json")
+    }
+
+    #[test]
+    fn identical_clock_ticks_still_create_independent_fixture_directories() {
+        // Windows clock resolution can give concurrent tests identical ticks.
+        // Keep every fixture alive so reusing a name cannot pass via cleanup.
+        let fixtures: Vec<_> = (0..16).map(|_| Fixture::at_clock(0)).collect();
+        let names: std::collections::HashSet<_> = fixtures.iter().map(|f| &f.0).collect();
+        assert_eq!(names.len(), 16);
+        for fixture in &fixtures {
+            assert!(fixture.0.join("actions").is_dir());
+            assert!(fixture.0.join("tiles").is_dir());
+        }
     }
 
     #[test]

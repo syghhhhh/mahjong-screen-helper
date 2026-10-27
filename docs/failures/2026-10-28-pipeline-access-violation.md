@@ -123,3 +123,11 @@ cargo test -p runtime-core --test pipeline --locked --no-run --target-dir .local
 本次规则 exe SHA-256 仍为 `7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4`，PDB 仍为 `e13dc703c17f03ee86fc45e92005e5fab9a95d0cf775b27fe4fd51e065082d0b`，与前次保存的规则二进制完全相同。行动输入变更没有重新生成这份规则二进制；相同二进制可先通过嵌套版本、后在回归中失败，进一步说明单次通过不足以排除间歇性问题，仍不能确定根因。
 
 本机 `component-regression-native-failure-4a4f329c3b25451e9ac2c4ffde987759` 保存 exe、PDB、摘要、完整日志及控制台副本。日志 49,915 字节，严格 UTF-8 有效，NUL 为 0，可直接检索异常。V001-003 保留未完成状态，V001-009 保持失败，V001-010 更新阻塞运行编号；未执行成功门禁。
+
+## CI 40588587619 的两个独立失败
+
+提交 `79ba0711d2c1550caafc8026cfa02b3ae1b763c6` 的 [CI 40588587619](https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40588587619) 中，任务校验、构建和打包通过，版本和回归失败。两份完整原始日志保存在本机 `ci-failure-9e1bf94be2af49428ea34023173e4d0e`。没有证据把它们归为规则访问异常。
+
+版本检查在启动测试 `recognition_setup.rs:106` 创建临时目录时遇到 Windows 183 `AlreadyExists`。名称仅由 PID 与 `SystemTime::as_nanos()` 组成，同进程并行测试可得到相同的时钟值。新增固定相同时钟、保持所有目录同时存活的测试后，在本机稳定复现同一错误（退出 101），红色日志为 `ci-contract-red-51e2f77dc36a4b61813fef555822d884/clock.log`。共享目录创建助手引入原子序号及排他创建，并保留已有目录和非重名错误；不修改原非法模型断言。
+
+回归检查在 `native_neural::rejects_wrong_tensor_shapes_and_non_models` 中，加载 `wrong-channels.onnx` 返回 `0x80080008`，日志明确为 “Object server is stopping when OLE service contacts it”；这发生在维度校验之前。微软将该码定义为 [CO_E_SERVER_STOPPING](https://learn.microsoft.com/en-us/windows/win32/com/com-error-codes-2)，它本身不是张量维度错误。加载路径现只对此码采取最多三次、总等待 160 ms 的有界恢复，重新获取未缓存的 factory，始终保持当前 apartment 存活；其他错误及推理路径不重试。恢复后原维度断言仍须精确满足，持续停止仍返回错误。注入式测试验证实际结果传递、立即成功、耗尽和其他错误；这项策略是项目的恢复选择，微软错误码说明没有给出本项目的次数或延迟要求。仍需新版 CI 检查真实系统行为，不据此宣布 COM 生命周期的所有问题或规则原生异常已经解决。
