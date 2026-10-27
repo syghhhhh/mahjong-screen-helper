@@ -101,7 +101,20 @@ impl WinMlTileSession {
         let absolute = std::path::absolute(path).map_err(|_| NeuralError::InvalidModel)?;
         let path = HSTRING::from_wide(&absolute.as_os_str().encode_wide().collect::<Vec<_>>());
         let apartment = Apartment::initialize()?;
-        let model = activation::load_model(&path).map_err(|_| NeuralError::InvalidModel)?;
+        let model = activation::load_model(&path).map_err(|error| {
+            // Preserve the system rejection in development/CI diagnostics.
+            // The public error remains conservative; an intermittent load
+            // failure must not be reclassified as an accepted model shape.
+            #[cfg(debug_assertions)]
+            eprintln!(
+                "WinML LoadFromFilePath failed: HRESULT=0x{:08X}; {}",
+                error.code().0 as u32,
+                error.message()
+            );
+            #[cfg(not(debug_assertions))]
+            let _ = error;
+            NeuralError::InvalidModel
+        })?;
         let inputs = model
             .InputFeatures()
             .map_err(|_| NeuralError::UnsupportedModel)?;

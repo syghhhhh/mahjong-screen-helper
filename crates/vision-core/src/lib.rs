@@ -248,16 +248,21 @@ pub fn detect_hand_slots(image: &RgbImage) -> Vec<Rect> {
                 if x - left >= min_width {
                     let mut top = image.height;
                     let mut bottom = 0;
+                    let mut pale_rows = Vec::with_capacity(image.height as usize);
                     for y in 0..image.height {
+                        let mut pale = 0;
                         for xx in left..x {
                             let i = ((y * image.width + xx) * 3) as usize;
                             if is_pale(&image.rgb[i..i + 3]) {
                                 top = top.min(y);
                                 bottom = bottom.max(y + 1);
+                                pale += 1;
                             }
                         }
+                        pale_rows.push(pale);
                     }
                     if bottom > top {
+                        top = hand_paper_top(image, left, x, top, bottom, &pale_rows);
                         slots.push(Rect {
                             x: left,
                             y: top,
@@ -272,6 +277,54 @@ pub fn detect_hand_slots(image: &RgbImage) -> Vec<Rect> {
         }
     }
     slots
+}
+
+/// A sparse annotation on a saturated header is not part of a pale face.
+/// Keep the original boundary when the leading paper itself is dense, when
+/// the prefix may be a printed glyph, or when the remaining body is too short.
+fn hand_paper_top(
+    image: &RgbImage,
+    left: u32,
+    right: u32,
+    top: u32,
+    bottom: u32,
+    pale_rows: &[u32],
+) -> u32 {
+    let width = right - left;
+    let dense = |y: u32| pale_rows[y as usize] * 5 >= width * 3;
+    if dense(top) {
+        return top;
+    }
+    let support_rows = width.div_ceil(32).clamp(1, 3);
+    let Some(last_start) = bottom.checked_sub(support_rows) else {
+        return top;
+    };
+    let Some(body_top) = (top..=last_start).find(|&y| (0..support_rows).all(|dy| dense(y + dy)))
+    else {
+        return top;
+    };
+    if body_top - top < width.div_ceil(8).max(3) || bottom - body_top < width {
+        return top;
+    }
+    let mut colored = 0u64;
+    for y in top..body_top {
+        for x in left..right {
+            let i = ((y * image.width + x) * 3) as usize;
+            let [r, g, b] = [
+                image.rgb[i] as i16,
+                image.rgb[i + 1] as i16,
+                image.rgb[i + 2] as i16,
+            ];
+            let blue = b >= r + 35 && g >= r + 20 && b >= 120;
+            let orange = r >= g + 25 && g >= b + 35 && g >= 100;
+            colored += u64::from(blue || orange);
+        }
+    }
+    if colored * 2 >= u64::from(width) * u64::from(body_top - top) {
+        body_top
+    } else {
+        top
+    }
 }
 
 fn is_pale(pixel: &[u8]) -> bool {

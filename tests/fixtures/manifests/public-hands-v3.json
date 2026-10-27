@@ -2,16 +2,16 @@
   "schema_version": "1.0",
   "truth_revision": "2026-10-28-frozen-two-source-hand-pip-count-review",
   "raw_images_in_repository": false,
-  "reviewer": "Assistant visual inspection before any native classifier inference on these images",
+  "reviewer": "Assistant initial visual review before inference, later enlarged pip-count correction and caption-boundary development",
   "review_details": "Full originals and enlarged hand crops reviewed. Zoomed circle counts confirm source 1 image 0 positions 7/8/9 are 5p/6p/8p, and source 1 image 1 positions 8/9/10 are three 4p. Source 1 image 0 position 3 is a red 5m. Orange replay occlusions are recorded separately and do not license incorrect accepted labels.",
-  "current_role": "initial-frozen-cross-source-hand-baseline",
-  "inference_not_run_at_review": true,
+  "current_role": "development-after-initial-frozen-baseline",
+  "inference_not_run_at_review": false,
   "frozen_model_sha256": [
     "ac422eb2358edfdb96e6c00f2dcec4d5098cf8d0bf369067f9b389dc822a2bee"
   ],
   "download_manifest_sha256": "0ddea23ee98ddbf5c93c0437e5cfaaccd3e8d4c3b7de595282970969f4d141a7",
   "source_article_groups": 2,
-  "source_group_limitation": "Two article/game groups, two related frames each; four images are not four independent games. Only one hand crop is free of known glyph-overlapping replay labels. This is not final live-game acceptance.",
+  "source_group_limitation": "Two article/game groups, two related frames each; four images are not four independent games. Only one hand crop is free of known glyph-overlapping replay labels. This is not final live-game acceptance. These images now inform hand-header boundary implementation and are development data; initial reports and both previous truth versions remain archived.",
   "cases": [
     {
       "id": "frozen-public-hand-0-0",
@@ -137,6 +137,26 @@
       "initial_truth_archive": ".local-test-data/screenshots/frozen-source-review-eac2ec53bcfc480f96d5498ac6db871e/initial-hand-truth.json",
       "initial_report": "local-frozen-public-hands-v3-36ae29e669b44c14a9eb60d0d30f74c1",
       "historical_evidence_policy": "Keep the initial truth, all original native logs and the initial wrong-label count unchanged; write a separate reassessment."
+    }
+  ],
+  "initial_review_before_inference": true,
+  "usage_history": [
+    {
+      "stage": "initial-frozen-baseline",
+      "truth_sha256": "3104b60ee5ded7dd0f2358ee2d1d679a056d8888ccb8504fbe14795ecc14527b",
+      "report": "local-frozen-public-hands-v3-36ae29e669b44c14a9eb60d0d30f74c1",
+      "archive": ".local-test-data/screenshots/frozen-source-review-eac2ec53bcfc480f96d5498ac6db871e/initial-hand-truth.json"
+    },
+    {
+      "stage": "independent-pip-count-correction",
+      "truth_sha256": "666cfe27865a6af73029c72860ad093878ac1e7dee81ed5ca5376bfbc3ac2591",
+      "report": "frozen-hand-pip-reassessment-a5dcf691018a4fcfb643cfe7f41e9d6b",
+      "archive": ".local-test-data/screenshots/frozen-source-review-eac2ec53bcfc480f96d5498ac6db871e/pre-header-development-hand-truth.json"
+    },
+    {
+      "stage": "hand-header-boundary-development",
+      "changes": "These images motivated trimming sparse pale annotations on saturated leading headers only when dense paper support exists. Model weights and score thresholds remain frozen. Later retests are development evidence, not another untouched holdout.",
+      "recorded_at": "2026-10-27T19:20:57.208904+00:00"
     }
   ]
 }
