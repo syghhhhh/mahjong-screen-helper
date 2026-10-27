@@ -208,6 +208,31 @@
         "background_hull": "rejected due to regression",
         "medium_ocr": "five major actions incomplete, developer CPU median 488.23 ms per word",
         "weights_shipped": false
+      },
+      "action_word_research": {
+        "document": "docs/action-word-decisions.md",
+        "summary": ".local-test-data/runs/action-word-decision-comparison-34045d4d3ce948638cb4af64722110a9/summary.json",
+        "source_sha": "22bb3292d4587618caf3456c3b79518c49b302f1",
+        "source_dirty": true,
+        "v4_model_sha256": "4ba0bb1bdf366e5089f3fe82565a851354692c25f08c99510ed0916ed6818bfb",
+        "v5_model_sha256": "7b283df3a08aebcb555a2a3a18ab71cc5a658f1727d2a3b15c3b5b525639e474",
+        "primary_accepted": [
+          1,
+          2,
+          2
+        ],
+        "nonoperable_false_candidates": [
+          0,
+          0,
+          1
+        ],
+        "model_order": [
+          "v3",
+          "v4",
+          "v5"
+        ],
+        "acceptance_verified": false,
+        "weights_bundled": false
       }
     },
     {
@@ -674,7 +699,27 @@
           "summary": ".local-test-data/runs/ci-rule-comparison-b313b784a409408fb2262a51dd646bf0/three-host-comparison.json",
           "document": "docs/native-rule-comparison.md"
         }
-      ]
+      ],
+      "static_function_comparison": {
+        "summary": ".local-test-data/runs/rule-function-symbols-dd710c8acc6946c19b1254ba3e0c3650/search-normal-call-difference-audit.json",
+        "original_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
+        "ci_sha256": "1f1e6355caf7d92cd987ce5c8d9380cd5b1f9346c26ca760e8ade4f932ce162c",
+        "selected_original_pdb_functions": 296,
+        "identical_at_same_rva": 226,
+        "different_at_same_rva": 70,
+        "search_normal_instructions": 933,
+        "changed_instructions": 70,
+        "changed_bytes": 140,
+        "changed_opcode": "call rel32",
+        "original_changed_targets": "core panicking symbols",
+        "ci_target_shift_bytes": 736,
+        "linker_versions": [
+          "14.41",
+          "14.44"
+        ],
+        "root_cause_verified": false,
+        "original_probe_upload": "awaiting_explicit_user_authorization"
+      }
     },
     {
       "id": "V001-010",
@@ -1983,6 +2028,54 @@
           "reproduces_original_failing_binary": false,
           "summary": ".local-test-data/runs/ci-rule-comparison-b313b784a409408fb2262a51dd646bf0/three-host-comparison.json",
           "document": "docs/native-rule-comparison.md"
+        }
+      ]
+    },
+    {
+      "id": "V001-016",
+      "title": "行动字形模型的类型化候选与拒识决策",
+      "status": "self_tested",
+      "depends_on": [
+        "V001-001"
+      ],
+      "scope": [
+        "vision",
+        "diagnostics"
+      ],
+      "acceptance_criteria": [
+        "固定七类输出，仅五类支持词可成为字形候选，Pass 与无观察保持不同语义",
+        "Unknown 和 Unsupported 无论分数多高都不转换为可执行动作",
+        "缺字形、未定位、实心亮块、非法张量和非有限 logits 一律拒绝",
+        "使用稳定 softmax 及显式阈值，诊断默认沿用 0.9/0.25/0.35，配置非法时失败",
+        "诊断输出区分候选、拒识及原始 logits，不激活未经验证的默认模型或绕过按钮底板/启用状态检查",
+        "新增契约测试纳入版本与回归，候选权重开发集表现不得当作现场验收"
+      ],
+      "version_tests": [
+        "tests/version/v0.0.1/vision.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/regression/vision.test.ps1"
+      ],
+      "regression_profile": "full",
+      "local_evidence_required": [],
+      "evidence": null,
+      "red_test_logs": [
+        ".local-test-data/action-decisions-red-20261028.log"
+      ],
+      "targeted_test_logs": [
+        ".local-test-data/action-decisions-green-20261028.log",
+        ".local-test-data/action-decisions-clippy-20261028.log"
+      ],
+      "research_document": "docs/action-word-decisions.md",
+      "validation_history": [
+        {
+          "source_sha": "22bb3292d4587618caf3456c3b79518c49b302f1",
+          "source_dirty": true,
+          "version_test_run": "version-action-word-decisions-20261028-01",
+          "summary": ".local-test-data/runs/version-action-word-decisions-20261028-01/version-tests.json",
+          "passed": true,
+          "checks": 11,
+          "completed_at": "2026-10-27T23:32:44.7031766Z"
         }
       ]
     }

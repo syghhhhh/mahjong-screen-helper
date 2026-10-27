@@ -4,6 +4,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     use std::{env, fs::File, io::Write, path::Path, time::Instant};
     use vision_core::{
         RgbImage,
+        action_decision::ActionWordPolicy,
         action_input::{
             ActionWordInput, COMPLETE_COMPONENT_PREPROCESSING_ID, INPUT_FLOATS, PREPROCESSING_ID,
             prepare_action_word, prepare_complete_action_word,
@@ -35,6 +36,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     let mut preparation = 0.0;
     let mut evaluation = 0.0;
+    let empty_input = vec![0.0; INPUT_FLOATS];
     for (index, path) in args[2..].iter().enumerate() {
         let start = Instant::now();
         let image = RgbImage::read_png(Path::new(path))?;
@@ -43,30 +45,34 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         } else {
             prepare_action_word(&image)?
         };
-        let input = match word {
+        let input: &[f32] = match &word {
             ActionWordInput::Empty => {
                 println!("word {index}: Empty");
-                vec![0.0; INPUT_FLOATS]
+                &empty_input
             }
             ActionWordInput::Unlocalized => {
                 println!("word {index}: Unlocalized");
-                vec![0.0; INPUT_FLOATS]
+                &empty_input
             }
             ActionWordInput::Prepared(word) => {
                 println!(
                     "word {index}: {:?}; foreground={}",
                     word.bounds, word.foreground_pixels
                 );
-                word.pixels
+                &word.pixels
             }
         };
         preparation += start.elapsed().as_secs_f64() * 1000.0;
-        for value in &input {
+        for value in input {
             file.write_all(&value.to_le_bytes())?;
         }
         let start = Instant::now();
-        let logits = session.evaluate(&input)?;
+        let logits = session.evaluate(input)?;
         evaluation += start.elapsed().as_secs_f64() * 1000.0;
+        println!(
+            "word_decision {index}: {:?}",
+            ActionWordPolicy::default().decide(&word, &logits)
+        );
         println!(
             "logits {index}: {}",
             logits

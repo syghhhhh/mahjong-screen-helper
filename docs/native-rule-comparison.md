@@ -39,3 +39,13 @@ scripts/package-rule-probe.ps1 -OutputDirectory "$PWD\.local-test-data\diagnosti
 原本机归档程序的 SHA-256 仍为 `7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4`，大小 994,304 字节，已有自然访问异常、栈溢出及减法溢出。两个 exe 的内嵌 Rust 编译器路径标识均为 `01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf`，但原始 `.text` 长度相差 512 字节、重叠范围有 71,441 个字节不同；路径、地址与链接布局都可能影响原始字节，尚未做语义等价分析。PE 只读比较保存在第一次下载目录的 `pe-comparison.json`。新文件六十次通过不能覆盖旧文件失败，也不能据此定位硬件、链接器或编译器原因。下一步仍需解释构建差异或在独立主机运行原失败文件，不能把更换文件视作修复。
 
 同源的[主 CI 40598298229](https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40598298229) 五项检查也全部通过，于 `2026-10-27T23:02:11Z` 核实。本机最新完整版本仍为 10/11 通过，规则退出 101；相关 failed 状态和原失败证据继续保留，没有用云端绿色结果直接写入 `succeed`。
+
+## 原程序符号定位后的静态差异审查
+
+后续使用原 exe 的匹配 PDB，经 64 位 DIA 读取函数名、RVA 和长度，工具只读本机文件、不注册 COM 或修改被分析程序。选择含 `riichi_core` 的函数及故障 Range 辅助函数共 296 段；云端文件相同 RVA 处 226 段逐字节相同、70 段不同。290 个有 `.pdata` 记录的入口及边界元组一致，其余六段在两文件中都没有对应记录。名称来自原 PDB，不能假称已读取云端 PDB 或验证所有函数的语义等价。
+
+故障对应的 `core::iter::range::impl$5::spec_next<usize>` 124 字节，以及相关 `find`、`try_fold` 和检查闭包的比较范围完全相同。`riichi_core::search_normal` 在 RVA `0x544c0`、长度 4,578 字节，完整反汇编共 933 条指令；所有 140 个不同字节恰好覆盖 70 条 `call rel32` 的相对目标字段，其他指令字节相同。原符号将这些目标识别为加/减/乘溢出及越界 panic 函数，云端目标均后移 736 字节且运行时函数长度相同。尚未核定云端 callee 的名称/语义、全部运行时数据或 CRT 行为，不能把这些调用目标差异直接认定为无害或根因。
+
+PE 头报告的链接器版本分别为 14.41 和 14.44，是明确的构建环境差异，尚不是故障原因证明。读取方法可参考微软 [DIA 子符号查询](https://learn.microsoft.com/en-us/visualstudio/debugger/debug-interface-access/idiasymbol-findchildren?view=vs-2022)和[符号长度接口](https://learn.microsoft.com/en-us/visualstudio/debugger/debug-interface-access/idiasymbol-get-length?view=vs-2022)。原始范围、逐函数比较、反汇编和覆盖全部差异字节的审查在 `.local-test-data/runs/rule-function-symbols-dd710c8acc6946c19b1254ba3e0c3650/`，没有修改生产算法或降低断言。
+
+已有原失败文件诊断 ZIP 已核对为 413,284 字节、八个白名单文件，不含截图、模型、PDB、dump 或本机报告。将其作为 PR 附件供 CI 运行的替代方案尚待明确授权，当前未上传，旧程序在独立主机的对照仍未完成。
