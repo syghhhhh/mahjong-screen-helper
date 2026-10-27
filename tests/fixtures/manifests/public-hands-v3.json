@@ -1,0 +1,142 @@
+{
+  "schema_version": "1.0",
+  "truth_revision": "2026-10-28-frozen-two-source-hand-pip-count-review",
+  "raw_images_in_repository": false,
+  "reviewer": "Assistant visual inspection before any native classifier inference on these images",
+  "review_details": "Full originals and enlarged hand crops reviewed. Zoomed circle counts confirm source 1 image 0 positions 7/8/9 are 5p/6p/8p, and source 1 image 1 positions 8/9/10 are three 4p. Source 1 image 0 position 3 is a red 5m. Orange replay occlusions are recorded separately and do not license incorrect accepted labels.",
+  "current_role": "initial-frozen-cross-source-hand-baseline",
+  "inference_not_run_at_review": true,
+  "frozen_model_sha256": [
+    "ac422eb2358edfdb96e6c00f2dcec4d5098cf8d0bf369067f9b389dc822a2bee"
+  ],
+  "download_manifest_sha256": "0ddea23ee98ddbf5c93c0437e5cfaaccd3e8d4c3b7de595282970969f4d141a7",
+  "source_article_groups": 2,
+  "source_group_limitation": "Two article/game groups, two related frames each; four images are not four independent games. Only one hand crop is free of known glyph-overlapping replay labels. This is not final live-game acceptance.",
+  "cases": [
+    {
+      "id": "frozen-public-hand-0-0",
+      "local_file": ".local-test-data/screenshots/frozen-source-review-eac2ec53bcfc480f96d5498ac6db871e/hand-0-0.rgb",
+      "sha256": "faa917b6f03faafdd39252294330c87c4ca8df789abc0b486409ba213cb33da6",
+      "width": 1380,
+      "height": 165,
+      "source_url": "https://note.com/nagomi_258/n/n4677898917bd",
+      "source_image_url": "https://assets.st-note.com/img/1787397213-5UYh2rGIiQysV0atmgFw89Ho.png",
+      "local_original": ".local-test-data/screenshots/frozen-source-review-eac2ec53bcfc480f96d5498ac6db871e/source-0-image-0.png",
+      "original_sha256": "0ffa67759c6e09c931356015aacc26f9d74a65dc5db4b3247fbb506f0c14223e",
+      "source_rect": [
+        420,
+        915,
+        1380,
+        165
+      ],
+      "expected_hand": "1m 3m 6m 6m 6m 2p 4p 3s 3s 3s 6s 6s 8s 5z",
+      "observed_honors": [
+        {
+          "one_based_tile_position": 14,
+          "observed_honor": "white"
+        }
+      ],
+      "source_group": 0,
+      "known_glyph_occlusions": [
+        {
+          "one_based_tile_position": 13,
+          "description": "Orange replay self-action label overlaps the bottom of the 8s glyph."
+        }
+      ]
+    },
+    {
+      "id": "frozen-public-hand-0-1",
+      "local_file": ".local-test-data/screenshots/frozen-source-review-eac2ec53bcfc480f96d5498ac6db871e/hand-0-1.rgb",
+      "sha256": "a2b7af6ace0e039a57991aee12b9ebc82e344147321b317185478938014c897b",
+      "width": 1380,
+      "height": 165,
+      "source_url": "https://note.com/nagomi_258/n/n4677898917bd",
+      "source_image_url": "https://assets.st-note.com/img/1787397213-6bBKF1GeUJNg5zYjOAlPkvQn.png",
+      "local_original": ".local-test-data/screenshots/frozen-source-review-eac2ec53bcfc480f96d5498ac6db871e/source-0-image-1.png",
+      "original_sha256": "d333789468b2ff83c9faaaa0e811b2513e6760f8cfdf7961b4855517a50e86c1",
+      "source_rect": [
+        420,
+        915,
+        1380,
+        165
+      ],
+      "expected_hand": "1m 3m 6m 6m 6m 2p 4p 3s 3s 3s 6s 6s 5z 6p",
+      "observed_honors": [
+        {
+          "one_based_tile_position": 13,
+          "observed_honor": "white"
+        }
+      ],
+      "source_group": 0,
+      "known_glyph_occlusions": [
+        {
+          "one_based_tile_position": 6,
+          "description": "Orange replay self-action label covers part of the lower circle of 2p."
+        }
+      ]
+    },
+    {
+      "id": "frozen-public-hand-1-0",
+      "local_file": ".local-test-data/screenshots/frozen-source-review-eac2ec53bcfc480f96d5498ac6db871e/hand-1-0.rgb",
+      "sha256": "d4d46e93e510259540591426b968c906bbd43ee111392144ffcea8d86b9b7980",
+      "width": 1390,
+      "height": 165,
+      "source_url": "https://note.com/amutan_mj/n/n8d3f8e0286e9",
+      "source_image_url": "https://assets.st-note.com/img/1791105879-bFfCYZ63qTuEVRzkLKxA7Hm1.jpg",
+      "local_original": ".local-test-data/screenshots/frozen-source-review-eac2ec53bcfc480f96d5498ac6db871e/source-1-image-0.jpg",
+      "original_sha256": "0115fd492b5aa66d45476c132c353af530581802a9824f6a0e0fc3dc165e8374",
+      "source_rect": [
+        210,
+        915,
+        1390,
+        165
+      ],
+      "expected_hand": "3m 4m 0m 7m 8m 9m 5p 6p 8p 1s 2s 6s 8s",
+      "observed_honors": [],
+      "source_group": 1,
+      "known_glyph_occlusions": []
+    },
+    {
+      "id": "frozen-public-hand-1-1",
+      "local_file": ".local-test-data/screenshots/frozen-source-review-eac2ec53bcfc480f96d5498ac6db871e/hand-1-1.rgb",
+      "sha256": "c7937dacaed6982644e7aa377a397554b0d3cfe6f48b9816fef86d93d31cac85",
+      "width": 1390,
+      "height": 165,
+      "source_url": "https://note.com/amutan_mj/n/n8d3f8e0286e9",
+      "source_image_url": "https://assets.st-note.com/img/1791106325-Pm2zKLsiwcdHG6D1RSrBZNnq.jpg",
+      "local_original": ".local-test-data/screenshots/frozen-source-review-eac2ec53bcfc480f96d5498ac6db871e/source-1-image-1.jpg",
+      "original_sha256": "e68b81b7b78f60bf7d264302c92419bfe2d84cedef7b2e9ffa1ab704280443e1",
+      "source_rect": [
+        210,
+        915,
+        1390,
+        165
+      ],
+      "expected_hand": "2m 2m 3m 3m 4m 1p 2p 4p 4p 4p 7p 7p 9p 9p",
+      "observed_honors": [],
+      "source_group": 1,
+      "known_glyph_occlusions": [
+        {
+          "one_based_tile_position": 5,
+          "description": "Orange replay self-action label overlaps the lower man glyph of 4m."
+        }
+      ]
+    }
+  ],
+  "reviewed_at": "2026-10-27T19:02:06.871506+00:00",
+  "corrections": [
+    {
+      "case_id": "frozen-public-hand-1-1",
+      "one_based_tile_position": 12,
+      "previous_label": "9p",
+      "corrected_label": "7p",
+      "review": "Enlarged original shows three dark diagonal circles above four red circles in a square, the same seven-circle pattern as the adjacent 11th tile. The next two tiles have three rows of three circles and are 9p. This is a visual annotation error; labels were not changed solely to agree with a model.",
+      "previous_truth_sha256": "3104b60ee5ded7dd0f2358ee2d1d679a056d8888ccb8504fbe14795ecc14527b",
+      "visual_review_file": ".local-test-data/screenshots/frozen-source-review-eac2ec53bcfc480f96d5498ac6db871e/last-pips-review.png",
+      "visual_review_sha256": "50da426e473624e98845694756ff433dcd90e53a929af106a75ff4b6d4e8c785",
+      "initial_truth_archive": ".local-test-data/screenshots/frozen-source-review-eac2ec53bcfc480f96d5498ac6db871e/initial-hand-truth.json",
+      "initial_report": "local-frozen-public-hands-v3-36ae29e669b44c14a9eb60d0d30f74c1",
+      "historical_evidence_policy": "Keep the initial truth, all original native logs and the initial wrong-label count unchanged; write a separate reassessment."
+    }
+  ]
+}

@@ -247,3 +247,34 @@ tensor 文件为 1–256 个连续的 little-endian `[1,3,48,32]` float32 输入
 为区分预处理损失和压缩损失，同一个未压缩教师对同 111 张手牌逐一比较：原始牌面基础类别最高分为 111/111，v2 紧字形拉伸为 104/111，7 个错误都是二索；原记录为 `local-teacher-glyph-input-186f39e913e54f9598009c4410a05fa0/summary.json`。预先固定的保持比例、28×44 内居中白底原型在 `local-teacher-letterbox-fc022e86d45047d8b7e22d07260a5a78/summary.json` 恢复为 111/111。这是已知开发图的基础类别最高分诊断，没有白板/置信度拒识，也不包含赤五区分；不能作为新小模型或现场准确率。
 
 因此原生接口新增独立的 `rgb-inverse-glyph-letterbox-v3`，按清单选择，保留原 v2 模式。14 个原创几何/颜色 fixture 逐像素对照独立 Pillow BOX 结果，包括窄/宽字形、两种恰半舍入、奇数留白、极端尺寸、红字和角标；原 v2 的 7 个 fixture 字节未变。新增清单及实际系统后端测试证明选用了不同输入，并保留白板拒识。最初两个编译失败日志为 `.local-test-data/letterbox-initial-failure.log` 和 `letterbox-routing-initial-failure.log`；Clippy 的测试范围写法失败及修复后日志也分别保留。该实现只是下一轮权重实验的输入契约，尚无已验收的 v3 权重，不能直接改旧权重 ID 或把两个失败候选作为默认资源。
+
+## 公开牌图种子与小型 CNN
+
+干净代码提交 `3197b31b01b91601c8fda430260406f5b92106b5` 的版本 8 项、回归 9 项以及 [CI 40559222750](https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40559222750) 五项通过。实际 v3 输入在 112 张已有游戏/FAQ/素材图上与独立 Pillow 参考逐值一致；该数值检查不是识牌验收。
+
+后续 v3 教师压缩实验使用重新生成的保持比例数据、完整 768 维 CLS 目标及 4×2 小块，固定 6,000 步得到 `local-pruned-vit-v3-1eececd693b7412d87fff82b2d7c97dc`，13,491,936 字节，SHA-256 `468c506ffb835e6a344238049ba796cf256555c3b8567a7aedb070340e80aaaa`。实际后端手牌为 67 张正确接受、1 张误认、29 张拒绝；深色非牌面被误作八筒。旧牌河接受 7/18、4 个错误，新开发图公共牌也有误认；相关失败摘要为 `local-bound-classifier-41be49a92c004571990ce911859c7d39`、`local-model-public-board-b915e4ba158f414aafb866805027ce0e`、`local-independent-scene-3bdbeba3ed8d4404b478d1f404326470`。该候选未采用。合成数据审计为 `letterbox-data-audit-69b3f925fe4a49cc90b2eac0ebca37f8`：没有矛盾牌码，验证/训练的精确重复只有 16 张预期零张量白板，非白板没有精确重复；仍是同素材家族诊断。
+
+为改善实际牌面差异，改用 [pjura 公开数据集](https://huggingface.co/datasets/pjura/mahjong_souls_tiles/blob/8c0f22e7c6b64be55bb1d2767fe1a63981788de7/README.md)的 34 张原始图做本机训练，固定提交 `8c0f22e7c6b64be55bb1d2767fe1a63981788de7`。数据集卡声明 Apache-2.0，并说明来自雀魂。API 列出 1,979 个文件，但原始牌图在 train/test 重复，其余主要是增强，不能宣称有近两千个独立观察。34 张图的 LFS SHA-256 均校验，共 615,786 字节；原始图、模型卡和下载脚本在被忽略的 `.local-test-data/models/pjura-seeds-8c0f22e/`。所有原图继续只在本机。
+
+清理原始图的角上说明文字后，从普通五字形合成 3 个赤五种子。白板的 Wh 和红中的黑色 R 另有已复核遮罩，不改变生产预处理规则。每类生成 160 个随机变换视图，144 训练、16 仅作同种子变换诊断；赤五种子不是真实赤五截图。首轮仅用正向公共牌，第二轮覆盖四个方向并变化红色墨迹；检查全部 37 类的训练/验证均覆盖所需方向，避免方向与验证索引绑定。第二轮输入 SHA-256 为 `123b419bb3e8a7dbed78b505bdc69aee5d54caddd407882db7e8d27d8a2c14d0`。
+
+两个 CNN 都从零训练，不使用教师参数或本项目公开手牌截图像素。固定 8,000 步，85% 公开种子视图、15% 既有 CC0/OFL 正向合成图，另有原创负例；阈值保持 0.8/0.1/0.4、温度 1.0，未根据实图降低门槛。模型均为 240,309 参数、962,873 字节，v3 输入和标准 37 类。
+
+| 候选 | 已知 97 张手牌 | 旧牌河 | 旧新来源开发图 |
+| --- | --- | --- | --- |
+| `local-public-seed-cnn-v1-3d7ae953953d495aa20fb6863ca56c76` | 96 正确接受、1 拒识 | 16/18 接受、无已接受错误 | 公共 6/10、手牌 12/14，整帧不确定 |
+| `local-public-seed-cnn-v2-9bde2d5a4439478f944ba338faa8c25a` | 97 正确接受、无拒识 | 17/18 接受、无已接受错误 | 公共 6/10、手牌 12/14，整帧不确定 |
+
+二者均拒绝 19 个已知非牌面。模型 SHA-256 分别为 `6c409a554c16ef9102588d4a0332cffdb495a12a6e0ec112608b28690e1e0e06` 和 `ac422eb2358edfdb96e6c00f2dcec4d5098cf8d0bf369067f9b389dc822a2bee`。v2 本机摘要为 `local-bound-classifier-14f7e022cc9e4076a23d85c2718ec5cd`、`local-model-public-board-4c9d32b8754a4cb1aa15d27fa75c0c02`、`local-independent-scene-bbceb60dc8d04e8ebcaa00cad47a6be4`。公共牌未全部接受时仍没有完整 Ready/Top-3，不能把部分接受率当作准确率达标。
+
+`local-cnn-native-parity-ef70c61d67994aaebee84f2f7f946eff` 对 112 张已有图比较 PyTorch 与实际系统后端，输入误差为 0，最大 logits 误差约 3.85e-6，最高类别一致。`local-model-runtime-44bd18b587f441988160732244f8f5c3` 的七组已有手牌都在第三帧 Ready：13 张时等待摸牌，14 张时给出手牌中的合法切牌；未知整手保持不确定。离线单帧处理最高约 12.4 ms，不含捕获、真实帧间隔或绘制，也不包含公共牌/按钮，不能作为 250 ms 验收。
+
+## 冻结后的两来源手牌检查
+
+v2 的权重、清单、阈值和已有报告哈希先写入本机 `frozen-evaluation-manifest.json`，随后选择[来源一](https://note.com/nagomi_258/n/n4677898917bd)和[来源二](https://note.com/amutan_mj/n/n8d3f8e0286e9)各自文章的前两张正文图片，未按模型结果挑图。原始 PNG/JPEG、文章快照、裁剪和标注在 `.local-test-data/screenshots/frozen-source-review-eac2ec53bcfc480f96d5498ac6db871e/`；仓库仅保存结构化清单 `tests/fixtures/manifests/public-hands-v3.json`。下载器最初只接受 PNG 而拒绝第二篇的 JPEG，原脚本、两个 PNG 和失败说明均保留；恢复时校验真实格式并保存原始字节，没有重新编码或改选图片。
+
+四个手牌共 55 张，三个有已记录的回放标记遮挡，只有一个手牌没有已知字形遮挡；同文章两个帧不算额外独立对局。先看原图和放大裁剪记录真值，再运行冻结模型。首次摘要 `local-frozen-public-hands-v3-36ae29e669b44c14a9eb60d0d30f74c1` 为 39 正确接受、1 个表面标签错误、15 拒识，1/4 手牌 Ready，整组退出 1。该次工作树只新增真值清单，标记 `source_dirty: true`，不作任务成功证据。
+
+随后放大复核发现来源二第二图第 12 张是“三个深色筒斜排＋四个红筒方阵”的七筒，初次误录为九筒；旁边第 11 张也是七筒，之后两张才是九筒。初始真值 SHA-256 `3104b60ee5ded7dd0f2358ee2d1d679a056d8888ccb8504fbe14795ecc14527b` 的字节仍在 `initial-hand-truth.json`，原生预测和初始摘要均未改写。独立复算 `frozen-hand-pip-reassessment-a5dcf691018a4fcfb643cfe7f41e9d6b` 为 40 正确接受、0 已接受错误、15 拒识，Ready 仍为 1/4，不是另一次独立验证或完整通过。标注修订不能隐藏这 15 张拒识。
+
+牌槽诊断还显示，部分回放标记被纳入候选上沿，而普通牌上沿更低；这给后续边界与遮挡处理提供了线索，但当前没有借此修改冻结模型或阈值。如果用这些图调整实现，须将其转为开发数据并保留这次初始报告。所有候选仍未默认安装或打包，五种按钮资源、公共牌完整性、新来源稳定性和真实对局验收继续未完成。
