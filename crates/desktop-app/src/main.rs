@@ -3,6 +3,8 @@
 #[cfg(windows)]
 mod presentation;
 #[cfg(windows)]
+mod recognition_setup;
+#[cfg(windows)]
 mod windows_app;
 
 #[cfg(windows)]

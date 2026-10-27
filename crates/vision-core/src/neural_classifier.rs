@@ -1,6 +1,8 @@
 //! Explicit local model loading; no downloads or automatic overlay activation.
 use crate::{
-    classifier::{ClassifierDecision, FaceObservation, ModelManifest},
+    classifier::{
+        ClassifierDecision, ClassifierFailure, FaceClassifier, FaceObservation, ModelManifest,
+    },
     neural::{NeuralError, WinMlTileSession},
 };
 use std::{
@@ -18,6 +20,16 @@ pub enum ClassifierLoadError {
     ModelHashMismatch,
     HashUnavailable,
     Backend(NeuralError),
+}
+
+impl FaceClassifier for LocalTileClassifier {
+    fn classify(&self, face: &FaceObservation) -> Result<ClassifierDecision, ClassifierFailure> {
+        LocalTileClassifier::classify(self, face).map_err(|error| match error {
+            NeuralError::InvalidInput => ClassifierFailure::InvalidInput,
+            NeuralError::InvalidOutput => ClassifierFailure::InvalidOutput,
+            _ => ClassifierFailure::Unavailable,
+        })
+    }
 }
 impl std::fmt::Display for ClassifierLoadError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

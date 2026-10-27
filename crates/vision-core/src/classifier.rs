@@ -1,7 +1,7 @@
 //! Model identity, conservative score decisions, and contextual blank handling.
 //! A declared class map and softmax score do not prove a model's accuracy.
 use crate::{
-    Rect, RgbImage, VisionError, detect_hand_slots,
+    Rect, RgbImage, Rotation, VisionError, detect_hand_slots, detect_public_slots,
     neural_input::{PREPROCESSING_ID, PreparedTile, prepare_tile},
 };
 use riichi_core::Tile;
@@ -180,6 +180,18 @@ pub enum ClassifierDecision {
     },
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ClassifierFailure {
+    Unavailable,
+    InvalidInput,
+    InvalidOutput,
+}
+/// Implementations may be bound to the creating thread's native apartment.
+/// No Send/Sync requirement or background thread is imposed on a local session.
+pub trait FaceClassifier {
+    fn classify(&self, face: &FaceObservation) -> Result<ClassifierDecision, ClassifierFailure>;
+}
+
 /// Prepared pixels and white-face evidence from the same immutable observation.
 /// Keeping these private prevents passing a previous face's blank evidence.
 pub struct FaceObservation {
@@ -204,7 +216,31 @@ impl FaceObservation {
         let image = scene.crop(rect)?;
         let input = prepare_tile(&image)?;
         let enclosed_blank = input.glyph_bounds.is_none()
+            && upright_ratio(image.width(), image.height())
             && detect_hand_slots(scene).contains(&rect)
+            && enclosing_blank_edges(scene, rect);
+        Ok(Self {
+            input,
+            enclosed_blank,
+        })
+    }
+    pub fn in_public(
+        scene: &RgbImage,
+        rect: Rect,
+        rotation: Rotation,
+    ) -> Result<Self, VisionError> {
+        if scene.width() > 16384
+            || scene.height() > 1024
+            || !(8..=1024).contains(&rect.width)
+            || !(8..=1024).contains(&rect.height)
+        {
+            return Err(VisionError::InvalidImage);
+        }
+        let image = scene.crop(rect)?.rotated(rotation);
+        let input = prepare_tile(&image)?;
+        let enclosed_blank = input.glyph_bounds.is_none()
+            && upright_ratio(image.width(), image.height())
+            && detect_public_slots(scene).contains(&rect)
             && enclosing_blank_edges(scene, rect);
         Ok(Self {
             input,
@@ -222,13 +258,15 @@ impl FaceObservation {
     }
 }
 
+fn upright_ratio(width: u32, height: u32) -> bool {
+    height * 10 >= width * 12 && height * 10 <= width * 22
+}
+
 fn enclosing_blank_edges(scene: &RgbImage, r: Rect) -> bool {
     if r.x < 3
         || r.y < 3
         || r.x + r.width + 3 > scene.width()
         || r.y + r.height + 3 > scene.height()
-        || r.height * 10 < r.width * 12
-        || r.height * 10 > r.width * 22
     {
         return false;
     }

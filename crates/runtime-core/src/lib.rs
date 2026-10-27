@@ -2,6 +2,7 @@
 
 use game_state::{ActionAdvice, ClaimSource, GameTracker, Phase, StateError, StateEvent};
 use riichi_core::{Recommendation, Tile};
+use vision_core::classifier::FaceClassifier;
 use vision_core::{
     ActionLabel, FilterDecision, MatchConfig, PublicSnapshot, Rect, RelativeSeat, RgbImage,
     StabilityFilter, TemplateBank, VisionError, VisionSnapshot, detect_hand_slots,
@@ -34,6 +35,7 @@ pub struct PublicImages<'a> {
 
 pub struct RuntimeEngine {
     bank: TemplateBank,
+    tile_classifier: Option<Box<dyn FaceClassifier>>,
     action_slots: Vec<Rect>,
     match_config: MatchConfig,
     filter: StabilityFilter,
@@ -57,6 +59,7 @@ impl RuntimeEngine {
     ) -> Result<Self, VisionError> {
         Ok(Self {
             bank,
+            tile_classifier: None,
             action_slots,
             match_config,
             filter: StabilityFilter::new(stable_frames)?,
@@ -73,6 +76,12 @@ impl RuntimeEngine {
 
     pub fn tracker(&self) -> &GameTracker {
         &self.tracker
+    }
+    /// Installing or removing a model invalidates prior stability and advice.
+    /// Native sessions remain on the caller's thread.
+    pub fn set_tile_classifier(&mut self, classifier: Option<Box<dyn FaceClassifier>>) {
+        self.tile_classifier = classifier;
+        self.reset_recognition();
     }
     pub fn tracker_mut(&mut self) -> &mut GameTracker {
         self.cached_discards = None;
@@ -309,7 +318,12 @@ impl RuntimeEngine {
     ) -> Option<VisionSnapshot> {
         let hand = self
             .bank
-            .recognize_hand(hand_image, slots, self.match_config)
+            .recognize_hand_with_fallback(
+                hand_image,
+                slots,
+                self.match_config,
+                self.tile_classifier.as_deref(),
+            )
             .ok()?;
         let hand = hand.tiles.map(|tiles| (tiles, hand.confidence))?;
         let (actions, action_confidence) = if self.action_slots.is_empty() {
@@ -330,15 +344,19 @@ impl RuntimeEngine {
         let (public_info, public_confidence) = if let Some(public) = public {
             let mut visible_tiles = Vec::new();
             let mut confidence = 1.0f32;
-            let river = self
-                .bank
-                .recognize_public_tiles(public.river, self.match_config);
+            let river = self.bank.recognize_public_tiles_with_fallback(
+                public.river,
+                self.match_config,
+                self.tile_classifier.as_deref(),
+            );
             confidence = confidence.min(river.confidence);
             let offered = river.offered.map(|offer| (offer.tile, offer.source));
             visible_tiles.extend(river.tiles?.into_iter().map(|tile| tile.tile));
-            let own = self
-                .bank
-                .recognize_public_tiles(public.own_melds, self.match_config);
+            let own = self.bank.recognize_public_tiles_with_fallback(
+                public.own_melds,
+                self.match_config,
+                self.tile_classifier.as_deref(),
+            );
             confidence = confidence.min(own.confidence);
             let mut own_meld_tiles: Vec<_> = own.tiles?.into_iter().map(|tile| tile.tile).collect();
             let open = (14 - hand.0.len()) / 3;
@@ -347,13 +365,19 @@ impl RuntimeEngine {
             }
             visible_tiles.extend_from_slice(&own_meld_tiles);
             for image in public.opponent_melds {
-                let read = self.bank.recognize_public_tiles(image, self.match_config);
+                let read = self.bank.recognize_public_tiles_with_fallback(
+                    image,
+                    self.match_config,
+                    self.tile_classifier.as_deref(),
+                );
                 confidence = confidence.min(read.confidence);
                 visible_tiles.extend(read.tiles?.into_iter().map(|tile| tile.tile));
             }
-            let dora = self
-                .bank
-                .recognize_public_tiles(public.dora, self.match_config);
+            let dora = self.bank.recognize_public_tiles_with_fallback(
+                public.dora,
+                self.match_config,
+                self.tile_classifier.as_deref(),
+            );
             confidence = confidence.min(dora.confidence);
             let dora_indicators: Vec<_> = dora.tiles?.into_iter().map(|tile| tile.tile).collect();
             visible_tiles.extend_from_slice(&dora_indicators);

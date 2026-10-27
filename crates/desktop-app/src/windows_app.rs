@@ -1,3 +1,4 @@
+use crate::recognition_setup::prepare_runtime;
 use game_state::GameTracker;
 use riichi_core::Tile;
 use runtime_core::{PipelineOutput, PublicImages, RuntimeEngine};
@@ -10,7 +11,7 @@ use std::collections::BTreeMap;
 use std::ffi::c_void;
 use std::path::PathBuf;
 use std::time::Duration;
-use vision_core::{MatchConfig, RgbImage, TemplateBank, save_labeled_hand};
+use vision_core::{RgbImage, save_labeled_hand};
 
 #[repr(C)]
 #[derive(Default, Clone, Copy)]
@@ -160,6 +161,7 @@ struct AppState {
     profile: Option<CalibrationProfile>,
     config_path: PathBuf,
     pack_path: PathBuf,
+    model_manifest: PathBuf,
     runtime: Option<RuntimeEngine>,
     manual_tracker: GameTracker,
     capture_stream: Option<CaptureStream>,
@@ -208,6 +210,10 @@ pub fn run(smoke: bool) -> Result<(), String> {
     let base = exe.parent().ok_or("无法定位程序目录")?;
     let config_path = base.join("config").join("calibration.json");
     let pack_path = base.join("models").join("template-pack");
+    let model_manifest = base
+        .join("models")
+        .join("tile-classifier")
+        .join("classifier.json");
     let profile = CalibrationProfile::load(&config_path).ok();
     let active_query = profile
         .as_ref()
@@ -221,6 +227,7 @@ pub fn run(smoke: bool) -> Result<(), String> {
             profile,
             config_path,
             pack_path,
+            model_manifest,
             runtime: None,
             manual_tracker: GameTracker::new(),
             capture_stream: None,
@@ -798,14 +805,10 @@ impl AppState {
             self.status = "请重新校准，补齐三家副露区域".into();
             return;
         };
-        let bank = match TemplateBank::load_dir(&self.pack_path) {
-            Ok(bank) => bank,
-            Err(_) => {
-                let progress = TemplateBank::progress_dir(&self.pack_path);
-                self.status = format!(
-                    "本机模板：牌图 {}/37、按钮 {}/5；可点击学习模板",
-                    progress.tiles, progress.actions
-                );
+        let (runtime, mode) = match prepare_runtime(&self.pack_path, &self.model_manifest) {
+            Ok(prepared) => prepared,
+            Err(error) => {
+                self.status = error.to_string();
                 return;
             }
         };
@@ -816,17 +819,7 @@ impl AppState {
                 return;
             }
         };
-        let runtime = match RuntimeEngine::new(bank, vec![], MatchConfig::default(), 3) {
-            Ok(runtime) => runtime,
-            Err(error) => {
-                self.status = format!("识别启动失败：{error}");
-                return;
-            }
-        };
-        self.status = format!(
-            "只读识别运行中（{:?}）；按钮匹配待实图验收",
-            stream.backend()
-        );
+        self.status = format!("只读识别运行中（{:?}，{}）", stream.backend(), mode.label());
         self.runtime = Some(runtime);
         self.capture_stream = Some(stream);
         self.last_images.clear();

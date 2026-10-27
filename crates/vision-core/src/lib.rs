@@ -9,6 +9,7 @@ use std::path::Path;
 
 mod board;
 pub mod classifier;
+mod hybrid;
 #[cfg(windows)]
 pub mod neural;
 #[cfg(windows)]
@@ -350,6 +351,39 @@ pub struct TemplatePackProgress {
 }
 
 impl TemplateBank {
+    /// A model may supply tile labels while these templates still verify actions.
+    pub fn actions_only(
+        action_templates: Vec<(ActionLabel, RgbImage)>,
+    ) -> Result<Self, VisionError> {
+        if action_templates.is_empty() {
+            return Err(VisionError::EmptyTemplates);
+        }
+        Ok(Self {
+            tile_templates: Vec::new(),
+            action_templates,
+            tile_descriptors: Vec::new(),
+            public_descriptors: Vec::new(),
+        })
+    }
+
+    /// Require all five local action states, even when a model supplies tiles.
+    pub fn load_actions_dir(path: &Path) -> Result<Self, VisionError> {
+        let mut actions = Vec::new();
+        for (label, name) in [
+            (ActionLabel::None, "none"),
+            (ActionLabel::Chi, "chi"),
+            (ActionLabel::Pon, "pon"),
+            (ActionLabel::Kan, "kan"),
+            (ActionLabel::Riichi, "riichi"),
+        ] {
+            actions.push((
+                label,
+                RgbImage::read_png(&path.join("actions").join(format!("{name}.png")))?,
+            ));
+        }
+        Self::actions_only(actions)
+    }
+
     pub fn progress_dir(path: &Path) -> TemplatePackProgress {
         let mut tiles = 0;
         for suit in ['m', 'p', 's'] {

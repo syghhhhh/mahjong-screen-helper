@@ -1,6 +1,7 @@
 use super::{
     MatchConfig, Rect, RgbImage, TemplateBank, TileDescriptor, VisionError, best_match, is_pale,
 };
+use crate::classifier::FaceClassifier;
 use riichi_core::Tile;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -154,6 +155,15 @@ impl TemplateBank {
     /// Classify separated public tiles, comparing all rotations per class before
     /// computing the class margin. Repeated rotations of one label are not rivals.
     pub fn recognize_public_tiles(&self, image: &RgbImage, config: MatchConfig) -> PublicTileRead {
+        self.recognize_public_tiles_with_fallback(image, config, None)
+    }
+
+    pub fn recognize_public_tiles_with_fallback(
+        &self,
+        image: &RgbImage,
+        config: MatchConfig,
+        classifier: Option<&dyn FaceClassifier>,
+    ) -> PublicTileRead {
         let slots = detect_public_slots(image);
         if slots.is_empty()
             && image
@@ -176,7 +186,7 @@ impl TemplateBank {
                 offered: None,
             };
         }
-        self.recognize_public_regions(image, &slots, config)
+        self.recognize_public_regions_with_fallback(image, &slots, config, classifier)
             .expect("detected regions stay inside image")
     }
 
@@ -187,6 +197,16 @@ impl TemplateBank {
         image: &RgbImage,
         slots: &[Rect],
         config: MatchConfig,
+    ) -> Result<PublicTileRead, VisionError> {
+        self.recognize_public_regions_with_fallback(image, slots, config, None)
+    }
+
+    pub fn recognize_public_regions_with_fallback(
+        &self,
+        image: &RgbImage,
+        slots: &[Rect],
+        config: MatchConfig,
+        classifier: Option<&dyn FaceClassifier>,
     ) -> Result<PublicTileRead, VisionError> {
         if !config.accepts(1.0, 1.0) {
             return Ok(PublicTileRead {
@@ -241,7 +261,7 @@ impl TemplateBank {
                     .map(|(_, rotated, descriptor)| score(candidate, template, rotated, descriptor))
                     .fold(0.0f32, f32::max)
             });
-            match result {
+            let template_tile = match result {
                 Some((tile, best, margin)) if config.accepts(best, margin) => {
                     let mut normalization = (Rotation::Upright, -1.0f32);
                     for (candidate, (label, template)) in self.tile_templates.iter().enumerate() {
@@ -255,22 +275,25 @@ impl TemplateBank {
                             }
                         }
                     }
-                    confidence = confidence.min(best);
-                    tiles.push(DetectedPublicTile {
+                    Some(DetectedPublicTile {
                         tile,
                         rect,
                         normalization: normalization.0,
                         confidence: best,
-                    });
+                    })
                 }
-                Some((_, best, _)) => {
-                    confidence = confidence.min(best);
-                    uncertain_regions.push(rect);
-                }
-                None => {
-                    confidence = 0.0;
-                    uncertain_regions.push(rect);
-                }
+                _ => None,
+            };
+            let found = template_tile.or_else(|| {
+                classifier
+                    .and_then(|model| crate::hybrid::neural_public_tile(image, rect, model, config))
+            });
+            if let Some(tile) = found {
+                confidence = confidence.min(tile.confidence);
+                tiles.push(tile);
+            } else {
+                confidence = confidence.min(result.map_or(0.0, |(_, score, _)| score));
+                uncertain_regions.push(rect);
             }
         }
         let mut counts = [0u8; 34];
