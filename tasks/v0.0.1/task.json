@@ -101,7 +101,7 @@
     {
       "id": "V001-004",
       "title": "实现四麻牌效与 Top-3 推荐",
-      "status": "planned",
+      "status": "implemented",
       "depends_on": [
         "V001-001"
       ],

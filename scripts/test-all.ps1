@@ -20,9 +20,13 @@ if ($LASTEXITCODE -ne 0 -or $sourceSha -notmatch '^[0-9a-f]{40}$') { throw 'Cann
 function Invoke-CheckedScript([string]$Path, [string[]]$Arguments = @()) {
     $command = 'powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{0}" {1}' -f $Path, ($Arguments -join ' ')
     Add-Content -LiteralPath $logPath -Value ("RUN $command") -Encoding utf8
-    & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $Path @Arguments 2>&1 |
-        ForEach-Object { [string]$_ } | Tee-Object -FilePath $logPath -Append
-    $code = $LASTEXITCODE
+    $previousPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $Path @Arguments 2>&1 |
+            ForEach-Object { [string]$_ } | Tee-Object -FilePath $logPath -Append
+        $code = $LASTEXITCODE
+    } finally { $ErrorActionPreference = $previousPreference }
     $script:results += [pscustomobject]@{ test = $Path; command = $command.Trim(); exit_code = $code; skipped = $false }
     if ($code -ne 0) { $script:passed = $false }
 }

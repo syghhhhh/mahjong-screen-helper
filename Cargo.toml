@@ -1,0 +1,3 @@
+[workspace]
+members = ["crates/riichi-core"]
+resolver = "2"
