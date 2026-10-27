@@ -15,3 +15,5 @@
 ## 视觉实验数据的边界
 
 本机诊断曾使用 [pjura 的雀魂牌图数据集](https://huggingface.co/datasets/pjura/mahjong_souls_tiles/raw/main/README.md)。数据集卡标注 Apache-2.0，同时明确图片取自雀魂游戏。该标注没有说明数据集作者拥有游戏原始美术的再分发授权；因此实验牌图仅放在被 Git 忽略的 `.local-test-data/`，不得随本仓库或便携包分发。另一开源识别项目 [QueHun](https://raw.githubusercontent.com/jzjzzzzzzz/quehun/main/templates/actions/README.md) 的按钮模板也标明来自真实客户端，当前不复制进本项目。正式发布前须取得可分发素材的明确授权，或改用本机由用户提供的模板而不打包游戏素材。
+
+另测试了 [FluffyStuff 的公有领域日麻牌图](https://github.com/FluffyStuff/riichi-mahjong-tiles)，上游提交 `26e127ba2117f45cdce5ea0225748cc0cfad3169`。直接将其 37 张 PNG 作为模板，对第一张公开雀魂手牌截图的 14 个槽位进行候选匹配时，整手标签判定失败，默认置信度门槛也未通过。失败摘要保存在本机 `.local-test-data/runs/local-vision-tiles-f765675d230d4766a6cda12a59dcd3dd/`。这套素材具有可分发的授权，但不能未经适配就声称支持默认雀魂牌面，因此当前未打包。

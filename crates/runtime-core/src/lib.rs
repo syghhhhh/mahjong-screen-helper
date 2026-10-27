@@ -31,6 +31,8 @@ pub struct RuntimeEngine {
     stable_frames: usize,
     tracker: GameTracker,
     offered: Option<(Tile, ClaimSource)>,
+    cached_discards: Option<(Vec<Tile>, Vec<Recommendation>)>,
+    recommendation_calculations: u64,
     paused: bool,
 }
 
@@ -49,6 +51,8 @@ impl RuntimeEngine {
             stable_frames,
             tracker: GameTracker::new(),
             offered: None,
+            cached_discards: None,
+            recommendation_calculations: 0,
             paused: false,
         })
     }
@@ -57,12 +61,17 @@ impl RuntimeEngine {
         &self.tracker
     }
     pub fn tracker_mut(&mut self) -> &mut GameTracker {
+        self.cached_discards = None;
         &mut self.tracker
+    }
+    pub fn recommendation_calculations(&self) -> u64 {
+        self.recommendation_calculations
     }
     pub fn set_paused(&mut self, paused: bool) {
         if self.paused != paused {
             self.filter = StabilityFilter::new(self.stable_frames).expect("validated frame count");
             self.tracker.mark_uncertain();
+            self.cached_discards = None;
         }
         self.paused = paused;
     }
@@ -72,6 +81,7 @@ impl RuntimeEngine {
     pub fn reset_recognition(&mut self) {
         self.filter = StabilityFilter::new(self.stable_frames).expect("validated frame count");
         self.tracker.mark_uncertain();
+        self.cached_discards = None;
     }
     pub fn set_offer(&mut self, offered: Option<(Tile, ClaimSource)>) {
         self.offered = offered;
@@ -82,7 +92,9 @@ impl RuntimeEngine {
         visible: [u8; 34],
         dora_indicators: Vec<Tile>,
     ) -> Result<(), StateError> {
-        self.tracker.set_public_tiles(visible, dora_indicators)
+        self.tracker.set_public_tiles(visible, dora_indicators)?;
+        self.cached_discards = None;
+        Ok(())
     }
 
     pub fn process(
@@ -109,6 +121,7 @@ impl RuntimeEngine {
             FilterDecision::Waiting => PipelineOutput::Waiting,
             FilterDecision::Uncertain => {
                 self.tracker.mark_uncertain();
+                self.cached_discards = None;
                 PipelineOutput::Uncertain
             }
             FilterDecision::Stable(snapshot) => {
@@ -119,9 +132,18 @@ impl RuntimeEngine {
                     confidence: snapshot.confidence,
                 });
                 if result.phase == Phase::Uncertain {
+                    self.cached_discards = None;
                     return PipelineOutput::Uncertain;
                 }
-                let discards = self.tracker.discard_recommendations();
+                let discards = if let Some((cached_hand, cached)) = &self.cached_discards {
+                    if *cached_hand == snapshot.hand {
+                        cached.clone()
+                    } else {
+                        self.compute_discards(&snapshot.hand)
+                    }
+                } else {
+                    self.compute_discards(&snapshot.hand)
+                };
                 let mut actions = Vec::new();
                 for action in snapshot.actions {
                     let (offered, source) = if action == ActionLabel::Riichi {
@@ -151,6 +173,13 @@ impl RuntimeEngine {
 
     fn tracker_actions(&self) -> Vec<ActionLabel> {
         self.tracker.available_actions().to_vec()
+    }
+
+    fn compute_discards(&mut self, hand: &[Tile]) -> Vec<Recommendation> {
+        let discards = self.tracker.discard_recommendations();
+        self.cached_discards = Some((hand.to_vec(), discards.clone()));
+        self.recommendation_calculations = self.recommendation_calculations.saturating_add(1);
+        discards
     }
 
     fn read_candidate(

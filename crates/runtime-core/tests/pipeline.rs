@@ -190,3 +190,47 @@ fn requires_stable_frames_before_recommending_and_clears_on_uncertainty() {
         PipelineOutput::Uncertain
     ));
 }
+
+#[test]
+fn unchanged_frames_reuse_discard_advice_until_inputs_change() {
+    let bank = bank();
+    let mut engine = RuntimeEngine::new(bank.clone(), vec![], MatchConfig::default(), 1).unwrap();
+    let mut hand = hand_tiles();
+    hand.push(Tile::from_code("9p").unwrap());
+    let image = scene(&bank, &hand);
+    let actions = action_scene(&bank, ActionLabel::None);
+
+    assert!(matches!(
+        engine.process(1, &image, Some(&actions)),
+        PipelineOutput::Ready { .. }
+    ));
+    assert_eq!(engine.recommendation_calculations(), 1);
+    assert!(matches!(
+        engine.process(2, &image, Some(&actions)),
+        PipelineOutput::Ready { .. }
+    ));
+    assert_eq!(engine.recommendation_calculations(), 1);
+
+    engine
+        .set_public_tiles([0; 34], vec![Tile::from_code("1z").unwrap()])
+        .unwrap();
+    assert!(matches!(
+        engine.process(3, &image, Some(&actions)),
+        PipelineOutput::Ready { .. }
+    ));
+    assert_eq!(engine.recommendation_calculations(), 2);
+
+    engine.tracker_mut().set_known_yaku(true);
+    assert!(matches!(
+        engine.process(4, &image, Some(&actions)),
+        PipelineOutput::Ready { .. }
+    ));
+    assert_eq!(engine.recommendation_calculations(), 3);
+
+    engine.reset_recognition();
+    assert!(matches!(
+        engine.process(5, &image, Some(&actions)),
+        PipelineOutput::Ready { .. }
+    ));
+    assert_eq!(engine.recommendation_calculations(), 4);
+}
