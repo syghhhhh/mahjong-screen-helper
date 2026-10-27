@@ -14,10 +14,15 @@ if (Test-Path -LiteralPath $zip) { throw "Output zip already exists: $zip" }
 $profile = if ($Configuration -eq 'Release') { 'release' } else { 'debug' }
 $cargoArgs = @('build', '--manifest-path', (Join-Path $repoRoot 'Cargo.toml'), '-p', 'riichi-screen-helper', '--locked', '-j', '1')
 if ($Configuration -eq 'Release') { $cargoArgs += '--release' }
-& cargo @cargoArgs
-if ($LASTEXITCODE -ne 0) { throw 'Cargo build failed' }
+Push-Location -LiteralPath $repoRoot
+try {
+    & cargo @cargoArgs
+    if ($LASTEXITCODE -ne 0) { throw 'Cargo build failed' }
+} finally { Pop-Location }
 $exe = Join-Path $repoRoot ("target\$profile\RiichiScreenHelper.exe")
 if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) { throw "Built executable missing: $exe" }
+& powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'validate-portable-imports.ps1') -Executable $exe
+if ($LASTEXITCODE -ne 0) { throw 'Portable DLL dependency audit failed' }
 
 New-Item -ItemType Directory -Path $output -Force | Out-Null
 New-Item -ItemType Directory -Path (Join-Path $output 'config') -Force | Out-Null

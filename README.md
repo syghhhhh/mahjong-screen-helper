@@ -14,6 +14,8 @@ Windows 雀魂网页版四人日麻只读屏幕辅助程序。v0.0.1 正在开�
 
 便携包在仓库根目录运行 `scripts/package-portable.ps1 -OutputDirectory <目标目录>` 生成。打包脚本会同时生成 zip；包内没有 Python、Node 或 Rust 运行时。开发包尚不能作为正式版使用：牌面与按钮模板的来源、授权和真实画面准确率仍待验收。
 
+Windows x64 MSVC 构建使用静态 CRT，打包前检查实际 exe 的 DLL 导入，拒绝额外 VC++ 运行库依赖。该审计需要构建机已有的 Visual Studio `dumpbin`，终端用户不需要此工具；导入检查仍不代替干净 Windows 的启动验收。
+
 - [v0.0.1 产品规格](docs/releases/v0.0.1-product-spec.md)
 - [v0.0.1 任务与验收](docs/releases/v0.0.1.md)
 - [开发和测试流程](docs/development-workflow.md)

@@ -147,3 +147,7 @@ tensor 文件为 1–256 个连续的 little-endian `[1,3,48,32]` float32 输入
 12 个新测试覆盖快速路径不调用模型、逐槽回退、分数/执行拒绝、方向矛盾、重叠与四张上限、旋转白板、三帧确认、旧建议清除、暂停/移除，以及三种启动模式和坏模型。失败日志保存在 `.local-test-data/runs/hybrid-recognition-tdd-1f15ef9/`；包括缺接口的 TDD 失败，以及修正前的 Rust 浮点字面量和 Clippy 测试代码风格错误。没有跳过测试或放宽拒识来消除这些错误。
 
 复核另发现模型切换后的跨源换局问题：旧换局基线仍能与新模型的稳定手牌、公共牌比较，误触发 `RoundEnd`。第 13 个回归测试用两个识别源解释的变化复现，失败日志为同目录 `cross-model-round-failure.log`。修复在 `set_tile_classifier` 清除换局基线，保留当前局规则状态与原本的三帧确认；不能用换局重置来掩盖模型解释变化导致的不一致。
+
+打包检查另发现此前开发 exe 直接导入 `VCRUNTIME140.dll`。新增 DLL 审计在修复前拒绝它，日志为同目录 `initial-runtime-import-failure.log`。配置 Windows x64 `target-feature=+crt-static` 后，实际导入列表不再有 VC runtime DLL；依据 [Rust 链接说明](https://doc.rust-lang.org/reference/linkage.html#static-and-dynamic-c-runtimes)切换链接方式，并按其建议检查最终二进制。审计使用[微软 DUMPBIN](https://learn.microsoft.com/en-us/cpp/build/reference/dependents?view=msvc-170)，只在构建机执行。
+
+版本打包测试还编译一个原创的动态 CRT 负例，确认它因运行库依赖被拒，而不是因为工具缺失或无法解析而误通过。从仓库外调用整个打包测试也通过，记录为同目录 `static-runtime-package.log`；输出目录中总文件约 1.82 MB，未包含负例、Python 或其他开发运行时。这只是开发机的打包与导入检查，不是干净 Windows 或现场识牌验收。

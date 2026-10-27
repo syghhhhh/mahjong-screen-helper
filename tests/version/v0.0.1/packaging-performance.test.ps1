@@ -22,6 +22,20 @@ foreach ($package in $inventory.packages) {
 }
 $unexpected = @(Get-ChildItem -LiteralPath $output -File -Recurse | Where-Object { $_.Name -match '^(python|node)(\.exe)?$|\.py$' })
 if ($unexpected.Count -ne 0) { throw 'Portable package contains a development runtime' }
+# Independently compile a deliberately dynamic-CRT control. The import audit
+# must reject it for runtime DLLs, rather than pass on an empty/failed tool read.
+$controlRoot = Join-Path (Split-Path -Parent $output) 'import-control'
+New-Item -ItemType Directory -Path $controlRoot -Force | Out-Null
+$controlExe = Join-Path $controlRoot 'portable_crt_control.exe'
+& rustc --edition 2024 --crate-name portable_crt_control -C 'target-feature=-crt-static' (Join-Path $repoRoot 'tests\fixtures\synthetic\runtime_import_control.rs') -o $controlExe
+if ($LASTEXITCODE -ne 0) { throw 'Could not compile dynamic-CRT negative control' }
+$auditScript = Join-Path $repoRoot 'scripts\validate-portable-imports.ps1'
+$auditError = Join-Path $controlRoot 'expected-rejection.log'
+$auditOutput = Join-Path $controlRoot 'audit-output.log'
+$controlProcess = Start-Process -FilePath powershell.exe -ArgumentList @('-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', ('"{0}"' -f $auditScript), '-Executable', ('"{0}"' -f $controlExe)) -RedirectStandardError $auditError -RedirectStandardOutput $auditOutput -WindowStyle Hidden -PassThru -Wait
+$diagnostic = Get-Content -LiteralPath $auditError -Raw
+if ($controlProcess.ExitCode -eq 0 -or $diagnostic -notmatch 'needs separately installed VC runtime DLLs:.*(vcruntime|msvcp|msvcr|concrt)') { throw 'DLL audit did not reject the dynamic-CRT control for the expected reason' }
+Write-Output 'Dynamic-CRT negative control correctly rejected; it was not executed or packaged'
 $totalBytes = (Get-ChildItem -LiteralPath $output -File -Recurse | Measure-Object Length -Sum).Sum
 if ($totalBytes -gt 100MB) { throw "Portable package exceeds lightweight size target: $totalBytes bytes" }
 $process = Start-Process -FilePath $exe -ArgumentList '--smoke' -WorkingDirectory $output -WindowStyle Hidden -PassThru -Wait
