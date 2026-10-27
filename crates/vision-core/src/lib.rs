@@ -10,6 +10,7 @@ use std::path::Path;
 mod board;
 #[cfg(windows)]
 pub mod neural;
+pub mod neural_input;
 pub use board::{
     DetectedPublicTile, OfferedTile, PublicSnapshot, PublicTileRead, RelativeSeat, Rotation,
     detect_public_slots,

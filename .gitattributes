@@ -1,0 +1,5 @@
+# Pixel/tensor/model fixtures are byte contracts; never normalize their newlines.
+*.rgb binary
+*.f32le binary
+*.onnx binary
+*.png binary

@@ -14,7 +14,7 @@ use windows::{
 
 mod activation;
 
-pub const INPUT_FLOATS: usize = 3 * 48 * 32;
+pub use crate::neural_input::INPUT_FLOATS;
 pub const OUTPUT_CLASSES: usize = 37;
 const MAX_MODEL_BYTES: u64 = 16 * 1024 * 1024;
 

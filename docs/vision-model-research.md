@@ -70,3 +70,18 @@ tensor 文件为 1–256 个连续的 little-endian `[1,3,48,32]` float32 输入
 提交 `06c4b74f72af03226a1c99ecb3637854d78b56eb` 的版本测试 8 项和全项目回归 9 项均在本机通过，无失败或跳过，摘要为 `.local-test-data/runs/version-v0.0.1-6953ba37615541ec91ab670752680ba2/version-tests.json` 和 `.local-test-data/runs/all-3e89bff1e2b64ebf8d679b8c7fa2b284/all-tests.json`。该提交的 [CI 运行 40518212205](https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40518212205) 的五项 required checks 均通过，其中包含隔离子进程生命周期测试；前两次失败记录继续保留。
 
 同一干净提交的原生数值对照记录在 `.local-test-data/runs/local-native-onnx-a05fe85d96454938b6cdb94d2da1874a/`：最大 logits 误差仍为 `2.55e-6`，该次模型加载约 27.8 ms、41 次执行约 3.1 ms。此对照使用较早的 40/41 CC0 权重，不是新增混合字体权重的准确率或实时验收。
+
+## 小分类器的 Rust 像素预处理
+
+检查 FAQ 说明图后发现，右上角的小红色数字或字母也进入了字形包围盒。保留原混合字体权重，只在本机 Python 探针中去掉符合位置、大小和连通条件的角标，结果先为 32/34；放宽角标宽度以覆盖西牌的 W 后为 33/34，仍把八筒误认一索，分数约 0.269。两次摘要分别为 `.local-test-data/runs/local-corner-hint-probe-8419edd5ce1f4ad79cd6390455dc11d9/summary.json` 和 `.local-test-data/runs/local-corner-hint-probe-cceb8e906f5748f7b266d8dc20bcf5b9/summary.json`。原来的 24/34 失败结果继续保留。这组图已经参与预处理调整，之后属于开发压力测试集，不能再宣称为未见的独立最终验收集。
+
+新增跨平台 `vision-core::neural_input::prepare_tile`，预处理标识为 `rgb-inverse-glyph-box-v2`。它接收 8–1024 像素宽高的直立牌面 RGB，复制后处理，不读写文件；alpha 须由调用方先合成到白色。步骤为：
+
+1. 检测红色四连通块；只去掉位于最右侧、上方且面积和宽高均较小的块，以浅色背景中位数填充。中央红色、左侧红色和大的红色字形保留。该启发式仍须用不同赤五牌面验证。
+2. 忽略外圈 5% 及橙色边缘对包围盒的影响，取墨色包围盒并加一像素边距。
+3. 用分离的 BOX 重采样、22 位定点系数和逐遍 8 位舍入得到 32×48 RGB，再生成 CHW `[3,48,32]` 的 `1 - RGB/255`。不能用一次二维平均截断来替代，否则输入与训练时不同。
+4. 无墨色时输出零 tensor，同时返回 `glyph_bounds: None`；该结果不能证明识别到了白板。模型映射、空白验证、未知输入拒识和置信度校准仍需调用层完成。
+
+七组合成几何图片和 Pillow 12.2.0 参考字节保存在 `tests/fixtures/synthetic/neural-input/`；无游戏牌图、字体和模型权重。四个新增 Rust 测试检查每个像素/通道的数值一致性、边界尺寸、输入不被修改、角标去除及红色信息保留，随版本和回归测试运行。初始模块缺失的失败日志保存在 `.local-test-data/runs/neural-input-tdd-a9f96b9/initial-failure.log`。开发时可用 `tools/generate-neural-input-fixtures.py` 再生成；运行程序和 CI 不依赖 Python。
+
+诊断命令 `cargo run -p vision-core --example inspect_neural_faces --release --locked -j 1 -- <ONNX> <新tensor文件> <牌面PNG> ...` 接受 1–256 张本机 RGB/RGBA PNG，保存实际 Rust 输入并输出原生 logits。目标 tensor 文件必须不存在，旧证据不得被覆盖。它没有生产类别映射、不输出麻将推荐，也未接入浮窗；模型清单必须绑定预处理版本后才能用于后续集成。
