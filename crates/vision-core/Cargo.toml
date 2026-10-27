@@ -8,9 +8,11 @@ license = "MIT"
 [dependencies]
 riichi-core = { path = "../riichi-core" }
 png = "=0.18.1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 
 [target.'cfg(windows)'.dependencies]
-windows = { version = "=0.62.2", features = ["AI_MachineLearning", "Win32_System_WinRT"] }
+windows = { version = "=0.62.2", features = ["AI_MachineLearning", "Win32_System_WinRT", "Win32_Security_Cryptography"] }
 
 [lib]
 name = "vision_core"

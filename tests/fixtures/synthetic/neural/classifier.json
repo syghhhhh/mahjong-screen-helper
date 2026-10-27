@@ -1,0 +1,10 @@
+{
+  "schema_version": "1.0",
+  "model_id": "synthetic-affine-37",
+  "model_file": "affine-37.onnx",
+  "model_sha256": "8bd4a9868efb22b83afe12ef258cf76ffec31ff47ab635123bf5be633107440b",
+  "preprocessing": "rgb-inverse-glyph-box-v2",
+  "class_order": ["1m", "2m", "3m", "4m", "5m", "6m", "7m", "8m", "9m", "1p", "2p", "3p", "4p", "5p", "6p", "7p", "8p", "9p", "1s", "2s", "3s", "4s", "5s", "6s", "7s", "8s", "9s", "1z", "2z", "3z", "4z", "5z", "6z", "7z", "0m", "0p", "0s"],
+  "license": "MIT",
+  "thresholds": {"min_probability": 0.8, "min_margin": 0.1, "max_normalized_entropy": 0.4}
+}

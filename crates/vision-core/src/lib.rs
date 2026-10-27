@@ -8,8 +8,11 @@ use std::io::{BufReader, BufWriter};
 use std::path::Path;
 
 mod board;
+pub mod classifier;
 #[cfg(windows)]
 pub mod neural;
+#[cfg(windows)]
+pub mod neural_classifier;
 pub mod neural_input;
 pub use board::{
     DetectedPublicTile, OfferedTile, PublicSnapshot, PublicTileRead, RelativeSeat, Rotation,

@@ -107,3 +107,15 @@ tensor 文件为 1–256 个连续的 little-endian `[1,3,48,32]` float32 输入
 冻结颜色增强权重，另生成 15 个非麻将字形和 4 个纯色区域作本机压力测试，记录在 `.local-test-data/runs/local-unknown-neural-probe-06e950043a4c4ed3bd1145a3f0448e8b/summary.json`。在假设的 `softmax ≥ 0.9` 且前两名差值 `≥ 0.2` 门槛下，仍有 6/19 个非牌面会通过，包括 Y→四万约 0.9998、暗区域→八筒约 0.9924；空白浅色区域也会得到白板约 0.983。该门槛仅用于暴露问题，没有写入生产配置。
 
 因此不能只凭已知与新手牌命中率启用模型。后续须补上未知输入/无效牌面拒识、白板上下文确认、模型清单及类别/预处理绑定，再进行集成和现场验收。视觉任务继续 `in_progress`；旧高分错误和本次真实的未知输入失败均保留，不能通过调低门槛或忽略失败将其标记成功。
+
+## 拒识训练与本机分类器接口
+
+参照 [Outlier Exposure 原论文](https://arxiv.org/abs/1812.04606)中对异常样本学习均匀分布的思路，新增本机实验使用自行绘制线条和 OFL Noto 字形作辅助负样本，不复制其代码。498 个合成输入明确排除之前 15 个压力字形的字符；不将空白零 tensor 当负样本，以免与白板冲突。负样本来源与脚本哈希在 `.local-test-data/models/original-outliers-v1/`，这些实验不是完整独立未知分布验收。
+
+首轮 `local-outlier-cnn-6bb48a5e2f2f4107bc6383a577276df5` 保持 37 类、61,517 参数，已知手牌最高标签仍为 41/41，FAQ 降为 33/34，真实赤五索分数降至约 0.125。19 个原压力样本在假设 0.9 / 0.2 门槛下只剩空白区域高分；输入和原生数值对照为 `local-neural-input-v2-b0c9e15e30c34c4f8278329c14dfdd6a`，压力摘要为 `local-unknown-neural-probe-3c004b600dc34187bc419992ef19961d`。这说明训练改善部分拒识，却损害有效牌面的置信度，不能只报告拒识数字。
+
+随后自行用椭圆、杆和圆角几何图形绘制普通/赤五索各 40 个变化，没有从游戏图片裁取纹理。来源为 `.local-test-data/models/permissive-bamboo-v2/`。第二轮 `local-bamboo-outlier-cnn-096672c8e3154ad79b647443a41bb529` 仍为已知手牌 41/41、FAQ 33/34；赤五索改善但最低分仍约 0.318。原生 tensor 逐值一致，最大 logits 误差约 `4.29e-6`，摘要为 `local-neural-input-v2-3c7578c4d1734e9ba67898c8d2f2ea27`；压力结果 `local-unknown-neural-probe-4bb5928a76d1468d99eb11b9898a913b` 仍只有无上下文空白高分。两轮模型均未打包、未启用，历史旧模型和所有错误继续保留。
+
+新增 `ModelManifest`、`FaceObservation` 和 Windows `LocalTileClassifier` 实现明确的本机模型契约：限定文件名、实际 SHA-256、类别顺序、预处理版本和显式阈值；读取时保持模型文件写入/替换锁，使用稳定数值运算并明确拒识；空白须有同一手牌观察中的四边牌槽证据。详见 [清单与拒识接口](model-manifest.md)。这仍不替代目标游戏白板、遮挡、未知输入与动作识别验收，且还没有接入浮窗。
+
+新增八个测试覆盖清单/决定/白板几何、系统哈希和本机加载。初始缺模块的 TDD 日志在 `.local-test-data/runs/classifier-contract-tdd-a1a0dd9/initial-failure.log`。另保留 `first-behavior-failure.log`：最初的并列分数用例因其最高概率略小于 0.5，先触发低概率拒识，未隔离到预期的差值检查；把第二名从 20 改为 19.98，使最高概率略高于 0.5 而差值不足，分别验证两条规则，没有放宽实现阈值。
