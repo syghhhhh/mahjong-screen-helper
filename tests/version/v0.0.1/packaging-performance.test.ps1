@@ -31,10 +31,17 @@ $controlExe = Join-Path $controlRoot 'portable_crt_control.exe'
 if ($LASTEXITCODE -ne 0) { throw 'Could not compile dynamic-CRT negative control' }
 $auditScript = Join-Path $repoRoot 'scripts\validate-portable-imports.ps1'
 $auditError = Join-Path $controlRoot 'expected-rejection.log'
-$auditOutput = Join-Path $controlRoot 'audit-output.log'
-$controlProcess = Start-Process -FilePath powershell.exe -ArgumentList @('-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', ('"{0}"' -f $auditScript), '-Executable', ('"{0}"' -f $controlExe)) -RedirectStandardError $auditError -RedirectStandardOutput $auditOutput -WindowStyle Hidden -PassThru -Wait
-$diagnostic = Get-Content -LiteralPath $auditError -Raw
-if ($controlProcess.ExitCode -eq 0 -or $diagnostic -notmatch 'needs separately installed VC runtime DLLs:.*(vcruntime|msvcp|msvcr|concrt)') { throw 'DLL audit did not reject the dynamic-CRT control for the expected reason' }
+$previousPreference = $ErrorActionPreference
+try {
+    # Match the normal Windows PowerShell test runner. A Start-Process child
+    # launched from pwsh could not discover Get-FileHash in the CI reproduction.
+    $ErrorActionPreference = 'Continue'
+    $diagnosticLines = @(& powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $auditScript -Executable $controlExe 2>&1 | ForEach-Object { [string]$_ })
+    $auditCode = $LASTEXITCODE
+} finally { $ErrorActionPreference = $previousPreference }
+$diagnosticLines | Set-Content -LiteralPath $auditError -Encoding utf8
+$diagnostic = ($diagnosticLines -join ' ') -replace '\s+', ' '
+if ($auditCode -eq 0 -or $diagnostic -notmatch 'needs separately installed VC runtime DLLs:.*(vcruntime|msvcp|msvcr|concrt)') { throw "DLL audit did not reject the dynamic-CRT control for the expected reason; see $auditError" }
 Write-Output 'Dynamic-CRT negative control correctly rejected; it was not executed or packaged'
 $totalBytes = (Get-ChildItem -LiteralPath $output -File -Recurse | Measure-Object Length -Sum).Sum
 if ($totalBytes -gt 100MB) { throw "Portable package exceeds lightweight size target: $totalBytes bytes" }

@@ -151,3 +151,13 @@ tensor 文件为 1–256 个连续的 little-endian `[1,3,48,32]` float32 输入
 打包检查另发现此前开发 exe 直接导入 `VCRUNTIME140.dll`。新增 DLL 审计在修复前拒绝它，日志为同目录 `initial-runtime-import-failure.log`。配置 Windows x64 `target-feature=+crt-static` 后，实际导入列表不再有 VC runtime DLL；依据 [Rust 链接说明](https://doc.rust-lang.org/reference/linkage.html#static-and-dynamic-c-runtimes)切换链接方式，并按其建议检查最终二进制。审计使用[微软 DUMPBIN](https://learn.microsoft.com/en-us/cpp/build/reference/dependents?view=msvc-170)，只在构建机执行。
 
 版本打包测试还编译一个原创的动态 CRT 负例，确认它因运行库依赖被拒，而不是因为工具缺失或无法解析而误通过。从仓库外调用整个打包测试也通过，记录为同目录 `static-runtime-package.log`；输出目录中总文件约 1.82 MB，未包含负例、Python 或其他开发运行时。这只是开发机的打包与导入检查，不是干净 Windows 或现场识牌验收。
+
+## 回退集成后的实图链路与 CI 差异
+
+集成提交 `76d446854b93805b95154d062fa68e183b1b3881` 的 [CI 40532258615](https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40532258615) 五项通过；补充跨模型基线修复的 `e3f7f7fed8b3a24054683fda0fe107d9fc3e7333` 的 [CI 40533562248](https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40533562248) 也全部通过。静态 CRT 提交 `8e446849909415b0e6417218c312a3853690bee5` 本机版本 8 项、回归 9 项无失败或跳过，摘要为 `version-v0.0.1-438e536e3fc74ec5a5670b17a61cf590/version-tests.json`、`all-f17a7e7745f04139baa10b22b20c4b47/all-tests.json`（均在 `.local-test-data/runs/`）。
+
+同一干净静态 CRT 提交使用实际 Windows 模型后端、三帧过滤、状态机和牌效核心检查七组公开手牌：4 组在第三帧输出正确整手与合法 Top-3，3 组因先前已记录的低分牌拒识，不输出推荐；由非麻将字形组成的整手也保持不确定。证据为 `.local-test-data/runs/local-model-runtime-787285ff5b7140d182eed80fbb898e42/summary.json`，记录模型与输入哈希、源提交、命令和逐帧输出。单帧离线处理该次最大约 12.2 ms，不含捕获、真实帧间隔或绘制。该工具未输入行动按钮和公共牌，不能代表八区域现场集成或 250 ms 验收。
+
+然而 `8e44684` 的 [CI 40535547611](https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40535547611) 中，独立 `package-smoke` 失败，其他四项通过。失败发生在动态 CRT 负例的原因验证；实际便携 exe 的 DLL 审计已通过。服务器原始日志保存在 `.local-test-data/runs/ci-8e44684-package-failure/ci-8e44684-package-job.log`。本机改用与独立检查相同的 PowerShell 7 宿主后也复现，记录为 `hybrid-recognition-tdd-1f15ef9/pwsh-package-reproduction.log`；该次负例子进程的原始错误显示找不到 `Get-FileHash`，而不是发现 VC runtime，因此测试正确地拒绝假成功。
+
+把 `Start-Process` 子调用改为与版本测试一致的直接 `powershell.exe` 调用，并检查非零退出码和明确的 VC runtime 原因后，两种 PowerShell 宿主均可工作；修复后的本机 PowerShell 7 记录为同目录 `pwsh-package-fixed.log`。CI 增加始终收集负例日志的步骤，只允许 `version-<GUID>/import-control/expected-rejection.log`，不扩大到任意包内文件；微型仓库回归同时验证有/无 runs 目录时，截图、模型、exe 及相邻同名日志都不会上传。新提交仍须重新通过全部 required checks，不能用本机成功覆盖已失败的服务器运行。
