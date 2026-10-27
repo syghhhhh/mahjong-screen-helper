@@ -681,7 +681,16 @@ fn learn_template() {
     APP.with(|cell| {
         if let Some(state) = cell.borrow_mut().as_mut() {
             state.status = match result {
-                Ok(message) => message,
+                Ok(message) => {
+                    state.runtime = None;
+                    state.hand_stream = None;
+                    state.action_stream = None;
+                    state.last_hand = None;
+                    state.last_action = None;
+                    state.last_output = None;
+                    state.manual_override = false;
+                    format!("{message}；点击开始重新加载")
+                }
                 Err(message) => format!("学习模板：{message}"),
             };
         }
