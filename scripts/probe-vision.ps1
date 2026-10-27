@@ -23,9 +23,15 @@ $logPath = Join-Path $runDir 'vision-probe.log'
 $summaryPath = Join-Path $runDir 'vision-probe.json'
 $sourceSha = (& git -C $repoRoot rev-parse HEAD).Trim()
 $command = 'cargo run -p vision-core --example inspect_raw --locked -- <local RGB> {0} {1} {2} {3} {4} {5}' -f $Width,$Height,$X,$Y,$RegionWidth,$RegionHeight
-$output = @(& cargo run --manifest-path (Join-Path $repoRoot 'Cargo.toml') -p vision-core --example inspect_raw --locked -- $rgbPath $Width $Height $X $Y $RegionWidth $RegionHeight 2>&1 | ForEach-Object { [string]$_ })
+$previousPreference = $ErrorActionPreference
+try {
+    $ErrorActionPreference = 'Continue'
+    $output = @(& cargo run --manifest-path (Join-Path $repoRoot 'Cargo.toml') -p vision-core --example inspect_raw --locked -- $rgbPath $Width $Height $X $Y $RegionWidth $RegionHeight 2>&1 | ForEach-Object { [string]$_ })
+    $exitCode = $LASTEXITCODE
+} finally {
+    $ErrorActionPreference = $previousPreference
+}
 $output | Set-Content -LiteralPath $logPath -Encoding utf8
-$exitCode = $LASTEXITCODE
 $line = @($output | Where-Object { $_ -match '^detected ([0-9]+) tile candidates$' } | Select-Object -Last 1)
 $detected = if ($line.Count -eq 1) { [int]([regex]::Match($line[0], '^detected ([0-9]+)').Groups[1].Value) } else { -1 }
 $passed = $exitCode -eq 0 -and $detected -eq $ExpectedSlots
