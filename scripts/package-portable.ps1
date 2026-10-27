@@ -27,11 +27,14 @@ Copy-Item -LiteralPath $exe -Destination (Join-Path $output 'RiichiScreenHelper.
 Copy-Item -LiteralPath (Join-Path $repoRoot 'README.md') -Destination (Join-Path $output 'README.md')
 Copy-Item -LiteralPath (Join-Path $repoRoot 'docs\third-party-licenses.md') -Destination (Join-Path $output 'licenses\README.md')
 Copy-Item -LiteralPath (Join-Path $repoRoot 'Cargo.lock') -Destination (Join-Path $output 'licenses\Cargo.lock')
+& (Join-Path $repoRoot 'scripts\generate-license-bundle.ps1') -Destination (Join-Path $output 'licenses')
+if ($LASTEXITCODE -ne 0) { throw 'License bundle generation failed' }
 Copy-Item -LiteralPath (Join-Path $repoRoot 'docs\vision-template-pack.md') -Destination (Join-Path $output 'models\template-pack\README.md')
 $intro = @(
     "Riichi Screen Helper $Version ($Configuration)"
     'Double-click RiichiScreenHelper.exe to start. No Python, Node, or Rust installation is required.'
     'Automatic tile recognition requires a complete local PNG template pack in models/template-pack/.'
+    'Use the Learn Template button to capture labeled tiles and action buttons locally; existing templates are never overwritten.'
     'This development package supports manual hand entry to verify Top-3 tile recommendations.'
     'The release still requires real Mahjong Soul screenshot and template licensing validation.'
 ) -join [Environment]::NewLine

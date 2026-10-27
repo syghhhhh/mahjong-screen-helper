@@ -10,7 +10,7 @@
 | `windows-capture` | Windows Graphics Capture 采集 | MIT |
 | `png` | 读取本机 PNG 识牌模板 | MIT OR Apache-2.0 |
 
-间接依赖的精确版本由 `Cargo.lock` 固定。发布打包任务应从锁文件生成完整 SBOM 与许可清单，并检查所有随包分发的模型、牌图、字体和其他资产；目前没有引入第三方模型或牌图。参考项目只用于架构调研，未复制其代码。
+间接依赖的精确版本由 `Cargo.lock` 固定。便携包构建时运行 `scripts/generate-license-bundle.ps1`，把 Cargo 元数据中的锁定注册表依赖、许可证字段、许可证原文及文件 SHA-256 写入 `licenses/DEPENDENCIES.json` 和 `licenses/texts/`。该清单包含 Cargo 返回的所有锁定注册表依赖，可能多于 Windows 实际使用的依赖。发布前仍须核对随包分发的模型、牌图、字体和其他资产；目前没有引入第三方模型或牌图。参考项目只用于架构调研，未复制其代码。
 
 ## 视觉实验数据的边界
 
