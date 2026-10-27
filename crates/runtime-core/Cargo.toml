@@ -1,0 +1,14 @@
+[package]
+name = "runtime-core"
+version = "0.0.1"
+edition = "2024"
+description = "In-memory real-time vision, state and recommendation pipeline"
+
+[dependencies]
+riichi-core = { path = "../riichi-core" }
+vision-core = { path = "../vision-core" }
+game-state = { path = "../game-state" }
+
+[lib]
+name = "runtime_core"
+path = "src/lib.rs"

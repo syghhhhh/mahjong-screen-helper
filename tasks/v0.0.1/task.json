@@ -195,7 +195,7 @@
     {
       "id": "V001-006",
       "title": "实现透明浮窗与实时集成",
-      "status": "planned",
+      "status": "in_progress",
       "depends_on": [
         "V001-005"
       ],

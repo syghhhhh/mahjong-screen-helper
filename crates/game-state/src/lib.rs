@@ -301,6 +301,10 @@ impl GameTracker {
         StateEvent::WindowLost
     }
 
+    pub fn mark_uncertain(&mut self) {
+        self.enter_uncertain();
+    }
+
     pub fn round_end(&mut self) -> StateEvent {
         self.phase = Phase::RoundEnded;
         self.hand = None;
