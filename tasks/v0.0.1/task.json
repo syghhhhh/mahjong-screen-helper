@@ -207,7 +207,7 @@
     {
       "id": "V001-006",
       "title": "实现透明浮窗与实时集成",
-      "status": "in_progress",
+      "status": "failed",
       "depends_on": [
         "V001-005"
       ],
@@ -230,7 +230,36 @@
       "local_evidence_required": [
         "live-overlay-latency"
       ],
-      "evidence": null
+      "evidence": null,
+      "failure_history": [
+        {
+          "source_sha": "9c3cbd2c1ee41adacf83cad182baaa5e4d4bf32b",
+          "source_dirty": false,
+          "test_run": "all-b8e86d5d08ea4f11a1690ec055d90a1c",
+          "command": "scripts/test-all.ps1 -Version v0.0.1",
+          "failed_check": "tests/regression/overlay-integration.test.ps1",
+          "exit_code": 1,
+          "native_exit_code": "0xc0000005",
+          "native_target": "runtime-core/tests/pipeline.rs",
+          "log": ".local-test-data/runs/all-b8e86d5d08ea4f11a1690ec055d90a1c/all-tests.log",
+          "summary": ".local-test-data/runs/all-b8e86d5d08ea4f11a1690ec055d90a1c/all-tests.json",
+          "preserved_artifacts": ".local-test-data/runs/pipeline-access-violation-9bb800bb715546d3b5db692aca5ddb69/",
+          "exe_sha256": "8789767b18e1629a0b4720402bf150fe607c3a2c2202423182d83f515d65c96c",
+          "pdb_sha256": "54d47f0a06c916c0b1d543f1283a591fa28e202300b22731da03d8f1c0aa3427",
+          "environment": {
+            "os": "Windows 11 10.0.26200",
+            "architecture": "x64",
+            "rustc": "1.93.1 (01f6ddf75 2026-02-11)"
+          },
+          "diagnostics": {
+            "under_debugger_attempts": 30,
+            "reproduced": false,
+            "result": "All 30 preserved-binary debug attempts passed; debugger changes timing and this does not fix or erase the original crash."
+          },
+          "root_cause": "unresolved",
+          "completed_at": "2026-10-27T19:59:49.8367807Z"
+        }
+      ]
     },
     {
       "id": "V001-007",

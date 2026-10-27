@@ -85,6 +85,8 @@ planned → in_progress → implemented → self_tested → regression_tested �
 
 失败时必须保留日志，并把任务置为 `failed` 或 `blocked`。修复后从 `in_progress` 重新开始，不能用一次成功重跑覆盖既有失败记录。
 
+任务可用追加的 `failure_history` 保存失败提交、命令、运行编号、退出码、日志/摘要位置、环境及诊断结果；后续状态变化不得删除历史项。诊断成功与原始失败分开记录，不能据此补写成功证据。崩溃 dump、二进制、符号文件及系统报告仅放在本机忽略目录。
+
 ## 5. 测试分层
 
 ### 5.1 版本专用测试
