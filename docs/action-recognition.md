@@ -90,3 +90,11 @@ v4 mobile 和 v6 tiny 的词典没有“槓”；繁体 v3 虽有该字，仍未
 | v6 small | `6f327246b50388f3c176ae304bd95767ea6dc0c9ae92153ef8cbe210b3c14884` | `rapidocr-action-development-3d98c06781c945ea8d1d6d5a43c2eed7` |
 
 上游 README 声明代码及转换模型使用 Apache-2.0，并说明 PaddleOCR 来源；其链接的 `MODEL_LICENSES.md` 在该固定提交返回 404，详细来源归属审查尚未完成。实验没有把上游脚本作为项目运行代码，也没有分发模型。OCR 的三维时序输出不符合现有 `[1,7]` 原生动作后端，不能直接替换模型文件。结果和授权两方面都未完成，因此没有新增 OCR 运行依赖或把任何权重装入便携包。
+
+## 十字体候选：仍不满足五按钮要求
+
+在同一 Google Fonts 固定提交另校验 [Iansui 元数据](https://github.com/google/fonts/blob/ddf386ba1b9fbc6b2c818f1ddcd9148f54ced94b/ofl/iansui/METADATA.pb)及 [Klee One 元数据](https://github.com/google/fonts/blob/ddf386ba1b9fbc6b2c818f1ddcd9148f54ced94b/ofl/kleeone/METADATA.pb)、OFL 和字体 Git blob。Iansui 覆盖碰及繁体槓、過；Klee One 的两个字重覆盖后两字，仍缺碰。将三份字体加入七字体集合，保持结构、种子、8,000 步、最后一步权重和全部门槛不变，训练过程中不用游戏像素或预训练权重。
+
+候选 `font-action-cnn-v3-f3a8ed9dab304b56866e194d4720c12f` 为 1,616,311 字节，SHA-256 `0f813d677f61533264bbdd0c1d48a17006c01a2122ab8fd812a3f1927abbb6a7`。在完整笔画 v2 输入的同一批 21 项开发数据上为 9 项正确接受、0 项误接受、12 项拒绝；五种主要按钮只有碰约 0.946 通过，吃约 0.845、立直约 0.785 被拒，杠和跳过最高仍为 Unknown。另一个负例“跳舞”最高为 Pass 约 0.807，因未到 0.9 继续拒绝。这里总体正确数仍包含 Unsupported、Unknown，不能误读为九个可操作按钮。
+
+原生运行 `native-action-v3-complete-component-parity-bf69ea8f6a734f52ac7477cc9116994c` 的输入逐值匹配独立 SciPy/Pillow，Windows CPU/PyTorch 最大 logits 误差约 2.74e-6，最高类别一致；分类探针仍退出 1。未降低门槛、未把已检查开发图重新称为独立验收集，也未安装、分发该权重。继续增加字体尚未解决字形泛化，后续需调整数据或识别方案，并保留未知按钮与底板状态的验收要求。

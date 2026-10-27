@@ -138,7 +138,7 @@
           "red_test_log": ".local-test-data/runs/component-contract-red-98d291b1a5474f6d8bfb11b075c00b73/test.log",
           "native_parity_run": "native-action-complete-component-parity-b5fb922cb3674b87bc46f8e8859898b3",
           "native_input_differing_values": 0,
-          "max_native_pytorch_logit_error": 0.000001191930175892253,
+          "max_native_pytorch_logit_error": 1.191930175892253e-06,
           "native_classifier_probe_exit_code": 1,
           "component_comparison_run": "action-component-closure-afd15d273f94465c84f433273cb17065",
           "font_candidate": {
@@ -160,6 +160,26 @@
             "rapidocr-action-development-3d98c06781c945ea8d1d6d5a43c2eed7"
           ],
           "limitations": "Inspected developer inputs, synthetic negatives and word-only prototypes; no independent or live acceptance, enabled-button context or shipped weights. OCR attribution review remains incomplete. Original v1 input contract retained."
+        },
+        {
+          "kind": "ten-font-action-complete-input-development-comparison",
+          "source_sha": "41beb28eef807a6487adb55999ac46164fa77a42",
+          "source_dirty": true,
+          "run_id": "native-action-v3-complete-component-parity-bf69ea8f6a734f52ac7477cc9116994c",
+          "model_run": "font-action-cnn-v3-f3a8ed9dab304b56866e194d4720c12f",
+          "model_sha256": "0f813d677f61533264bbdd0c1d48a17006c01a2122ab8fd812a3f1927abbb6a7",
+          "model_bytes": 1616311,
+          "correct_accepted": 9,
+          "wrong_accepted": 0,
+          "rejected": 12,
+          "primary_five_complete": false,
+          "input_differing_values": 0,
+          "max_native_pytorch_logit_error": 2.741411804230154e-06,
+          "probe_exit_code": 1,
+          "acceptance_verified": false,
+          "production_integrated": false,
+          "record": "docs/action-recognition.md",
+          "limitations": "Known inspected developer inputs, including repeated negatives; no independent or live acceptance. No game pixels or pretrained weights used for training. No thresholds lowered or weights bundled."
         }
       ],
       "validation_history": [
@@ -366,8 +386,18 @@
       "id": "V001-008",
       "title": "接入公共牌与来牌识别及同帧采集",
       "status": "in_progress",
-      "depends_on": ["V001-002", "V001-003", "V001-004"],
-      "scope": ["capture", "calibration", "vision", "state", "integration"],
+      "depends_on": [
+        "V001-002",
+        "V001-003",
+        "V001-004"
+      ],
+      "scope": [
+        "capture",
+        "calibration",
+        "vision",
+        "state",
+        "integration"
+      ],
       "acceptance_criteria": [
         "八区域同帧采集，旧配置迁移并要求补齐三家副露区域",
         "牌河、四家副露与宝牌指示牌计数进入牌效计算",
@@ -388,15 +418,24 @@
         "tests/regression/overlay-integration.test.ps1"
       ],
       "regression_profile": "full",
-      "local_evidence_required": ["live-public-table-recognition", "live-public-table-integration"],
+      "local_evidence_required": [
+        "live-public-table-recognition",
+        "live-public-table-integration"
+      ],
       "evidence": null
     },
     {
       "id": "V001-009",
       "title": "定位并修复原生并行规则计算异常",
       "status": "failed",
-      "depends_on": ["V001-004"],
-      "scope": ["rules", "integration", "testing"],
+      "depends_on": [
+        "V001-004"
+      ],
+      "scope": [
+        "rules",
+        "integration",
+        "testing"
+      ],
       "acceptance_criteria": [
         "保留原访问异常、诊断 panic、最小规则复现和对应构建哈希",
         "确认可检验的原因并验证修复，不以有限次重跑通过代替根因分析",
@@ -413,7 +452,9 @@
         "tests/regression/overlay-integration.test.ps1"
       ],
       "regression_profile": "full",
-      "local_evidence_required": ["native-parallel-resolution"],
+      "local_evidence_required": [
+        "native-parallel-resolution"
+      ],
       "evidence": null,
       "diagnostic_history": [
         {
@@ -439,9 +480,30 @@
           "standalone_same_binary_failure": ".local-test-data/diagnostics/rule-runtime-probe-beb769087501415bb74bf450d2d938e7/results-20261028-050214-2ad2ece23bfc4ae59f518a0359582fe3/report.json",
           "standalone_native_exit_code": "0xc0000005",
           "diagnostic_zip_sha256": "7a1dcc95d4b547c77f1c9a9e9c5c6d210c93db0d855da1c430352b0426859f33",
-          "environment_clue": { "processor": "i7-13700K", "bios": "1.11", "bios_date": "2022-09-19", "microcode_registry_u32_le": "0x10B" },
+          "environment_clue": {
+            "processor": "i7-13700K",
+            "bios": "1.11",
+            "bios_date": "2022-09-19",
+            "microcode_registry_u32_le": "0x10B"
+          },
           "limitations": "Read-only environment clues and finite passing controls do not establish a hardware or compiler cause. Independent-host diagnostic is not success-gate evidence. Same preserved rule contract still fails naturally on this host.",
           "record": "docs/failures/2026-10-28-pipeline-access-violation.md"
+        },
+        {
+          "kind": "same-binary-single-logical-processor-comparison",
+          "run_id": "rule-affinity-research-db38e2fbd2c147ffbe7d923e2d005d8f",
+          "base_sha": "79ba0711d2c1550caafc8026cfa02b3ae1b763c6",
+          "exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
+          "logical_processors": 24,
+          "attempts": 48,
+          "passed": 48,
+          "failed": 0,
+          "timed_out": 0,
+          "production_settings_changed": false,
+          "acceptance_verified": false,
+          "record": "docs/failures/2026-10-28-pipeline-access-violation.md",
+          "completed_at": "2026-10-27T21:53:13.1294369Z",
+          "limitations": "Child affinity applied after process start. Other development work ran during the probe. Changed scheduling and uncontrolled background load prevent hardware localization or performance acceptance; passing results do not resolve default-affinity failures."
         }
       ],
       "failure_history": [
@@ -459,7 +521,11 @@
           "preserved_artifacts": ".local-test-data/runs/state-access-violation-d54ba5e3b41c4956a1915b8395ad70af/",
           "exe_sha256": "a05c91da902bfb70f5da479215990e0591a28307e5caacd74263da7f5cfb76cb",
           "pdb_sha256": "a5fe53f583a3fd2c105d3dc46b81285891176e63dbf2f597f82e5ef921f3ee02",
-          "environment": { "os": "Windows 11 10.0.26200", "architecture": "x64", "rustc": "1.93.1" },
+          "environment": {
+            "os": "Windows 11 10.0.26200",
+            "architecture": "x64",
+            "rustc": "1.93.1"
+          },
           "completed_at": "2026-10-27T20:43:30.8721206Z"
         },
         {
@@ -467,18 +533,33 @@
           "source_dirty": false,
           "test_run": "all-add896cdaad741b38996799197b1cbf7",
           "command": "scripts/test-all.ps1 -Version v0.0.1",
-          "failed_checks": ["scripts/test-version.ps1", "tests/regression/overlay-integration.test.ps1"],
+          "failed_checks": [
+            "scripts/test-version.ps1",
+            "tests/regression/overlay-integration.test.ps1"
+          ],
           "exit_code": 1,
           "natural_failures": [
-            { "target": "riichi-core/tests/concurrency.rs", "exit_code": 101, "reason": "subtraction overflow at riichi-core/src/lib.rs:154" },
-            { "target": "runtime-core/tests/pipeline.rs", "native_exit_code": "0xc0000005", "reason": "stack-overflow message followed by access violation" }
+            {
+              "target": "riichi-core/tests/concurrency.rs",
+              "exit_code": 101,
+              "reason": "subtraction overflow at riichi-core/src/lib.rs:154"
+            },
+            {
+              "target": "runtime-core/tests/pipeline.rs",
+              "native_exit_code": "0xc0000005",
+              "reason": "stack-overflow message followed by access violation"
+            }
           ],
           "summary": ".local-test-data/runs/all-add896cdaad741b38996799197b1cbf7/all-tests.json",
           "log": ".local-test-data/runs/all-add896cdaad741b38996799197b1cbf7/all-tests.log",
           "preserved_artifacts": ".local-test-data/runs/concurrency-natural-failure-541a286eb6b44cab876631f7a94c35bc/",
           "concurrency_exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
           "concurrency_pdb_sha256": "e13dc703c17f03ee86fc45e92005e5fab9a95d0cf775b27fe4fd51e065082d0b",
-          "environment": { "os": "Windows 11 10.0.26200", "architecture": "x64", "rustc": "1.93.1" },
+          "environment": {
+            "os": "Windows 11 10.0.26200",
+            "architecture": "x64",
+            "rustc": "1.93.1"
+          },
           "completed_at": "2026-10-27T20:50:20.3468100Z"
         },
         {
@@ -502,7 +583,11 @@
           "concurrency_pdb_sha256": "e13dc703c17f03ee86fc45e92005e5fab9a95d0cf775b27fe4fd51e065082d0b",
           "strict_utf8": true,
           "nul_bytes": 0,
-          "environment": { "os": "Windows 11 10.0.26200", "architecture": "x64", "rustc": "1.93.1" },
+          "environment": {
+            "os": "Windows 11 10.0.26200",
+            "architecture": "x64",
+            "rustc": "1.93.1"
+          },
           "completed_at": "2026-10-27T21:38:20.1669374Z"
         }
       ]
@@ -511,8 +596,14 @@
       "id": "V001-010",
       "title": "修复 PowerShell 5 测试日志混合编码",
       "status": "blocked",
-      "depends_on": ["V001-001", "V001-009"],
-      "scope": ["process", "testing"],
+      "depends_on": [
+        "V001-001",
+        "V001-009"
+      ],
+      "scope": [
+        "process",
+        "testing"
+      ],
       "acceptance_criteria": [
         "版本及全项目测试日志统一写入 UTF-8，保留中文和非 ASCII 字符",
         "即使从 CP437 启动，也统一原生子进程输出与 PowerShell 解码为 UTF-8",
@@ -522,8 +613,13 @@
         "最小仓库集成测试覆盖两个真实测试入口和嵌套版本测试",
         "本版本及全项目回归完成后才允许执行成功门禁"
       ],
-      "version_tests": ["tests/version/v0.0.1/runner-logging.test.ps1"],
-      "affected_tests": ["tests/regression/runner-logging.test.ps1", "tests/regression/repository-process.test.ps1"],
+      "version_tests": [
+        "tests/version/v0.0.1/runner-logging.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/regression/runner-logging.test.ps1",
+        "tests/regression/repository-process.test.ps1"
+      ],
       "regression_profile": "full",
       "local_evidence_required": [],
       "evidence": null,
@@ -532,10 +628,19 @@
           "source_sha": "964828b335e342ddce42c613481a10663a10e113",
           "ci_run": 40581870231,
           "url": "https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40581870231",
-          "failed_checks": ["version-tests", "regression-tests"],
+          "failed_checks": [
+            "version-tests",
+            "regression-tests"
+          ],
           "reason": "English Windows native PowerShell child lost Unicode before UTF-8 file persistence; logging contract could not find stdout-中文Ω.",
-          "logs": [".local-test-data/runs/ci-failure-bc290ca40f374d43a5891c04e6f518bd/version-tests.log", ".local-test-data/runs/ci-failure-bc290ca40f374d43a5891c04e6f518bd/regression-tests.log"],
-          "environment": { "os": "Windows Server 2022 10.0.20348", "architecture": "x64" },
+          "logs": [
+            ".local-test-data/runs/ci-failure-bc290ca40f374d43a5891c04e6f518bd/version-tests.log",
+            ".local-test-data/runs/ci-failure-bc290ca40f374d43a5891c04e6f518bd/regression-tests.log"
+          ],
+          "environment": {
+            "os": "Windows Server 2022 10.0.20348",
+            "architecture": "x64"
+          },
           "observed_at": "2026-10-27T21:03:34.1615523Z"
         }
       ],
@@ -556,26 +661,454 @@
           "limitations": "New source fixes logging code pages. This passing run does not resolve or replace prior native failures; declared dependency V001-009 still fails and no success gate was run."
         }
       ],
-      "blocked_reason": "Logging contracts remain passed. The latest clean full run at b6c4a0f passed 9/10 checks but naturally failed in the unchanged rule concurrency binary with 0xc0000005. Declared dependency V001-009 remains failed; prior successful logging validation is historical and no success gate has run.",
+      "blocked_reason": "Logging contracts, the clean full run and subsequent per-task gates passed at 41beb28. Earlier natural failures in the unchanged rule concurrency binary remain unexplained, and declared dependency V001-009 is still failed; no V001-010 success gate has run.",
       "blocking_run": "all-components-0026fd17ca554ea490c136dede73531a"
     },
     {
       "id": "V001-011",
       "title": "修复 Windows 同时刻测试临时目录冲突",
-      "status": "self_tested",
-      "depends_on": ["V001-001"],
-      "scope": ["testing", "startup", "vision"],
+      "status": "succeed",
+      "depends_on": [
+        "V001-001"
+      ],
+      "scope": [
+        "testing",
+        "startup",
+        "vision"
+      ],
       "acceptance_criteria": [
         "启动和本机分类器测试使用原子序号及排他创建，不依赖时钟精度保证唯一性",
         "相同时钟和并行创建均得到独立目录，不复用或删除既有目录",
         "权限等非重名错误立即返回，重名恢复次数有界",
         "保留非法模型拒绝断言，通过版本和完整回归后才执行成功门禁"
       ],
-      "version_tests": ["tests/version/v0.0.1/overlay-integration.test.ps1", "tests/version/v0.0.1/vision.test.ps1"],
-      "affected_tests": ["tests/regression/overlay-integration.test.ps1", "tests/regression/vision.test.ps1"],
+      "version_tests": [
+        "tests/version/v0.0.1/overlay-integration.test.ps1",
+        "tests/version/v0.0.1/vision.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/regression/overlay-integration.test.ps1",
+        "tests/regression/vision.test.ps1"
+      ],
       "regression_profile": "full",
       "local_evidence_required": [],
-      "evidence": null,
+      "evidence": {
+        "source_sha": "41beb28eef807a6487adb55999ac46164fa77a42",
+        "version_test_run": "gate-version-v0.0.1-179bc5a5f4d2452db8feaa100174dd27",
+        "regression_test_run": "gate-all-03b01c99dfd34332a1ccdb16ca3c3233",
+        "commands": [
+          "scripts/test-version.ps1 -Version v0.0.1 -RunId gate-version-v0.0.1-179bc5a5f4d2452db8feaa100174dd27",
+          "scripts/test-all.ps1 -Version v0.0.1 -RunId gate-all-03b01c99dfd34332a1ccdb16ca3c3233"
+        ],
+        "logs": [
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-version-v0.0.1-179bc5a5f4d2452db8feaa100174dd27\\version-tests.log",
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-all-03b01c99dfd34332a1ccdb16ca3c3233\\all-tests.log"
+        ],
+        "summaries": [
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-version-v0.0.1-179bc5a5f4d2452db8feaa100174dd27\\version-tests.json",
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-all-03b01c99dfd34332a1ccdb16ca3c3233\\all-tests.json"
+        ],
+        "fixture_hashes": [
+          {
+            "path": "tests/fixtures/synthetic/runtime_import_control.rs",
+            "sha256": "d0ee8dc51e3bd68ae690f6aa6f9fdf8be3efdeda4e7cd08fe9342ac12d066276"
+          },
+          {
+            "path": "tests/fixtures/synthetic/vision-hand.txt",
+            "sha256": "dee81cd07f2ebabe7f17b21df3621d3976fa3151f00f1152970d469bec1b5b87"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/all-sides.mask",
+            "sha256": "721d309169bac2f09cddcff2ab621097350b1dc44bccb7198701f2501919e511"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/all-sides.png",
+            "sha256": "9f3c44cb7e2b5adf04494d97be2c9f52d1f0a07706271f9bb086dc7b08e90c2e"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/box-without-ink.mask",
+            "sha256": "fa6abfbdfc5653cd786294f7114115317426beff49d7161b24020e6228c714f4"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/box-without-ink.png",
+            "sha256": "224e3c6afe0c3337a4f9c1f40f7af10ba59a49b498d9b43507c04bf188a80c69"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/cases.json",
+            "sha256": "612d4c00d2c7619c2a5052c7a8fb5a4d545ff04d2774e97c2a071d56bbbbbe05"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/generate.py",
+            "sha256": "4e54c6bd9814cc6205457f758a3ecd9e7dcf1e9cfc2a5c50b1fa5ddb5233f489"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/README.md",
+            "sha256": "0f8f65e3edc841fe55a02d0cbf28e1fe0d78ad569fafa50e8742825be050239e"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/transitive.mask",
+            "sha256": "7048019748a96c9f00bfdee0f8ebd02d9a01aa2e8d717366caeb49859d197889"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/transitive.png",
+            "sha256": "d8784c56ec5731d8cdce7f72f14f2f92fac28ff6cf8a2641f7f4acf06bd96278"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/cases.json",
+            "sha256": "2689e5532509a321ba37e9a6389c8eab4741f19994e775a8d2b494847104eabd"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/color-boundary.mask",
+            "sha256": "ac5880875f0de83058682ac3341ab63756633dc04d04556168f353dfe5664998"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/color-boundary.png",
+            "sha256": "25453e2ae460f8afee567b19f12a2c4b6655d66605fbefbde2f5a8293d1648ca"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/empty.png",
+            "sha256": "1bf8cc4eb9f31bf18f850bb3c9c6b41def7d5b4a74c33ace3beb136c794dc09e"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/fragment.png",
+            "sha256": "3e97dc4ec6495023db576a950bc94802315d683dd2c706336fea767016f00803"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/half-down.mask",
+            "sha256": "9f3f875d5faf6b815b87725d0fae91cdd22dba7606518f35556a5c1a39de75fb"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/half-down.png",
+            "sha256": "fede1fd230ec1cf7f17754c5562f6186a53317906c23270d90145829ac95b83c"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/half-up.mask",
+            "sha256": "adeb389e44c6dc803f998eeea8c3456f82da8b506cec558a902ebd61e431a0de"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/half-up.png",
+            "sha256": "e55e1bb3f4e1534950c4468b52dd2d12c108f088034928c9d4e55b52d4d47e78"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/inner-mark.mask",
+            "sha256": "ba68604d0230285d8bcf116d823bb304571f722c2d73d6f27b11c25b8074560b"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/inner-mark.png",
+            "sha256": "3017f8d2e788c4541d44304eb97fba2cbc037366788661d77a8a52a68544e93c"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/large.mask",
+            "sha256": "80eca53a536e073c1e293bba658435ed963adb66d03ac21bf1759ef4afce9b21"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/large.png",
+            "sha256": "bb5449472e2bc397062893daecedd73b1e6a2e8c4eadba7891f7ef50cd3059f7"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/low-channel.png",
+            "sha256": "665c64974496c0f34974945302d3770e9a884261d8de001f422a8eef748b1304"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/low-maximum.png",
+            "sha256": "971f191b4d426254754cbcdd8b05757b7da9d5c367ba2328b6908bfc1b024010"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/narrow.mask",
+            "sha256": "57a9f4e8c266497a4ae9d25cc00aef11df2451e76ef54c9428ac0390251f58dd"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/narrow.png",
+            "sha256": "92d541a63fb7aa9ffcf99b26e6645b034109b9d5b7f4cd196b7c20801a0a2a1d"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/nearest-column-boundary.mask",
+            "sha256": "648e13afa46bea4c1174dcf8ad2dd850fa9878fc853329b71ebd191867edb654"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/nearest-column-boundary.png",
+            "sha256": "2a8883dfdda9a44db8b50ac13e08bac34f4e2c05275e7bb7da3dcfe813b80461"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/nearest-row-boundary.mask",
+            "sha256": "ae47da86383281139a6826bc5830d0263a10183452cecd6f25f79d5c2957b67d"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/nearest-row-boundary.png",
+            "sha256": "b73a60c4414eb6104bed64ee579aad30dba75aee91ff8589a025f1cc0ee6446f"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/odd-margin.mask",
+            "sha256": "608bcdaf1f147fabc35a729e34d120aca99ca1c308a0b8f158f3a0cc3d6bf7e2"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/odd-margin.png",
+            "sha256": "34a458acb660521f9975dd0141c0663c9a90d4ea02e065807dfe0042b07e3f91"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/pattern.mask",
+            "sha256": "7f150c16db0912687d6ec4d2e423294d39679c11c5b5a4fd2bdd1f34db2df809"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/pattern.png",
+            "sha256": "b6ad4e8518fb1c05aef64a858a6b7cf819b2be70d03b345195e660e3e2bf6a96"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/README.md",
+            "sha256": "dff451f5d55cd3b86bf3edf001a9b3602b1c5b1d10fa58e4d27ff7bf1d66c248"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/wide.mask",
+            "sha256": "54a2e0b27c1bda32a8bd0e9bb8c7c37d5fca732c6b938f17a40fd63a2459a193"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/wide.png",
+            "sha256": "160d6b0cbac026886f2d3fa1eab3b7d35a730f365d3995da18e6c5ba05d30a6b"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-neural/affine-7.onnx",
+            "sha256": "d9006123444e2dea6dd901d57a36f58ee8c67391646c29c545057332512ec066"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-neural/nonfinite-output.onnx",
+            "sha256": "d54c4ed7f77b7af2d1b0cbdcc9d0d51412f10aec4936d3592693230669edfdc7"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-neural/README.md",
+            "sha256": "c979e6a17d14c1d4a75969e4a3969f3158030ef1469b7ccb74d1aa56b924b6b0"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-neural/wrong-channels.onnx",
+            "sha256": "81bd75d1e274e186354d63d58731238b3b7bcc4366cb2bcdd6c7f42d9d665021"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-neural/wrong-classes.onnx",
+            "sha256": "e7b72ee37d60db6ab7d187e8a20c171c54f6a6682c7a2f8183a0aab205eb516f"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural/affine-37.onnx",
+            "sha256": "8bd4a9868efb22b83afe12ef258cf76ffec31ff47ab635123bf5be633107440b"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural/classifier.json",
+            "sha256": "c919f837f56af8cb9d512fe53b1909eaaccb83d2c1a8b69e9cd9b13d8edf5fb0"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural/nonfinite-output.onnx",
+            "sha256": "5cfb5af431c2d2ce3219b477d6c1b749a625fb8ff06e67c4c8a8e2e2651b6aaf"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural/not-a-model.onnx",
+            "sha256": "cbc8fee383fc035b1ffb28fdc5566801fab48cffdd2deb1cf5bfe3c5913486be"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural/README.md",
+            "sha256": "235f51a954d3fb417ff5ff8620349fd0cf29fcd045b51cb963b9d3f2e8b38f54"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural/wrong-channels.onnx",
+            "sha256": "0faa1de3385290dc3a6a0817bdf9237c733a22747b76cef1191b1bbc4248e345"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural/wrong-classes.onnx",
+            "sha256": "cd0274d77b4eac841d5c189307d3fec1f686224fe4a30183823303abef7f138b"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/blank.png",
+            "sha256": "140a67051045725d82cb7a93e7dcb09898d24e90a0de9ede1459548d941f8261"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/blank.rgb",
+            "sha256": "d397edef4cf4719aa6670603a4abe242d870f1ac33e619dc894b24dc1eb9b413"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/cases.txt",
+            "sha256": "73c3efcbb7daa82acba3ef33bb6ff30ba084ccebed205cec4c5cd8a82a4740c5"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/equal-size.png",
+            "sha256": "822dec6363b416c126e2278a43ba165669f9ada446b7f7f55b5e16456cdc052b"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/equal-size.rgb",
+            "sha256": "831981f369a57894bcd88547eba4554cf0d4de5a023b49aaa40009fa46e03500"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/fractional-downsample.png",
+            "sha256": "6c32303cc2d80555f68c540a6897b745bc3f11585f4fbc81143f16763344fbbf"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/fractional-downsample.rgb",
+            "sha256": "ac1fd473313123b80f35893b65244785131487aef61e0de4f5c66ff7b073a06d"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/fractional-upsample.png",
+            "sha256": "3673ddf3d8beb4a443a0b0f4e1c6f794b3013997800809de7402ec0a74b49764"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/fractional-upsample.rgb",
+            "sha256": "8ea0dde237433ccda4940083e8ee29eaa8fa58daedb7a79059364d9ea9e20966"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/hint-and-red-glyph.png",
+            "sha256": "f6ffc399b0c5f3dffb71c955925dc643a2975349814891b3c3356b065c3d8b04"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/hint-and-red-glyph.rgb",
+            "sha256": "ed74c866a7cd6c350ebbd79e3d6ebc9080261d8d2973653c4f8c5bd360878737"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/hint-only.png",
+            "sha256": "7249c61216684582c2804dc6d7f2e1b63f870c34e8b95b9561b6476b71c4fbd6"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/hint-only.rgb",
+            "sha256": "d397edef4cf4719aa6670603a4abe242d870f1ac33e619dc894b24dc1eb9b413"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/preserve-red.png",
+            "sha256": "9322546caea9e683288bf93eec8f3cde3d1c8ee8322593c617fca22ff0e06f81"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/preserve-red.rgb",
+            "sha256": "7555bb04ba82a0bdcdd915edb6caf8b4de69dc5e688618c203f560170af548be"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/README.md",
+            "sha256": "cea7ae61c7a040269a6c5a60cf39b862e0997925bc27cdac12615788ddc0d0b1"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/SHA256SUMS",
+            "sha256": "2a5917b40a88a32e5d3e78633ffa475f3e12b183ab99e4a13cfa3a7c2ee31b7e"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/blank.png",
+            "sha256": "140a67051045725d82cb7a93e7dcb09898d24e90a0de9ede1459548d941f8261"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/blank.rgb",
+            "sha256": "d397edef4cf4719aa6670603a4abe242d870f1ac33e619dc894b24dc1eb9b413"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/cases.txt",
+            "sha256": "6ecb52bf1f731950b45241deb2aed22399b20d04ab3e42ad2a22d799d4598f20"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/equal-size.png",
+            "sha256": "822dec6363b416c126e2278a43ba165669f9ada446b7f7f55b5e16456cdc052b"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/equal-size.rgb",
+            "sha256": "b50de9ef3d235d203020357bd94a759b309d824a49739da5f052298adce245e3"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/extreme-tall.png",
+            "sha256": "47f181cea7e04e48d63bc630a44595df2aae64608ebb038d3cf955e128874181"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/extreme-tall.rgb",
+            "sha256": "ac0a999a5e631b6b7c5dcecb738ab6fc8c1da797cce5313fb952a936ab87e9cc"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/extreme-wide.png",
+            "sha256": "8d7ca0f460f6054f3a856bb71b9bba4a88689b1bf850f2e459cb72e0b044832e"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/extreme-wide.rgb",
+            "sha256": "35f6df3f8b22a4a1879ed84df6026c9d801b025c53cea283baa9c0125217e288"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/fractional-downsample.png",
+            "sha256": "6c32303cc2d80555f68c540a6897b745bc3f11585f4fbc81143f16763344fbbf"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/fractional-downsample.rgb",
+            "sha256": "fd2189d692488ba319bebbd38264c8b5e2605b59cca0348b7a55c1577a64c403"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/fractional-upsample.png",
+            "sha256": "3673ddf3d8beb4a443a0b0f4e1c6f794b3013997800809de7402ec0a74b49764"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/fractional-upsample.rgb",
+            "sha256": "0747d4dc9dc85ee19f2296adc6b151e5aec1c8d070ed14011ecbb9fc17db36d3"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/half-even-down.png",
+            "sha256": "869c60b42ea9f12bf386ca22644f3412a7a4d8122f4f9c09de79ab3109971181"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/half-even-down.rgb",
+            "sha256": "474bba78dfc74ba615697457a12c738d2df5a2b617a5d66c3104dd2042153a61"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/half-even.png",
+            "sha256": "0484e5e4372677bf79c3152e0f50b9594024ddd446b0a0b34b6cfedc21a16cee"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/half-even.rgb",
+            "sha256": "4c0263654ca38dca5c788144ce3ced8f2333c40bbdf35ab662e4fcab7692f727"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/hint-and-red-glyph.png",
+            "sha256": "f6ffc399b0c5f3dffb71c955925dc643a2975349814891b3c3356b065c3d8b04"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/hint-and-red-glyph.rgb",
+            "sha256": "577ef685464e6b097a2991637f198d44c552cffa32bd49af5040d1c2f3d9bfcb"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/hint-only.png",
+            "sha256": "7249c61216684582c2804dc6d7f2e1b63f870c34e8b95b9561b6476b71c4fbd6"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/hint-only.rgb",
+            "sha256": "d397edef4cf4719aa6670603a4abe242d870f1ac33e619dc894b24dc1eb9b413"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/narrow.png",
+            "sha256": "164ea872aa33f553bb3c92b0c7b155af01d9e21f1afeb690a4e13cdff33f07a5"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/narrow.rgb",
+            "sha256": "ac5b3538778c31566d954fdc211adfe49fdfbdb25fa0b63ca3d7426c660eae0d"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/odd-center.png",
+            "sha256": "2738804249192f5dcd3d3359f41e3a72b618de162219910497d66e76b06fb503"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/odd-center.rgb",
+            "sha256": "e2a4a04d17c5552d4181b0399fd32fcfe789755243c95f08fcfe51056cea385a"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/preserve-red.png",
+            "sha256": "9322546caea9e683288bf93eec8f3cde3d1c8ee8322593c617fca22ff0e06f81"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/preserve-red.rgb",
+            "sha256": "db30f90bdab76cd34610de5ad4077d50d8f2ff030c5f39cb3349f25b354a1d4f"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/SHA256SUMS",
+            "sha256": "40bdd1c48c1d9a535bd8ce2fb3f08d6897c8d12201e1fc5f717eda35d1402908"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/wide.png",
+            "sha256": "e5e44df158fb749252323a0767bef9c9b4362d00b63414c866cb631554597832"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/wide.rgb",
+            "sha256": "d60f46861152038214491e12fc8d9cdde292591333cd5ea1f85d8d90998e08a0"
+          }
+        ],
+        "local_evidence_paths": [],
+        "environment": {
+          "os": "Microsoft Windows NT 10.0.26200.0",
+          "architecture": "X64"
+        },
+        "completed_at": "2026-10-27T21:56:21.2020719Z"
+      },
       "failure_history": [
         {
           "source_sha": "79ba0711d2c1550caafc8026cfa02b3ae1b763c6",
@@ -587,14 +1120,49 @@
           "red_test_log": ".local-test-data/runs/ci-contract-red-51e2f77dc36a4b61813fef555822d884/clock.log",
           "red_test_exit_code": 101
         }
+      ],
+      "validation_history": [
+        {
+          "source_sha": "41beb28eef807a6487adb55999ac46164fa77a42",
+          "source_dirty": false,
+          "version_test_run": "version-v0.0.1-fc9960747838459d9e0b0e880be683a9",
+          "regression_test_run": "all-ci-recovery-a016e70457004913b1397b89ce8f650c",
+          "passed": true,
+          "checks": 10,
+          "failed": 0,
+          "skipped": 0,
+          "summary": ".local-test-data/runs/all-ci-recovery-a016e70457004913b1397b89ce8f650c/all-tests.json",
+          "completed_at": "2026-10-27T21:53:37.0737174Z"
+        }
+      ],
+      "ci_validation_history": [
+        {
+          "source_sha": "41beb28eef807a6487adb55999ac46164fa77a42",
+          "run_id": 40590366996,
+          "url": "https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40590366996",
+          "checks": [
+            "task-schema",
+            "version-tests",
+            "regression-tests",
+            "build-smoke",
+            "package-smoke"
+          ],
+          "passed": true,
+          "observed_at": "2026-10-27T21:58:47.1488128Z"
+        }
       ]
     },
     {
       "id": "V001-012",
       "title": "处理 WinML 模型加载期间的服务暂时停止错误",
-      "status": "self_tested",
-      "depends_on": ["V001-001"],
-      "scope": ["vision", "testing"],
+      "status": "succeed",
+      "depends_on": [
+        "V001-001"
+      ],
+      "scope": [
+        "vision",
+        "testing"
+      ],
       "acceptance_criteria": [
         "仅模型加载的 CO_E_SERVER_STOPPING 允许至多三次有界恢复等待，总等待不超过 160 ms",
         "立即成功不重试，其他错误不重试，持续停止仍失败并保留错误",
@@ -602,11 +1170,431 @@
         "注入式测试覆盖恢复、耗尽和非重试错误；原生版本及回归测试保持运行",
         "不得把 COM 服务恢复视为规则原生访问异常的修复"
       ],
-      "version_tests": ["tests/version/v0.0.1/vision.test.ps1"],
-      "affected_tests": ["tests/regression/vision.test.ps1"],
+      "version_tests": [
+        "tests/version/v0.0.1/vision.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/regression/vision.test.ps1"
+      ],
       "regression_profile": "full",
       "local_evidence_required": [],
-      "evidence": null,
+      "evidence": {
+        "source_sha": "41beb28eef807a6487adb55999ac46164fa77a42",
+        "version_test_run": "gate-version-v0.0.1-ed2451e735d3409295390bf496a4b640",
+        "regression_test_run": "gate-all-9ee9250cd76a4960aef049e7abfe15c9",
+        "commands": [
+          "scripts/test-version.ps1 -Version v0.0.1 -RunId gate-version-v0.0.1-ed2451e735d3409295390bf496a4b640",
+          "scripts/test-all.ps1 -Version v0.0.1 -RunId gate-all-9ee9250cd76a4960aef049e7abfe15c9"
+        ],
+        "logs": [
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-version-v0.0.1-ed2451e735d3409295390bf496a4b640\\version-tests.log",
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-all-9ee9250cd76a4960aef049e7abfe15c9\\all-tests.log"
+        ],
+        "summaries": [
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-version-v0.0.1-ed2451e735d3409295390bf496a4b640\\version-tests.json",
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-all-9ee9250cd76a4960aef049e7abfe15c9\\all-tests.json"
+        ],
+        "fixture_hashes": [
+          {
+            "path": "tests/fixtures/synthetic/runtime_import_control.rs",
+            "sha256": "d0ee8dc51e3bd68ae690f6aa6f9fdf8be3efdeda4e7cd08fe9342ac12d066276"
+          },
+          {
+            "path": "tests/fixtures/synthetic/vision-hand.txt",
+            "sha256": "dee81cd07f2ebabe7f17b21df3621d3976fa3151f00f1152970d469bec1b5b87"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/all-sides.mask",
+            "sha256": "721d309169bac2f09cddcff2ab621097350b1dc44bccb7198701f2501919e511"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/all-sides.png",
+            "sha256": "9f3c44cb7e2b5adf04494d97be2c9f52d1f0a07706271f9bb086dc7b08e90c2e"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/box-without-ink.mask",
+            "sha256": "fa6abfbdfc5653cd786294f7114115317426beff49d7161b24020e6228c714f4"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/box-without-ink.png",
+            "sha256": "224e3c6afe0c3337a4f9c1f40f7af10ba59a49b498d9b43507c04bf188a80c69"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/cases.json",
+            "sha256": "612d4c00d2c7619c2a5052c7a8fb5a4d545ff04d2774e97c2a071d56bbbbbe05"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/generate.py",
+            "sha256": "4e54c6bd9814cc6205457f758a3ecd9e7dcf1e9cfc2a5c50b1fa5ddb5233f489"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/README.md",
+            "sha256": "0f8f65e3edc841fe55a02d0cbf28e1fe0d78ad569fafa50e8742825be050239e"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/transitive.mask",
+            "sha256": "7048019748a96c9f00bfdee0f8ebd02d9a01aa2e8d717366caeb49859d197889"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-components/transitive.png",
+            "sha256": "d8784c56ec5731d8cdce7f72f14f2f92fac28ff6cf8a2641f7f4acf06bd96278"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/cases.json",
+            "sha256": "2689e5532509a321ba37e9a6389c8eab4741f19994e775a8d2b494847104eabd"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/color-boundary.mask",
+            "sha256": "ac5880875f0de83058682ac3341ab63756633dc04d04556168f353dfe5664998"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/color-boundary.png",
+            "sha256": "25453e2ae460f8afee567b19f12a2c4b6655d66605fbefbde2f5a8293d1648ca"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/empty.png",
+            "sha256": "1bf8cc4eb9f31bf18f850bb3c9c6b41def7d5b4a74c33ace3beb136c794dc09e"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/fragment.png",
+            "sha256": "3e97dc4ec6495023db576a950bc94802315d683dd2c706336fea767016f00803"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/half-down.mask",
+            "sha256": "9f3f875d5faf6b815b87725d0fae91cdd22dba7606518f35556a5c1a39de75fb"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/half-down.png",
+            "sha256": "fede1fd230ec1cf7f17754c5562f6186a53317906c23270d90145829ac95b83c"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/half-up.mask",
+            "sha256": "adeb389e44c6dc803f998eeea8c3456f82da8b506cec558a902ebd61e431a0de"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/half-up.png",
+            "sha256": "e55e1bb3f4e1534950c4468b52dd2d12c108f088034928c9d4e55b52d4d47e78"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/inner-mark.mask",
+            "sha256": "ba68604d0230285d8bcf116d823bb304571f722c2d73d6f27b11c25b8074560b"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/inner-mark.png",
+            "sha256": "3017f8d2e788c4541d44304eb97fba2cbc037366788661d77a8a52a68544e93c"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/large.mask",
+            "sha256": "80eca53a536e073c1e293bba658435ed963adb66d03ac21bf1759ef4afce9b21"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/large.png",
+            "sha256": "bb5449472e2bc397062893daecedd73b1e6a2e8c4eadba7891f7ef50cd3059f7"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/low-channel.png",
+            "sha256": "665c64974496c0f34974945302d3770e9a884261d8de001f422a8eef748b1304"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/low-maximum.png",
+            "sha256": "971f191b4d426254754cbcdd8b05757b7da9d5c367ba2328b6908bfc1b024010"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/narrow.mask",
+            "sha256": "57a9f4e8c266497a4ae9d25cc00aef11df2451e76ef54c9428ac0390251f58dd"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/narrow.png",
+            "sha256": "92d541a63fb7aa9ffcf99b26e6645b034109b9d5b7f4cd196b7c20801a0a2a1d"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/nearest-column-boundary.mask",
+            "sha256": "648e13afa46bea4c1174dcf8ad2dd850fa9878fc853329b71ebd191867edb654"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/nearest-column-boundary.png",
+            "sha256": "2a8883dfdda9a44db8b50ac13e08bac34f4e2c05275e7bb7da3dcfe813b80461"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/nearest-row-boundary.mask",
+            "sha256": "ae47da86383281139a6826bc5830d0263a10183452cecd6f25f79d5c2957b67d"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/nearest-row-boundary.png",
+            "sha256": "b73a60c4414eb6104bed64ee579aad30dba75aee91ff8589a025f1cc0ee6446f"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/odd-margin.mask",
+            "sha256": "608bcdaf1f147fabc35a729e34d120aca99ca1c308a0b8f158f3a0cc3d6bf7e2"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/odd-margin.png",
+            "sha256": "34a458acb660521f9975dd0141c0663c9a90d4ea02e065807dfe0042b07e3f91"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/pattern.mask",
+            "sha256": "7f150c16db0912687d6ec4d2e423294d39679c11c5b5a4fd2bdd1f34db2df809"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/pattern.png",
+            "sha256": "b6ad4e8518fb1c05aef64a858a6b7cf819b2be70d03b345195e660e3e2bf6a96"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/README.md",
+            "sha256": "dff451f5d55cd3b86bf3edf001a9b3602b1c5b1d10fa58e4d27ff7bf1d66c248"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/wide.mask",
+            "sha256": "54a2e0b27c1bda32a8bd0e9bb8c7c37d5fca732c6b938f17a40fd63a2459a193"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-input/wide.png",
+            "sha256": "160d6b0cbac026886f2d3fa1eab3b7d35a730f365d3995da18e6c5ba05d30a6b"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-neural/affine-7.onnx",
+            "sha256": "d9006123444e2dea6dd901d57a36f58ee8c67391646c29c545057332512ec066"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-neural/nonfinite-output.onnx",
+            "sha256": "d54c4ed7f77b7af2d1b0cbdcc9d0d51412f10aec4936d3592693230669edfdc7"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-neural/README.md",
+            "sha256": "c979e6a17d14c1d4a75969e4a3969f3158030ef1469b7ccb74d1aa56b924b6b0"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-neural/wrong-channels.onnx",
+            "sha256": "81bd75d1e274e186354d63d58731238b3b7bcc4366cb2bcdd6c7f42d9d665021"
+          },
+          {
+            "path": "tests/fixtures/synthetic/action-neural/wrong-classes.onnx",
+            "sha256": "e7b72ee37d60db6ab7d187e8a20c171c54f6a6682c7a2f8183a0aab205eb516f"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural/affine-37.onnx",
+            "sha256": "8bd4a9868efb22b83afe12ef258cf76ffec31ff47ab635123bf5be633107440b"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural/classifier.json",
+            "sha256": "c919f837f56af8cb9d512fe53b1909eaaccb83d2c1a8b69e9cd9b13d8edf5fb0"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural/nonfinite-output.onnx",
+            "sha256": "5cfb5af431c2d2ce3219b477d6c1b749a625fb8ff06e67c4c8a8e2e2651b6aaf"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural/not-a-model.onnx",
+            "sha256": "cbc8fee383fc035b1ffb28fdc5566801fab48cffdd2deb1cf5bfe3c5913486be"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural/README.md",
+            "sha256": "235f51a954d3fb417ff5ff8620349fd0cf29fcd045b51cb963b9d3f2e8b38f54"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural/wrong-channels.onnx",
+            "sha256": "0faa1de3385290dc3a6a0817bdf9237c733a22747b76cef1191b1bbc4248e345"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural/wrong-classes.onnx",
+            "sha256": "cd0274d77b4eac841d5c189307d3fec1f686224fe4a30183823303abef7f138b"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/blank.png",
+            "sha256": "140a67051045725d82cb7a93e7dcb09898d24e90a0de9ede1459548d941f8261"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/blank.rgb",
+            "sha256": "d397edef4cf4719aa6670603a4abe242d870f1ac33e619dc894b24dc1eb9b413"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/cases.txt",
+            "sha256": "73c3efcbb7daa82acba3ef33bb6ff30ba084ccebed205cec4c5cd8a82a4740c5"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/equal-size.png",
+            "sha256": "822dec6363b416c126e2278a43ba165669f9ada446b7f7f55b5e16456cdc052b"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/equal-size.rgb",
+            "sha256": "831981f369a57894bcd88547eba4554cf0d4de5a023b49aaa40009fa46e03500"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/fractional-downsample.png",
+            "sha256": "6c32303cc2d80555f68c540a6897b745bc3f11585f4fbc81143f16763344fbbf"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/fractional-downsample.rgb",
+            "sha256": "ac1fd473313123b80f35893b65244785131487aef61e0de4f5c66ff7b073a06d"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/fractional-upsample.png",
+            "sha256": "3673ddf3d8beb4a443a0b0f4e1c6f794b3013997800809de7402ec0a74b49764"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/fractional-upsample.rgb",
+            "sha256": "8ea0dde237433ccda4940083e8ee29eaa8fa58daedb7a79059364d9ea9e20966"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/hint-and-red-glyph.png",
+            "sha256": "f6ffc399b0c5f3dffb71c955925dc643a2975349814891b3c3356b065c3d8b04"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/hint-and-red-glyph.rgb",
+            "sha256": "ed74c866a7cd6c350ebbd79e3d6ebc9080261d8d2973653c4f8c5bd360878737"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/hint-only.png",
+            "sha256": "7249c61216684582c2804dc6d7f2e1b63f870c34e8b95b9561b6476b71c4fbd6"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/hint-only.rgb",
+            "sha256": "d397edef4cf4719aa6670603a4abe242d870f1ac33e619dc894b24dc1eb9b413"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/preserve-red.png",
+            "sha256": "9322546caea9e683288bf93eec8f3cde3d1c8ee8322593c617fca22ff0e06f81"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/preserve-red.rgb",
+            "sha256": "7555bb04ba82a0bdcdd915edb6caf8b4de69dc5e688618c203f560170af548be"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/README.md",
+            "sha256": "cea7ae61c7a040269a6c5a60cf39b862e0997925bc27cdac12615788ddc0d0b1"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-input/SHA256SUMS",
+            "sha256": "2a5917b40a88a32e5d3e78633ffa475f3e12b183ab99e4a13cfa3a7c2ee31b7e"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/blank.png",
+            "sha256": "140a67051045725d82cb7a93e7dcb09898d24e90a0de9ede1459548d941f8261"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/blank.rgb",
+            "sha256": "d397edef4cf4719aa6670603a4abe242d870f1ac33e619dc894b24dc1eb9b413"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/cases.txt",
+            "sha256": "6ecb52bf1f731950b45241deb2aed22399b20d04ab3e42ad2a22d799d4598f20"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/equal-size.png",
+            "sha256": "822dec6363b416c126e2278a43ba165669f9ada446b7f7f55b5e16456cdc052b"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/equal-size.rgb",
+            "sha256": "b50de9ef3d235d203020357bd94a759b309d824a49739da5f052298adce245e3"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/extreme-tall.png",
+            "sha256": "47f181cea7e04e48d63bc630a44595df2aae64608ebb038d3cf955e128874181"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/extreme-tall.rgb",
+            "sha256": "ac0a999a5e631b6b7c5dcecb738ab6fc8c1da797cce5313fb952a936ab87e9cc"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/extreme-wide.png",
+            "sha256": "8d7ca0f460f6054f3a856bb71b9bba4a88689b1bf850f2e459cb72e0b044832e"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/extreme-wide.rgb",
+            "sha256": "35f6df3f8b22a4a1879ed84df6026c9d801b025c53cea283baa9c0125217e288"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/fractional-downsample.png",
+            "sha256": "6c32303cc2d80555f68c540a6897b745bc3f11585f4fbc81143f16763344fbbf"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/fractional-downsample.rgb",
+            "sha256": "fd2189d692488ba319bebbd38264c8b5e2605b59cca0348b7a55c1577a64c403"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/fractional-upsample.png",
+            "sha256": "3673ddf3d8beb4a443a0b0f4e1c6f794b3013997800809de7402ec0a74b49764"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/fractional-upsample.rgb",
+            "sha256": "0747d4dc9dc85ee19f2296adc6b151e5aec1c8d070ed14011ecbb9fc17db36d3"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/half-even-down.png",
+            "sha256": "869c60b42ea9f12bf386ca22644f3412a7a4d8122f4f9c09de79ab3109971181"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/half-even-down.rgb",
+            "sha256": "474bba78dfc74ba615697457a12c738d2df5a2b617a5d66c3104dd2042153a61"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/half-even.png",
+            "sha256": "0484e5e4372677bf79c3152e0f50b9594024ddd446b0a0b34b6cfedc21a16cee"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/half-even.rgb",
+            "sha256": "4c0263654ca38dca5c788144ce3ced8f2333c40bbdf35ab662e4fcab7692f727"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/hint-and-red-glyph.png",
+            "sha256": "f6ffc399b0c5f3dffb71c955925dc643a2975349814891b3c3356b065c3d8b04"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/hint-and-red-glyph.rgb",
+            "sha256": "577ef685464e6b097a2991637f198d44c552cffa32bd49af5040d1c2f3d9bfcb"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/hint-only.png",
+            "sha256": "7249c61216684582c2804dc6d7f2e1b63f870c34e8b95b9561b6476b71c4fbd6"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/hint-only.rgb",
+            "sha256": "d397edef4cf4719aa6670603a4abe242d870f1ac33e619dc894b24dc1eb9b413"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/narrow.png",
+            "sha256": "164ea872aa33f553bb3c92b0c7b155af01d9e21f1afeb690a4e13cdff33f07a5"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/narrow.rgb",
+            "sha256": "ac5b3538778c31566d954fdc211adfe49fdfbdb25fa0b63ca3d7426c660eae0d"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/odd-center.png",
+            "sha256": "2738804249192f5dcd3d3359f41e3a72b618de162219910497d66e76b06fb503"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/odd-center.rgb",
+            "sha256": "e2a4a04d17c5552d4181b0399fd32fcfe789755243c95f08fcfe51056cea385a"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/preserve-red.png",
+            "sha256": "9322546caea9e683288bf93eec8f3cde3d1c8ee8322593c617fca22ff0e06f81"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/preserve-red.rgb",
+            "sha256": "db30f90bdab76cd34610de5ad4077d50d8f2ff030c5f39cb3349f25b354a1d4f"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/SHA256SUMS",
+            "sha256": "40bdd1c48c1d9a535bd8ce2fb3f08d6897c8d12201e1fc5f717eda35d1402908"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/wide.png",
+            "sha256": "e5e44df158fb749252323a0767bef9c9b4362d00b63414c866cb631554597832"
+          },
+          {
+            "path": "tests/fixtures/synthetic/neural-letterbox/wide.rgb",
+            "sha256": "d60f46861152038214491e12fc8d9cdde292591333cd5ea1f85d8d90998e08a0"
+          }
+        ],
+        "local_evidence_paths": [],
+        "environment": {
+          "os": "Microsoft Windows NT 10.0.26200.0",
+          "architecture": "X64"
+        },
+        "completed_at": "2026-10-27T21:58:33.2273749Z"
+      },
       "failure_history": [
         {
           "source_sha": "79ba0711d2c1550caafc8026cfa02b3ae1b763c6",
@@ -617,6 +1605,36 @@
           "reason": "Windows COM object server was stopping during LoadFromFilePath, before the existing shape check could return UnsupportedModel",
           "log": ".local-test-data/runs/ci-failure-9e1bf94be2af49428ea34023173e4d0e/regression-tests.log",
           "red_test_log": ".local-test-data/runs/ci-contract-red-51e2f77dc36a4b61813fef555822d884/activation.log"
+        }
+      ],
+      "validation_history": [
+        {
+          "source_sha": "41beb28eef807a6487adb55999ac46164fa77a42",
+          "source_dirty": false,
+          "version_test_run": "version-v0.0.1-fc9960747838459d9e0b0e880be683a9",
+          "regression_test_run": "all-ci-recovery-a016e70457004913b1397b89ce8f650c",
+          "passed": true,
+          "checks": 10,
+          "failed": 0,
+          "skipped": 0,
+          "summary": ".local-test-data/runs/all-ci-recovery-a016e70457004913b1397b89ce8f650c/all-tests.json",
+          "completed_at": "2026-10-27T21:53:37.0737174Z"
+        }
+      ],
+      "ci_validation_history": [
+        {
+          "source_sha": "41beb28eef807a6487adb55999ac46164fa77a42",
+          "run_id": 40590366996,
+          "url": "https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40590366996",
+          "checks": [
+            "task-schema",
+            "version-tests",
+            "regression-tests",
+            "build-smoke",
+            "package-smoke"
+          ],
+          "passed": true,
+          "observed_at": "2026-10-27T21:58:47.1488128Z"
         }
       ]
     }

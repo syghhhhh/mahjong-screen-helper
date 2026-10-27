@@ -131,3 +131,13 @@ cargo test -p runtime-core --test pipeline --locked --no-run --target-dir .local
 版本检查在启动测试 `recognition_setup.rs:106` 创建临时目录时遇到 Windows 183 `AlreadyExists`。名称仅由 PID 与 `SystemTime::as_nanos()` 组成，同进程并行测试可得到相同的时钟值。新增固定相同时钟、保持所有目录同时存活的测试后，在本机稳定复现同一错误（退出 101），红色日志为 `ci-contract-red-51e2f77dc36a4b61813fef555822d884/clock.log`。共享目录创建助手引入原子序号及排他创建，并保留已有目录和非重名错误；不修改原非法模型断言。
 
 回归检查在 `native_neural::rejects_wrong_tensor_shapes_and_non_models` 中，加载 `wrong-channels.onnx` 返回 `0x80080008`，日志明确为 “Object server is stopping when OLE service contacts it”；这发生在维度校验之前。微软将该码定义为 [CO_E_SERVER_STOPPING](https://learn.microsoft.com/en-us/windows/win32/com/com-error-codes-2)，它本身不是张量维度错误。加载路径现只对此码采取最多三次、总等待 160 ms 的有界恢复，重新获取未缓存的 factory，始终保持当前 apartment 存活；其他错误及推理路径不重试。恢复后原维度断言仍须精确满足，持续停止仍返回错误。注入式测试验证实际结果传递、立即成功、耗尽和其他错误；这项策略是项目的恢复选择，微软错误码说明没有给出本项目的次数或延迟要求。仍需新版 CI 检查真实系统行为，不据此宣布 COM 生命周期的所有问题或规则原生异常已经解决。
+
+## 同一规则二进制的单逻辑处理器对照
+
+本机 `rule-affinity-research-db38e2fbd2c147ffbe7d923e2d005d8f` 保持旧 exe 哈希 `7dd9…c5aa4`，分别将测试子进程限制到 24 个逻辑处理器，每个运行两次十线程原契约，每次超时 30 秒；48 次均通过、无超时，于 `2026-10-27T21:53:13.1294369Z` 完成。每次记录实际亲和性掩码、退出码、stdout 和 stderr，未改变生产程序或全局系统设置。
+
+亲和性在子进程启动后设置，存在初始执行窗口；部分期间还有其他开发工作，耗时不是受控性能数据。单核调度与正常并行运行不同，这组通过结果没有定位特定故障核心，不能排除硬件、编译器或并发环境因素，也不能消除默认亲和性下的既有失败。V001-009 保持 failed，原失败和跨机器对照需求保留。
+
+V001-011 已由 `task-gate.ps1` 在源提交 `41beb28eef807a6487adb55999ac46164fa77a42` 上完成独立版本及全回归门禁，版本运行 `gate-version-v0.0.1-179bc5a5f4d2452db8feaa100174dd27`，回归运行 `gate-all-03b01c99dfd34332a1ccdb16ca3c3233`。这只确认该项修正，不把 V001-009 改为成功。
+
+V001-012 已由 `task-gate.ps1` 在源提交 `41beb28eef807a6487adb55999ac46164fa77a42` 上完成独立版本及全回归门禁，版本运行 `gate-version-v0.0.1-ed2451e735d3409295390bf496a4b640`，回归运行 `gate-all-9ee9250cd76a4960aef049e7abfe15c9`。这只确认该项修正，不把 V001-009 改为成功。
