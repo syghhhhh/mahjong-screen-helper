@@ -1,11 +1,12 @@
 use game_state::GameTracker;
 use riichi_core::Tile;
-use runtime_core::{PipelineOutput, RuntimeEngine};
+use runtime_core::{PipelineOutput, PublicImages, RuntimeEngine};
 use screen_capture::{
     CalibrationProfile, CaptureError, CaptureStream, RegionKind, WindowInfo, calibrate_window,
     capture_region, find_windows, select_region,
 };
 use std::cell::RefCell;
+use std::collections::BTreeMap;
 use std::ffi::c_void;
 use std::path::PathBuf;
 use std::time::Duration;
@@ -160,10 +161,8 @@ struct AppState {
     pack_path: PathBuf,
     runtime: Option<RuntimeEngine>,
     manual_tracker: GameTracker,
-    hand_stream: Option<CaptureStream>,
-    action_stream: Option<CaptureStream>,
-    last_hand: Option<RgbImage>,
-    last_action: Option<RgbImage>,
+    capture_stream: Option<CaptureStream>,
+    last_images: BTreeMap<RegionKind, RgbImage>,
     last_output: Option<PipelineOutput>,
     frame_id: u64,
     manual_override: bool,
@@ -222,10 +221,8 @@ pub fn run(smoke: bool) -> Result<(), String> {
             pack_path,
             runtime: None,
             manual_tracker: GameTracker::new(),
-            hand_stream: None,
-            action_stream: None,
-            last_hand: None,
-            last_action: None,
+            capture_stream: None,
+            last_images: BTreeMap::new(),
             last_output: None,
             frame_id: 0,
             manual_override: false,
@@ -587,10 +584,10 @@ fn calibrate_target() {
                 Ok(profile) => {
                     state.profile = Some(profile);
                     state.runtime = None;
-                    state.hand_stream = None;
-                    state.action_stream = None;
+                    state.capture_stream = None;
+                    state.last_images.clear();
                     state.last_output = None;
-                    state.status = "五个区域已校准并保存".into();
+                    state.status = "八个区域已校准并保存".into();
                 }
                 Err(CaptureError::Cancelled) => state.status = "校准已取消".into(),
                 Err(error) => state.status = format!("校准失败：{error}"),
@@ -682,10 +679,8 @@ fn learn_template() {
             state.status = match result {
                 Ok(message) => {
                     state.runtime = None;
-                    state.hand_stream = None;
-                    state.action_stream = None;
-                    state.last_hand = None;
-                    state.last_action = None;
+                    state.capture_stream = None;
+                    state.last_images.clear();
                     state.last_output = None;
                     state.manual_override = false;
                     format!("{message}；点击开始重新加载")
@@ -719,8 +714,8 @@ impl AppState {
                 self.status = format!("已选择：{}；点击校准或开始", selected.title);
                 self.selected = Some(selected);
                 self.runtime = None;
-                self.hand_stream = None;
-                self.action_stream = None;
+                self.capture_stream = None;
+                self.last_images.clear();
                 self.last_output = None;
             }
             _ => self.status = "未找到雀魂浏览器窗口；请打开对局页面".into(),
@@ -728,20 +723,21 @@ impl AppState {
     }
 
     fn start(&mut self) {
+        self.runtime = None;
+        self.capture_stream = None;
+        self.last_images.clear();
+        self.last_output = None;
+        self.manual_override = false;
         let Some(target) = self.selected.as_ref() else {
             self.status = "请先找窗口".into();
             return;
         };
         let Some(profile) = self.profile.as_ref() else {
-            self.status = "请先完成五区域校准".into();
+            self.status = "请先完成八区域校准".into();
             return;
         };
-        let Some(hand_region) = profile.region(RegionKind::Hand) else {
-            self.status = "校准文件缺少手牌区域".into();
-            return;
-        };
-        let Some(action_region) = profile.region(RegionKind::Actions) else {
-            self.status = "校准文件缺少行动按钮区域".into();
+        let Ok(capture_bounds) = profile.capture_bounds() else {
+            self.status = "请重新校准，补齐三家副露区域".into();
             return;
         };
         let bank = match TemplateBank::load_dir(&self.pack_path) {
@@ -755,17 +751,10 @@ impl AppState {
                 return;
             }
         };
-        let stream = match CaptureStream::start(target.handle, hand_region) {
+        let stream = match CaptureStream::start(target.handle, capture_bounds) {
             Ok(stream) => stream,
             Err(error) => {
                 self.status = format!("采集启动失败：{error}");
-                return;
-            }
-        };
-        let action_stream = match CaptureStream::start(target.handle, action_region) {
-            Ok(stream) => stream,
-            Err(error) => {
-                self.status = format!("按钮区域采集启动失败：{error}");
                 return;
             }
         };
@@ -781,10 +770,8 @@ impl AppState {
             stream.backend()
         );
         self.runtime = Some(runtime);
-        self.hand_stream = Some(stream);
-        self.action_stream = Some(action_stream);
-        self.last_hand = None;
-        self.last_action = None;
+        self.capture_stream = Some(stream);
+        self.last_images.clear();
         self.last_output = None;
         self.frame_id = 0;
         self.manual_override = false;
@@ -797,64 +784,47 @@ impl AppState {
         {
             return false;
         }
-        let mut fresh_frame = false;
-        let mut image_changed = false;
-        let Some(stream) = self.hand_stream.as_mut() else {
+        let Some(stream) = self.capture_stream.as_mut() else {
             return false;
         };
-        match stream.next_frame(Duration::from_millis(10)) {
-            Ok(frame) => {
-                match RgbImage::from_bgra(frame.size.width, frame.size.height, &frame.bgra) {
-                    Ok(image) => {
-                        image_changed |= self.last_hand.as_ref() != Some(&image);
-                        self.last_hand = Some(image);
-                        fresh_frame = true;
-                    }
-                    Err(_) => {
-                        self.status = "采集画面格式错误".into();
-                        self.runtime = None;
-                        return true;
-                    }
-                }
-            }
-            Err(CaptureError::Timeout) => {}
+        let frame = match stream.next_frame(Duration::from_millis(10)) {
+            Ok(frame) => frame,
+            Err(CaptureError::Timeout) => return false,
             Err(error) => {
                 self.status = format!("采集已停止：{error}");
                 self.runtime = None;
-                self.hand_stream = None;
-                self.action_stream = None;
+                self.capture_stream = None;
+                self.last_output = Some(PipelineOutput::Uncertain);
                 return true;
             }
-        }
-        if let Some(action_stream) = self.action_stream.as_mut() {
-            match action_stream.next_frame(Duration::from_millis(10)) {
-                Ok(frame) => {
-                    match RgbImage::from_bgra(frame.size.width, frame.size.height, &frame.bgra) {
-                        Ok(image) => {
-                            image_changed |= self.last_action.as_ref() != Some(&image);
-                            self.last_action = Some(image);
-                            fresh_frame = true;
-                        }
-                        Err(_) => {
-                            self.status = "按钮区域画面格式错误".into();
-                            self.runtime = None;
-                            return true;
-                        }
-                    }
+        };
+        let Some(profile) = self.profile.as_ref() else {
+            return false;
+        };
+        let mut images = BTreeMap::new();
+        for kind in RegionKind::ALL {
+            let result = profile
+                .region(kind)
+                .ok_or(CaptureError::InvalidRegion)
+                .and_then(|region| frame.crop_normalized(region));
+            let image = match result {
+                Ok(crop) => RgbImage::from_bgra(crop.size.width, crop.size.height, &crop.bgra).ok(),
+                Err(_) => None,
+            };
+            match image {
+                Some(image) => {
+                    images.insert(kind, image);
                 }
-                Err(CaptureError::Timeout) => {}
-                Err(error) => {
-                    self.status = format!("按钮区域采集已停止：{error}");
+                None => {
+                    self.status = "区域裁剪失败，请重新校准".into();
                     self.runtime = None;
-                    self.action_stream = None;
+                    self.capture_stream = None;
+                    self.last_output = Some(PipelineOutput::Uncertain);
                     return true;
                 }
             }
         }
-        if !fresh_frame {
-            return false;
-        }
-        if !image_changed
+        if images == self.last_images
             && matches!(
                 self.last_output.as_ref(),
                 Some(PipelineOutput::Ready { .. })
@@ -862,18 +832,29 @@ impl AppState {
         {
             return false;
         }
-        let Some(image) = self.last_hand.as_ref() else {
-            return false;
-        };
-        let Some(action_image) = self.last_action.as_ref() else {
-            return false;
+        self.last_images = images;
+        let images = &self.last_images;
+        let public = PublicImages {
+            river: &images[&RegionKind::River],
+            own_melds: &images[&RegionKind::Melds],
+            opponent_melds: [
+                &images[&RegionKind::LeftMelds],
+                &images[&RegionKind::AcrossMelds],
+                &images[&RegionKind::RightMelds],
+            ],
+            dora: &images[&RegionKind::Dora],
         };
         self.frame_id = self.frame_id.saturating_add(1);
-        let output = self.runtime.as_mut().expect("checked above").process(
-            self.frame_id,
-            image,
-            Some(action_image),
-        );
+        let output = self
+            .runtime
+            .as_mut()
+            .expect("checked above")
+            .process_with_public(
+                self.frame_id,
+                &images[&RegionKind::Hand],
+                Some(&images[&RegionKind::Actions]),
+                &public,
+            );
         self.last_output = Some(output);
         true
     }

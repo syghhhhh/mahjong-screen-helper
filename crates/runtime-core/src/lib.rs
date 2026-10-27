@@ -3,8 +3,8 @@
 use game_state::{ActionAdvice, ClaimSource, GameTracker, Phase, StateError, StateEvent};
 use riichi_core::{Recommendation, Tile};
 use vision_core::{
-    ActionLabel, FilterDecision, MatchConfig, Rect, RgbImage, StabilityFilter, TemplateBank,
-    VisionError, VisionSnapshot, detect_hand_slots,
+    ActionLabel, FilterDecision, MatchConfig, PublicSnapshot, Rect, RelativeSeat, RgbImage,
+    StabilityFilter, TemplateBank, VisionError, VisionSnapshot, detect_hand_slots,
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -23,6 +23,13 @@ pub enum PipelineOutput {
     },
 }
 
+pub struct PublicImages<'a> {
+    pub river: &'a RgbImage,
+    pub own_melds: &'a RgbImage,
+    pub opponent_melds: [&'a RgbImage; 3],
+    pub dora: &'a RgbImage,
+}
+
 pub struct RuntimeEngine {
     bank: TemplateBank,
     action_slots: Vec<Rect>,
@@ -33,6 +40,7 @@ pub struct RuntimeEngine {
     offered: Option<(Tile, ClaimSource)>,
     cached_discards: Option<(Vec<Tile>, Vec<Recommendation>)>,
     recommendation_calculations: u64,
+    last_public: Option<PublicSnapshot>,
     paused: bool,
 }
 
@@ -53,6 +61,7 @@ impl RuntimeEngine {
             offered: None,
             cached_discards: None,
             recommendation_calculations: 0,
+            last_public: None,
             paused: false,
         })
     }
@@ -72,6 +81,8 @@ impl RuntimeEngine {
             self.filter = StabilityFilter::new(self.stable_frames).expect("validated frame count");
             self.tracker.mark_uncertain();
             self.cached_discards = None;
+            self.offered = None;
+            self.last_public = None;
         }
         self.paused = paused;
     }
@@ -82,6 +93,8 @@ impl RuntimeEngine {
         self.filter = StabilityFilter::new(self.stable_frames).expect("validated frame count");
         self.tracker.mark_uncertain();
         self.cached_discards = None;
+        self.offered = None;
+        self.last_public = None;
     }
     pub fn set_offer(&mut self, offered: Option<(Tile, ClaimSource)>) {
         self.offered = offered;
@@ -103,6 +116,26 @@ impl RuntimeEngine {
         hand_image: &RgbImage,
         action_image: Option<&RgbImage>,
     ) -> PipelineOutput {
+        self.process_frame(frame_id, hand_image, action_image, None)
+    }
+
+    pub fn process_with_public(
+        &mut self,
+        frame_id: u64,
+        hand_image: &RgbImage,
+        action_image: Option<&RgbImage>,
+        public: &PublicImages<'_>,
+    ) -> PipelineOutput {
+        self.process_frame(frame_id, hand_image, action_image, Some(public))
+    }
+
+    fn process_frame(
+        &mut self,
+        frame_id: u64,
+        hand_image: &RgbImage,
+        action_image: Option<&RgbImage>,
+        public: Option<&PublicImages<'_>>,
+    ) -> PipelineOutput {
         if self.paused {
             return PipelineOutput::Paused;
         }
@@ -112,8 +145,13 @@ impl RuntimeEngine {
             13usize.saturating_sub(3 * open),
             14usize.saturating_sub(3 * open),
         ];
-        let candidate = if expected.contains(&slots.len()) {
-            self.read_candidate(hand_image, action_image, &slots)
+        let valid_count = if public.is_some() {
+            (1..=14).contains(&slots.len()) && matches!(slots.len() % 3, 1 | 2)
+        } else {
+            expected.contains(&slots.len())
+        };
+        let candidate = if valid_count {
+            self.read_candidate(hand_image, action_image, &slots, public)
         } else {
             None
         };
@@ -122,15 +160,45 @@ impl RuntimeEngine {
             FilterDecision::Uncertain => {
                 self.tracker.mark_uncertain();
                 self.cached_discards = None;
+                self.offered = None;
+                self.last_public = None;
                 PipelineOutput::Uncertain
             }
             FilterDecision::Stable(snapshot) => {
-                let result = self.tracker.observe(game_state::ObservedHand {
+                let observation = game_state::ObservedHand {
                     frame_id,
                     hand: snapshot.hand.clone(),
                     actions: snapshot.actions.clone(),
                     confidence: snapshot.confidence,
-                });
+                };
+                let result = if let Some(public) = &snapshot.public_info {
+                    if self.last_public.as_ref() != Some(public) {
+                        self.cached_discards = None;
+                    }
+                    let mut visible = [0u8; 34];
+                    for tile in &public.visible_tiles {
+                        visible[tile.index() as usize] =
+                            visible[tile.index() as usize].saturating_add(1);
+                    }
+                    self.offered = public.offered.and_then(|(tile, seat)| {
+                        let source = match seat {
+                            RelativeSeat::Left => ClaimSource::Left,
+                            RelativeSeat::Across => ClaimSource::Across,
+                            RelativeSeat::Right => ClaimSource::Right,
+                            RelativeSeat::SelfSeat => return None,
+                        };
+                        Some((tile, source))
+                    });
+                    self.last_public = Some(public.clone());
+                    self.tracker.observe_table(
+                        observation,
+                        visible,
+                        public.dora_indicators.clone(),
+                        public.own_meld_tiles.clone(),
+                    )
+                } else {
+                    self.tracker.observe(observation)
+                };
                 if result.phase == Phase::Uncertain {
                     self.cached_discards = None;
                     return PipelineOutput::Uncertain;
@@ -190,6 +258,7 @@ impl RuntimeEngine {
         hand_image: &RgbImage,
         action_image: Option<&RgbImage>,
         slots: &[Rect],
+        public: Option<&PublicImages<'_>>,
     ) -> Option<VisionSnapshot> {
         let hand = self
             .bank
@@ -211,10 +280,63 @@ impl RuntimeEngine {
                 .ok()?;
             (read.actions?, read.confidence)
         };
+        let (public_info, public_confidence) = if let Some(public) = public {
+            let mut visible_tiles = Vec::new();
+            let mut confidence = 1.0f32;
+            let river = self
+                .bank
+                .recognize_public_tiles(public.river, self.match_config);
+            confidence = confidence.min(river.confidence);
+            let offered = river.offered.map(|offer| (offer.tile, offer.source));
+            visible_tiles.extend(river.tiles?.into_iter().map(|tile| tile.tile));
+            let own = self
+                .bank
+                .recognize_public_tiles(public.own_melds, self.match_config);
+            confidence = confidence.min(own.confidence);
+            let mut own_meld_tiles: Vec<_> = own.tiles?.into_iter().map(|tile| tile.tile).collect();
+            let open = (14 - hand.0.len()) / 3;
+            if own_meld_tiles.len() < 3 * open || own_meld_tiles.len() > 4 * open {
+                return None;
+            }
+            visible_tiles.extend_from_slice(&own_meld_tiles);
+            for image in public.opponent_melds {
+                let read = self.bank.recognize_public_tiles(image, self.match_config);
+                confidence = confidence.min(read.confidence);
+                visible_tiles.extend(read.tiles?.into_iter().map(|tile| tile.tile));
+            }
+            let dora = self
+                .bank
+                .recognize_public_tiles(public.dora, self.match_config);
+            confidence = confidence.min(dora.confidence);
+            let dora_indicators: Vec<_> = dora.tiles?.into_iter().map(|tile| tile.tile).collect();
+            visible_tiles.extend_from_slice(&dora_indicators);
+            let mut counts = [0u8; 34];
+            for tile in &visible_tiles {
+                let count = &mut counts[tile.index() as usize];
+                *count = count.saturating_add(1);
+            }
+            if counts.iter().any(|count| *count > 4) || dora_indicators.len() > 5 {
+                return None;
+            }
+            visible_tiles.sort();
+            own_meld_tiles.sort();
+            (
+                Some(PublicSnapshot {
+                    visible_tiles,
+                    own_meld_tiles,
+                    dora_indicators,
+                    offered,
+                }),
+                confidence,
+            )
+        } else {
+            (None, 1.0)
+        };
         Some(VisionSnapshot {
             hand: hand.0,
             actions,
-            confidence: hand.1.min(action_confidence),
+            confidence: hand.1.min(action_confidence).min(public_confidence),
+            public_info,
         })
     }
 }

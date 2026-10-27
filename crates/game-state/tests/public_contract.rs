@@ -28,6 +28,134 @@ fn observation(frame_id: u64, hand: Vec<Tile>, actions: Vec<ActionLabel>) -> Obs
 }
 
 #[test]
+fn stable_public_observation_moves_a_tile_from_hand_to_river_atomically() {
+    let mut tracker = GameTracker::new();
+    let hand = tiles(&[
+        "1m", "1m", "1m", "1m", "2m", "3m", "4m", "5m", "6m", "1p", "2p", "3p", "7z", "7z",
+    ]);
+    assert_eq!(
+        tracker.observe(observation(1, hand.clone(), vec![])).phase,
+        Phase::AwaitDiscard
+    );
+    let mut visible = [0; 34];
+    visible[0] = 1;
+    assert!(tracker.set_public_tiles(visible, vec![]).is_err());
+    let mut after = hand;
+    after.remove(0);
+    let result = tracker.observe_with_public(observation(2, after, vec![]), visible, vec![]);
+    assert_eq!(result.phase, Phase::AwaitDraw);
+    assert!(
+        result
+            .events
+            .contains(&StateEvent::Discard(Tile::from_code("1m").unwrap()))
+    );
+
+    visible[0] = 2;
+    assert_eq!(
+        tracker
+            .observe_with_public(
+                observation(3, tracker.hand().unwrap().to_vec(), vec![]),
+                visible,
+                vec![]
+            )
+            .phase,
+        Phase::Uncertain
+    );
+    assert!(tracker.discard_recommendations().is_empty());
+}
+
+#[test]
+fn table_observation_reconciles_pon_discard_and_added_kan_and_reconnects() {
+    let mut tracker = GameTracker::new();
+    let hand = tiles(&[
+        "1m", "2m", "3m", "4m", "5m", "6m", "2p", "3p", "4p", "2s", "3s", "7z", "7z",
+    ]);
+    tracker.observe(observation(1, hand.clone(), vec![ActionLabel::Pon]));
+    let mut after: Vec<_> = hand.into_iter().filter(|tile| tile.index() != 33).collect();
+    let mut visible = [0; 34];
+    visible[33] = 3;
+    let meld = tiles(&["7z", "7z", "7z"]);
+    let result = tracker.observe_table(
+        observation(2, after.clone(), vec![]),
+        visible,
+        vec![],
+        meld.clone(),
+    );
+    assert_eq!(result.phase, Phase::AwaitDiscard);
+    assert_eq!(tracker.open_melds(), 1);
+    assert!(
+        result
+            .events
+            .contains(&StateEvent::CallDeclared(ActionLabel::Pon))
+    );
+    let discard = after.remove(0);
+    visible[discard.index() as usize] += 1;
+    assert!(
+        tracker
+            .observe_table(
+                observation(3, after.clone(), vec![]),
+                visible,
+                vec![],
+                meld.clone()
+            )
+            .events
+            .contains(&StateEvent::Discard(discard))
+    );
+    after.push(Tile::from_code("7z").unwrap());
+    assert_eq!(
+        tracker
+            .observe_table(
+                observation(4, after.clone(), vec![]),
+                visible,
+                vec![],
+                meld.clone()
+            )
+            .phase,
+        Phase::AwaitDiscard
+    );
+    after.pop();
+    visible[33] = 4;
+    let kan = tiles(&["7z", "7z", "7z", "7z"]);
+    let result = tracker.observe_table(
+        observation(5, after.clone(), vec![]),
+        visible,
+        vec![],
+        kan.clone(),
+    );
+    assert_eq!(result.phase, Phase::AwaitDraw);
+    assert!(
+        result
+            .events
+            .contains(&StateEvent::CallDeclared(ActionLabel::Kan))
+    );
+    assert!(
+        !result
+            .events
+            .iter()
+            .any(|event| matches!(event, StateEvent::Discard(_)))
+    );
+    let mut reconnected = GameTracker::new();
+    assert_eq!(
+        reconnected
+            .observe_table(observation(1, after.clone(), vec![]), visible, vec![], kan)
+            .phase,
+        Phase::AwaitDraw
+    );
+    assert_eq!(reconnected.open_melds(), 1);
+    assert_eq!(
+        reconnected
+            .observe_table(
+                observation(2, after, vec![]),
+                visible,
+                vec![],
+                tiles(&["1m", "2m", "4m"])
+            )
+            .phase,
+        Phase::Uncertain
+    );
+}
+
+#[test]
 fn tracks_draw_discard_uncertainty_correction_and_round_end() {
     let mut tracker = GameTracker::new();
     let base = waiting_hand();

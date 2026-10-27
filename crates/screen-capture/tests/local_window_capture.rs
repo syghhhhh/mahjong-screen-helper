@@ -100,6 +100,14 @@ fn captures_a_real_window_client_region_without_saving_a_file() {
     assert_eq!(graphics_frame.region, new_frame.region);
     assert_eq!(graphics_frame.size, new_frame.size);
     assert_eq!(graphics_frame.bgra.len(), new_frame.bgra.len());
+    assert_eq!(graphics_frame.client, new_window.client);
+    let crop_region = NormalizedRect::new(0.2, 0.2, 0.4, 0.4).unwrap();
+    let same_frame_crop = graphics_frame.crop_normalized(crop_region).unwrap();
+    assert_eq!(
+        same_frame_crop.region,
+        crop_region.resolve(new_window.client).unwrap()
+    );
+    assert_eq!(same_frame_crop.source, graphics_frame.source);
 
     assert_ne!(unsafe { MoveWindow(hwnd, 200, 140, 600, 400, 1) }, 0);
     let latest = find_windows(&title).unwrap();
@@ -205,6 +213,9 @@ fn captures_a_real_window_client_region_without_saving_a_file() {
         "可见牌河区域",
         "宝牌指示牌区域",
         "行动按钮区域",
+        "上家（左侧）副露区域",
+        "对家（上方）副露区域",
+        "下家（右侧）副露区域",
     ] {
         let selector = (0..200)
             .find_map(|_| {

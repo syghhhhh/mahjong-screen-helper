@@ -1,4 +1,6 @@
-use screen_capture::{CalibrationProfile, NormalizedRect, PixelRect, RegionKind, Size};
+use screen_capture::{
+    CalibrationProfile, Frame, NormalizedRect, PixelRect, RegionKind, Size, WindowHandle,
+};
 
 #[test]
 fn calibrated_region_scales_with_window_and_dpi() {
@@ -123,9 +125,102 @@ fn calibration_profile_round_trips_without_image_data_and_rejects_wrong_schema()
     assert!(!content.contains("bgra") && !content.contains("screenshot"));
     std::fs::write(
         &path,
-        content.replace("\"schema_version\": 1", "\"schema_version\": 2"),
+        content.replace("\"schema_version\": 2", "\"schema_version\": 99"),
     )
     .unwrap();
     assert!(CalibrationProfile::load(&path).is_err());
     std::fs::remove_file(path).unwrap();
+}
+
+#[test]
+fn legacy_calibration_keeps_coordinates_and_requires_opponent_regions() {
+    let mut profile = CalibrationProfile::new(
+        "雀魂",
+        Size {
+            width: 100,
+            height: 100,
+        },
+        96,
+    )
+    .unwrap();
+    let region = NormalizedRect::new(0.1, 0.2, 0.8, 0.9).unwrap();
+    for kind in [
+        RegionKind::Hand,
+        RegionKind::Melds,
+        RegionKind::River,
+        RegionKind::Dora,
+        RegionKind::Actions,
+    ] {
+        profile.set_region(kind, region).unwrap();
+    }
+    let path = std::env::temp_dir().join(format!(
+        "msh-legacy-calibration-{}.json",
+        std::process::id()
+    ));
+    let mut value = serde_json::to_value(&profile).unwrap();
+    value["schema_version"] = 1.into();
+    std::fs::write(&path, serde_json::to_vec(&value).unwrap()).unwrap();
+    let mut migrated = CalibrationProfile::load(&path).unwrap();
+    assert_eq!(migrated.schema_version, 2);
+    assert_eq!(migrated.region(RegionKind::Hand), Some(region));
+    assert!(!migrated.is_complete());
+    assert!(migrated.capture_bounds().is_err());
+    assert!(migrated.save(&path).is_err());
+    for kind in [
+        RegionKind::LeftMelds,
+        RegionKind::AcrossMelds,
+        RegionKind::RightMelds,
+    ] {
+        migrated.set_region(kind, region).unwrap();
+    }
+    migrated.save(&path).unwrap();
+    assert!(CalibrationProfile::load(&path).unwrap().is_complete());
+    std::fs::remove_file(path).unwrap();
+}
+
+#[test]
+fn calibrated_crops_share_one_source_frame_and_reject_outside_regions() {
+    let client = Size {
+        width: 10,
+        height: 10,
+    };
+    let region = PixelRect {
+        left: 2,
+        top: 2,
+        right: 8,
+        bottom: 8,
+    };
+    let bgra = (0..36u8).flat_map(|index| [index, 2, 3, 255]).collect();
+    let frame = Frame {
+        source: WindowHandle(123),
+        region,
+        dpi: 144,
+        client,
+        size: region.size().unwrap(),
+        bgra,
+    };
+    let crop = frame
+        .crop_normalized(NormalizedRect::new(0.3, 0.4, 0.5, 0.6).unwrap())
+        .unwrap();
+    assert_eq!(
+        crop.size,
+        Size {
+            width: 2,
+            height: 2
+        }
+    );
+    assert_eq!(crop.source, frame.source);
+    assert_eq!(crop.dpi, frame.dpi);
+    assert_eq!(
+        crop.bgra
+            .chunks_exact(4)
+            .map(|pixel| pixel[0])
+            .collect::<Vec<_>>(),
+        vec![13, 14, 19, 20]
+    );
+    assert!(
+        frame
+            .crop_normalized(NormalizedRect::new(0.1, 0.1, 0.4, 0.4).unwrap())
+            .is_err()
+    );
 }

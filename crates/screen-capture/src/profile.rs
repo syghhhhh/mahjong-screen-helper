@@ -11,15 +11,21 @@ pub enum RegionKind {
     River,
     Dora,
     Actions,
+    LeftMelds,
+    AcrossMelds,
+    RightMelds,
 }
 
 impl RegionKind {
-    pub const ALL: [Self; 5] = [
+    pub const ALL: [Self; 8] = [
         Self::Hand,
         Self::Melds,
         Self::River,
         Self::Dora,
         Self::Actions,
+        Self::LeftMelds,
+        Self::AcrossMelds,
+        Self::RightMelds,
     ];
 
     fn prompt(self) -> &'static str {
@@ -29,6 +35,9 @@ impl RegionKind {
             Self::River => "框选可见牌河区域；拖动鼠标，Esc 取消",
             Self::Dora => "框选宝牌指示牌区域；拖动鼠标，Esc 取消",
             Self::Actions => "框选行动按钮区域；拖动鼠标，Esc 取消",
+            Self::LeftMelds => "框选上家（左侧）副露区域；拖动鼠标，Esc 取消",
+            Self::AcrossMelds => "框选对家（上方）副露区域；拖动鼠标，Esc 取消",
+            Self::RightMelds => "框选下家（右侧）副露区域；拖动鼠标，Esc 取消",
         }
     }
 }
@@ -50,7 +59,7 @@ impl CalibrationProfile {
         reference_dpi: u32,
     ) -> Result<Self, CaptureError> {
         let profile = Self {
-            schema_version: 1,
+            schema_version: 2,
             window_title_query: window_title_query.into(),
             reference_client,
             reference_dpi,
@@ -81,8 +90,32 @@ impl CalibrationProfile {
             .all(|kind| self.regions.contains_key(kind))
     }
 
+    /// Capture a single bounding region so every calibrated crop has the same
+    /// source frame and the graphics backend needs only one capture session.
+    pub fn capture_bounds(&self) -> Result<NormalizedRect, CaptureError> {
+        self.validate(true)?;
+        NormalizedRect::new(
+            self.regions
+                .values()
+                .map(|rect| rect.left)
+                .fold(1.0, f32::min),
+            self.regions
+                .values()
+                .map(|rect| rect.top)
+                .fold(1.0, f32::min),
+            self.regions
+                .values()
+                .map(|rect| rect.right)
+                .fold(0.0, f32::max),
+            self.regions
+                .values()
+                .map(|rect| rect.bottom)
+                .fold(0.0, f32::max),
+        )
+    }
+
     fn validate(&self, require_complete: bool) -> Result<(), CaptureError> {
-        if self.schema_version != 1
+        if self.schema_version != 2
             || self.window_title_query.trim().is_empty()
             || self.window_title_query.len() > 512
             || self.reference_client.width == 0
@@ -112,14 +145,29 @@ impl CalibrationProfile {
 
     pub fn load(path: &Path) -> Result<Self, CaptureError> {
         let content = std::fs::read(path).map_err(|error| CaptureError::Io(error.to_string()))?;
-        let profile: Self =
+        let mut profile: Self =
             serde_json::from_slice(&content).map_err(|_| CaptureError::ConfigFormat)?;
+        if profile.schema_version == 1 {
+            let legacy = [
+                RegionKind::Hand,
+                RegionKind::Melds,
+                RegionKind::River,
+                RegionKind::Dora,
+                RegionKind::Actions,
+            ];
+            if !legacy.iter().all(|kind| profile.regions.contains_key(kind)) {
+                return Err(CaptureError::ConfigFormat);
+            }
+            profile.schema_version = 2;
+            profile.validate(false)?;
+            return Ok(profile);
+        }
         profile.validate(true)?;
         Ok(profile)
     }
 }
 
-/// First-run calibration: the user drags five regions over the selected target window.
+/// First-run calibration: the user drags eight regions over the selected target window.
 pub fn calibrate_window(
     window: &WindowInfo,
     query: &str,

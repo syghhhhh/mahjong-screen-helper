@@ -7,6 +7,12 @@ use std::fs::File;
 use std::io::{BufReader, BufWriter};
 use std::path::Path;
 
+mod board;
+pub use board::{
+    DetectedPublicTile, OfferedTile, PublicSnapshot, PublicTileRead, RelativeSeat, Rotation,
+    detect_public_slots,
+};
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Rect {
     pub x: u32,
@@ -328,6 +334,7 @@ pub struct TemplateBank {
     tile_templates: Vec<(Tile, RgbImage)>,
     action_templates: Vec<(ActionLabel, RgbImage)>,
     tile_descriptors: Vec<TileDescriptor>,
+    public_descriptors: Vec<TileDescriptor>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -380,10 +387,15 @@ impl TemplateBank {
             .iter()
             .map(|(_, image)| TileDescriptor::new(image))
             .collect();
+        let public_descriptors = tile_templates
+            .iter()
+            .map(|(_, image)| board::glyph_descriptor(image))
+            .collect();
         Ok(Self {
             tile_templates,
             action_templates,
             tile_descriptors,
+            public_descriptors,
         })
     }
 
@@ -847,6 +859,7 @@ pub struct VisionSnapshot {
     pub hand: Vec<Tile>,
     pub actions: Vec<ActionLabel>,
     pub confidence: f32,
+    pub public_info: Option<PublicSnapshot>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -888,10 +901,11 @@ impl StabilityFilter {
             self.streak = 0;
             return FilterDecision::Uncertain;
         };
-        let same = self
-            .last
-            .as_ref()
-            .is_some_and(|last| last.hand == candidate.hand && last.actions == candidate.actions);
+        let same = self.last.as_ref().is_some_and(|last| {
+            last.hand == candidate.hand
+                && last.actions == candidate.actions
+                && last.public_info == candidate.public_info
+        });
         self.streak = if same {
             self.streak.saturating_add(1)
         } else {

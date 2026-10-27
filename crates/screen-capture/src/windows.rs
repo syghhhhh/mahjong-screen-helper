@@ -273,6 +273,7 @@ pub(super) fn capture_region(
         return Err(CaptureError::WindowsApi("GetDIBits"));
     }
     Ok(Frame {
+        client,
         source: handle,
         region: rect,
         dpi,

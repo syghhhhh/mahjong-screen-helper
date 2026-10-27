@@ -307,6 +307,7 @@ fn dark_honor_glyph_beats_a_closer_red_shape() {
 fn requires_three_distinct_consecutive_stable_frames() {
     let hand = vec![Tile::from_code("1m").unwrap(); 13];
     let snapshot = VisionSnapshot {
+        public_info: None,
         hand,
         actions: vec![ActionLabel::Riichi],
         confidence: 0.99,

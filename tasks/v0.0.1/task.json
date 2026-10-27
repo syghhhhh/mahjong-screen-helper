@@ -258,6 +258,35 @@
         "live-30-minute-soak"
       ],
       "evidence": null
+    },
+    {
+      "id": "V001-008",
+      "title": "接入公共牌与来牌识别及同帧采集",
+      "status": "in_progress",
+      "depends_on": ["V001-002", "V001-003", "V001-004"],
+      "scope": ["capture", "calibration", "vision", "state", "integration"],
+      "acceptance_criteria": [
+        "八区域同帧采集，旧配置迁移并要求补齐三家副露区域",
+        "牌河、四家副露与宝牌指示牌计数进入牌效计算",
+        "稳定来牌进入吃碰杠建议，公共信息变化清除旧建议",
+        "鸣牌后通过合法副露与手牌共同校对状态",
+        "合成回归与真实公共牌画面验收均有完整证据"
+      ],
+      "version_tests": [
+        "tests/version/v0.0.1/capture-calibration.test.ps1",
+        "tests/version/v0.0.1/vision.test.ps1",
+        "tests/version/v0.0.1/state-actions.test.ps1",
+        "tests/version/v0.0.1/overlay-integration.test.ps1"
+      ],
+      "affected_tests": [
+        "tests/regression/capture-calibration.test.ps1",
+        "tests/regression/vision.test.ps1",
+        "tests/regression/state-actions.test.ps1",
+        "tests/regression/overlay-integration.test.ps1"
+      ],
+      "regression_profile": "full",
+      "local_evidence_required": ["live-public-table-recognition", "live-public-table-integration"],
+      "evidence": null
     }
   ],
   "release_gate": {

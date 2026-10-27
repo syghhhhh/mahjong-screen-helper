@@ -148,8 +148,46 @@ pub struct Frame {
     pub region: PixelRect,
     pub dpi: u32,
     pub size: Size,
+    pub client: Size,
     /// Top-down BGRA pixels, four bytes per pixel. Kept in memory only.
     pub bgra: Vec<u8>,
+}
+
+impl Frame {
+    /// Extract another calibrated region from this frame without another capture.
+    pub fn crop_normalized(&self, region: NormalizedRect) -> Result<Self, CaptureError> {
+        let rect = region.resolve(self.client)?;
+        let source_size = self.region.size()?;
+        let expected = (self.size.width as usize)
+            .checked_mul(self.size.height as usize)
+            .and_then(|count| count.checked_mul(4))
+            .ok_or(CaptureError::AllocationTooLarge)?;
+        if self.size != source_size
+            || self.bgra.len() != expected
+            || rect.left < self.region.left
+            || rect.top < self.region.top
+            || rect.right > self.region.right
+            || rect.bottom > self.region.bottom
+        {
+            return Err(CaptureError::InvalidRegion);
+        }
+        let size = rect.size()?;
+        let mut bgra = Vec::with_capacity(size.width as usize * size.height as usize * 4);
+        let x = (rect.left - self.region.left) as usize;
+        let y = (rect.top - self.region.top) as usize;
+        for row in y..y + size.height as usize {
+            let start = (row * self.size.width as usize + x) * 4;
+            bgra.extend_from_slice(&self.bgra[start..start + size.width as usize * 4]);
+        }
+        Ok(Self {
+            source: self.source,
+            region: rect,
+            dpi: self.dpi,
+            size,
+            client: self.client,
+            bgra,
+        })
+    }
 }
 
 #[cfg(windows)]

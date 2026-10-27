@@ -271,6 +271,7 @@ fn crop_client_frame(
     let dpi = unsafe { GetDpiForWindow(handle.0) }.max(96);
     let size = client_region.size()?;
     Ok(Frame {
+        client,
         source: handle,
         region: client_region,
         dpi,

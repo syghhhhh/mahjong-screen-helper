@@ -59,6 +59,7 @@ pub struct GameTracker {
     known_yaku: bool,
     visible: [u8; 34],
     dora_indicators: Vec<Tile>,
+    own_meld_tiles: Vec<Tile>,
 }
 
 impl Default for GameTracker {
@@ -80,6 +81,7 @@ impl GameTracker {
             known_yaku: false,
             visible: [0; 34],
             dora_indicators: Vec::new(),
+            own_meld_tiles: Vec::new(),
         }
     }
 
@@ -219,6 +221,113 @@ impl GameTracker {
         Ok(())
     }
 
+    /// Apply a hand and its public counts from one stable visual observation.
+    /// Validating against the incoming hand avoids counting a just-discarded
+    /// tile both in the previous hand and the newly updated river.
+    pub fn observe_with_public(
+        &mut self,
+        observation: ObservedHand,
+        visible: [u8; 34],
+        dora_indicators: Vec<Tile>,
+    ) -> ObservationResult {
+        let mut indicators = [0u8; 34];
+        for tile in &dora_indicators {
+            indicators[tile.index() as usize] = indicators[tile.index() as usize].saturating_add(1);
+        }
+        if visible.iter().any(|count| *count > 4)
+            || dora_indicators.len() > 5
+            || (0..34).any(|index| indicators[index] > visible[index])
+            || !valid_visible(&observation.hand, &visible)
+        {
+            return self.enter_uncertain();
+        }
+        self.visible = visible;
+        self.dora_indicators = dora_indicators;
+        self.observe(observation)
+    }
+
+    /// Reconcile a stable table after a call or a reconnect. A reduced hand
+    /// alone cannot create a meld: the observed public melds must partition
+    /// into legal sequences/triplets/quads and agree with the concealed count.
+    pub fn observe_table(
+        &mut self,
+        observation: ObservedHand,
+        visible: [u8; 34],
+        dora_indicators: Vec<Tile>,
+        mut own_meld_tiles: Vec<Tile>,
+    ) -> ObservationResult {
+        let len = observation.hand.len();
+        if !(1..=14).contains(&len) || !matches!(len % 3, 1 | 2) || own_meld_tiles.len() > 16 {
+            return self.enter_uncertain();
+        }
+        let open = ((14 - len) / 3) as u8;
+        let own_counts = counts(&own_meld_tiles);
+        let mut meld_counts = own_counts;
+        if own_counts.iter().any(|count| *count > 4)
+            || !meld_partition(&mut meld_counts, open)
+            || (0..34).any(|index| own_counts[index] > visible[index])
+        {
+            return self.enter_uncertain();
+        }
+        own_meld_tiles.sort();
+        if open == self.open_melds && own_meld_tiles == self.own_meld_tiles {
+            return self.observe_with_public(observation, visible, dora_indicators);
+        }
+        let event = if let Some(previous) = self.hand.as_ref() {
+            let Some(added) = added_tiles(&self.own_meld_tiles, &own_meld_tiles) else {
+                return self.enter_uncertain();
+            };
+            let action = if open == self.open_melds + 1 {
+                if !meld_partition(&mut counts(&added), 1) {
+                    return self.enter_uncertain();
+                }
+                if added.len() == 4 && added.iter().all(|tile| tile.index() == added[0].index()) {
+                    ActionLabel::Kan
+                } else if added.len() == 3
+                    && added.iter().all(|tile| tile.index() == added[0].index())
+                {
+                    ActionLabel::Pon
+                } else if added.len() == 3 {
+                    ActionLabel::Chi
+                } else {
+                    return self.enter_uncertain();
+                }
+            } else if open == self.open_melds
+                && added.len() == 1
+                && self
+                    .own_meld_tiles
+                    .iter()
+                    .filter(|tile| tile.index() == added[0].index())
+                    .count()
+                    == 3
+            {
+                ActionLabel::Kan
+            } else {
+                return self.enter_uncertain();
+            };
+            if !call_hand_matches(previous, &observation.hand, &added, action) {
+                return self.enter_uncertain();
+            }
+            Some(StateEvent::CallDeclared(action))
+        } else {
+            None
+        };
+        let mut staged = self.clone();
+        staged.open_melds = open;
+        staged.own_meld_tiles = own_meld_tiles;
+        staged.hand = None;
+        staged.known_yaku |= (31..34).any(|index| own_counts[index] >= 3);
+        let mut result = staged.observe_with_public(observation, visible, dora_indicators);
+        if result.phase == Phase::Uncertain {
+            return self.enter_uncertain();
+        }
+        if let Some(event) = event {
+            result.events.push(event);
+        }
+        *self = staged;
+        result
+    }
+
     pub fn set_known_yaku(&mut self, known_yaku: bool) {
         self.known_yaku = known_yaku;
     }
@@ -260,6 +369,9 @@ impl GameTracker {
         for tile in tiles_from_hand {
             self.visible[tile.index() as usize] += 1;
         }
+        self.own_meld_tiles.extend_from_slice(tiles_from_hand);
+        self.own_meld_tiles.push(offered);
+        self.own_meld_tiles.sort();
         self.open_melds = next_open;
         self.phase = if action == ActionLabel::Kan {
             Phase::AwaitDraw
@@ -319,6 +431,7 @@ impl GameTracker {
         self.known_yaku = false;
         self.visible = [0; 34];
         self.dora_indicators.clear();
+        self.own_meld_tiles.clear();
         StateEvent::RoundEnd
     }
 
@@ -332,6 +445,75 @@ impl GameTracker {
             events: vec![StateEvent::Uncertain],
         }
     }
+}
+
+fn meld_partition(counts: &mut [u8; 34], groups: u8) -> bool {
+    let Some(index) = counts.iter().position(|count| *count > 0) else {
+        return groups == 0;
+    };
+    if groups == 0 {
+        return false;
+    }
+    for size in [3, 4] {
+        if counts[index] >= size {
+            counts[index] -= size;
+            let valid = meld_partition(counts, groups - 1);
+            counts[index] += size;
+            if valid {
+                return true;
+            }
+        }
+    }
+    if index < 27 && index % 9 <= 6 && counts[index + 1] > 0 && counts[index + 2] > 0 {
+        for slot in &mut counts[index..=index + 2] {
+            *slot -= 1;
+        }
+        let valid = meld_partition(counts, groups - 1);
+        for slot in &mut counts[index..=index + 2] {
+            *slot += 1;
+        }
+        if valid {
+            return true;
+        }
+    }
+    false
+}
+
+fn added_tiles(before: &[Tile], after: &[Tile]) -> Option<Vec<Tile>> {
+    let mut added = after.to_vec();
+    for tile in before {
+        added.remove(added.iter().position(|candidate| candidate == tile)?);
+    }
+    Some(added)
+}
+
+fn call_hand_matches(
+    before: &[Tile],
+    after: &[Tile],
+    added_meld: &[Tile],
+    action: ActionLabel,
+) -> bool {
+    let mut choices = Vec::new();
+    if added_meld.len() == 1 || action == ActionLabel::Kan {
+        choices.push(added_meld.to_vec());
+    }
+    if added_meld.len() >= 3 {
+        for offered in 0..added_meld.len() {
+            let mut consumed = added_meld.to_vec();
+            consumed.remove(offered);
+            choices.push(consumed);
+        }
+    }
+    choices.into_iter().any(|consumed| {
+        let Some(remaining) = added_tiles(&consumed, before) else {
+            return false;
+        };
+        matches!(hand_change(&remaining, after), HandChange::Same)
+            || (action != ActionLabel::Kan
+                && matches!(hand_change(&remaining, after), HandChange::Discard(_)))
+            || (action == ActionLabel::Kan
+                && matches!(hand_change(&remaining, after), HandChange::Draw(_)))
+    })
 }
 
 fn valid_confidence(confidence: f32) -> bool {

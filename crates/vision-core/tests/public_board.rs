@@ -1,0 +1,180 @@
+use riichi_core::Tile;
+use vision_core::{
+    ActionLabel, MatchConfig, RelativeSeat, RgbImage, Rotation, TemplateBank, detect_public_slots,
+};
+
+fn art(seed: u32) -> RgbImage {
+    let (width, height) = (18, 26);
+    let mut rgb = vec![240; width * height * 3];
+    for y in 3..height - 3 {
+        for x in 3..width - 3 {
+            if ((x * (seed as usize + 3) + y * 7 + y * x) % 29) < 13 {
+                let at = (y * width + x) * 3;
+                rgb[at..at + 3].copy_from_slice(if seed == 2 {
+                    &[210, 20, 30]
+                } else {
+                    &[20, 30, 40]
+                });
+            }
+        }
+    }
+    RgbImage::new(width as u32, height as u32, rgb).unwrap()
+}
+
+fn bank() -> TemplateBank {
+    let tiles = ["1m", "2p", "0s", "1z"]
+        .into_iter()
+        .enumerate()
+        .map(|(i, code)| (Tile::from_code(code).unwrap(), art(i as u32)))
+        .collect();
+    TemplateBank::new(tiles, vec![(ActionLabel::None, art(9))]).unwrap()
+}
+
+fn paste(canvas: &mut RgbImage, source: &RgbImage, left: u32, top: u32, highlighted: bool) {
+    for y in top.saturating_sub(2)..top + source.height() + 2 {
+        for x in left.saturating_sub(2)..left + source.width() + 2 {
+            let at = ((y * canvas.width() + x) * 3) as usize;
+            if x >= left && x < left + source.width() && y >= top && y < top + source.height() {
+                let from = (((y - top) * source.width() + x - left) * 3) as usize;
+                canvas.pixels_mut()[at..at + 3].copy_from_slice(&source.pixels()[from..from + 3]);
+            } else if highlighted {
+                canvas.pixels_mut()[at..at + 3].copy_from_slice(&[70, 225, 100]);
+            }
+        }
+    }
+}
+
+#[test]
+fn rotation_preserves_each_pixel_and_swaps_sideways_dimensions() {
+    let input = RgbImage::new(2, 3, (1..=6).flat_map(|value| [value; 3]).collect()).unwrap();
+    let rotated = input.rotated(Rotation::Clockwise);
+    assert_eq!((rotated.width(), rotated.height()), (3, 2));
+    assert_eq!(
+        rotated
+            .pixels()
+            .chunks_exact(3)
+            .map(|pixel| pixel[0])
+            .collect::<Vec<_>>(),
+        vec![5, 3, 1, 6, 4, 2]
+    );
+    assert_eq!(rotated.rotated(Rotation::CounterClockwise), input);
+    assert_eq!(
+        input
+            .rotated(Rotation::HalfTurn)
+            .rotated(Rotation::HalfTurn),
+        input
+    );
+}
+
+#[test]
+fn reads_scattered_rotated_tiles_and_only_one_highlighted_opponent_offer() {
+    let bank = bank();
+    let mut image = RgbImage::new(180, 160, vec![38; 180 * 160 * 3]).unwrap();
+    let positions = [(8, 70), (78, 8), (140, 70), (78, 120)];
+    for (index, rotation) in Rotation::ALL.into_iter().enumerate() {
+        paste(
+            &mut image,
+            &art(index as u32).rotated(rotation),
+            positions[index].0,
+            positions[index].1,
+            index == 2,
+        );
+    }
+    assert_eq!(detect_public_slots(&image).len(), 4);
+    let read = bank.recognize_public_tiles(&image, MatchConfig::default());
+    let tiles = read.tiles.unwrap();
+    assert_eq!(tiles.len(), 4);
+    assert!(read.uncertain_regions.is_empty());
+    for (index, tile) in bank.tile_templates().iter().enumerate() {
+        assert!(tiles.iter().any(|found| found.tile == tile.0
+            && found.rect.x == positions[index].0
+            && found.rect.y == positions[index].1));
+    }
+    let offer = read.offered.unwrap();
+    assert_eq!(offer.tile, Tile::from_code("0s").unwrap());
+    assert_eq!(offer.source, RelativeSeat::Right);
+
+    paste(&mut image, &art(0), positions[0].0, positions[0].1, true);
+    assert!(
+        bank.recognize_public_tiles(&image, MatchConfig::default())
+            .offered
+            .is_none()
+    );
+}
+
+#[test]
+fn rejects_unknown_tiles_and_impossible_public_counts() {
+    let bank = bank();
+    let mut image = RgbImage::new(160, 50, vec![38; 160 * 50 * 3]).unwrap();
+    for index in 0..5 {
+        paste(&mut image, &art(0), 4 + index * 28, 8, false);
+    }
+    let read = bank.recognize_public_tiles(&image, MatchConfig::default());
+    assert!(read.tiles.is_none());
+    assert!(!read.uncertain_regions.is_empty());
+
+    let mut image = RgbImage::new(50, 50, vec![38; 50 * 50 * 3]).unwrap();
+    let blank = RgbImage::new(18, 26, vec![240; 18 * 26 * 3]).unwrap();
+    paste(&mut image, &blank, 8, 8, false);
+    assert!(
+        bank.recognize_public_tiles(&image, MatchConfig::default())
+            .tiles
+            .is_none()
+    );
+    let empty = RgbImage::new(50, 50, vec![38; 50 * 50 * 3]).unwrap();
+    assert_eq!(
+        bank.recognize_public_tiles(&empty, MatchConfig::default())
+            .tiles,
+        Some(vec![])
+    );
+    let covered = RgbImage::new(400, 300, vec![240; 400 * 300 * 3]).unwrap();
+    assert!(
+        bank.recognize_public_tiles(&covered, MatchConfig::default())
+            .tiles
+            .is_none()
+    );
+    assert!(
+        bank.recognize_public_tiles(
+            &empty,
+            MatchConfig {
+                min_confidence: f32::NAN,
+                min_margin: 0.0
+            }
+        )
+        .tiles
+        .is_none()
+    );
+}
+
+#[test]
+fn own_river_highlight_does_not_become_an_opponent_offer() {
+    let bank = bank();
+    let mut image = RgbImage::new(160, 160, vec![38; 160 * 160 * 3]).unwrap();
+    paste(&mut image, &art(0), 70, 125, true);
+    let read = bank.recognize_public_tiles(&image, MatchConfig::default());
+    assert_eq!(read.tiles.unwrap().len(), 1);
+    assert!(read.offered.is_none());
+}
+
+#[test]
+fn public_glyph_matching_tolerates_different_face_margins() {
+    let bank = bank();
+    for index in 0..4 {
+        let mut padded = RgbImage::new(36, 48, vec![240; 36 * 48 * 3]).unwrap();
+        paste(&mut padded, &art(index), 9, 9, false);
+        let mut scene = RgbImage::new(80, 80, vec![38; 80 * 80 * 3]).unwrap();
+        paste(
+            &mut scene,
+            &padded.rotated(Rotation::Clockwise),
+            10,
+            10,
+            false,
+        );
+        let read = bank.recognize_public_tiles(&scene, MatchConfig::default());
+        assert_eq!(
+            read.tiles
+                .map(|tiles| tiles.into_iter().map(|tile| tile.tile).collect::<Vec<_>>()),
+            Some(vec![bank.tile_templates()[index as usize].0])
+        );
+    }
+}
