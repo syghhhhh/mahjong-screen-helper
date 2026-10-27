@@ -791,10 +791,14 @@ impl AppState {
     }
 
     fn tick(&mut self) -> bool {
-        if self.manual_override || self.runtime.is_none() {
+        if self.manual_override
+            || self.runtime.is_none()
+            || self.runtime.as_ref().is_some_and(RuntimeEngine::is_paused)
+        {
             return false;
         }
         let mut fresh_frame = false;
+        let mut image_changed = false;
         let Some(stream) = self.hand_stream.as_mut() else {
             return false;
         };
@@ -802,6 +806,7 @@ impl AppState {
             Ok(frame) => {
                 match RgbImage::from_bgra(frame.size.width, frame.size.height, &frame.bgra) {
                     Ok(image) => {
+                        image_changed |= self.last_hand.as_ref() != Some(&image);
                         self.last_hand = Some(image);
                         fresh_frame = true;
                     }
@@ -826,6 +831,7 @@ impl AppState {
                 Ok(frame) => {
                     match RgbImage::from_bgra(frame.size.width, frame.size.height, &frame.bgra) {
                         Ok(image) => {
+                            image_changed |= self.last_action.as_ref() != Some(&image);
                             self.last_action = Some(image);
                             fresh_frame = true;
                         }
@@ -846,6 +852,14 @@ impl AppState {
             }
         }
         if !fresh_frame {
+            return false;
+        }
+        if !image_changed
+            && matches!(
+                self.last_output.as_ref(),
+                Some(PipelineOutput::Ready { .. })
+            )
+        {
             return false;
         }
         let Some(image) = self.last_hand.as_ref() else {
