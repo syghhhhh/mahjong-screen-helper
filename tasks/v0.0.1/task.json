@@ -52,7 +52,7 @@
     {
       "id": "V001-002",
       "title": "实现窗口采集与首次区域校准",
-      "status": "implemented",
+      "status": "succeed",
       "depends_on": [
         "V001-001"
       ],
@@ -72,7 +72,29 @@
         "tests/regression/capture-calibration.test.ps1"
       ],
       "regression_profile": "full",
-      "evidence": null
+      "evidence": {
+        "source_sha": "178ce12f977ed9408d4daf8f8002c173bcd60074",
+        "version_test_run": "gate-version-v0.0.1-1aed1e9e877e4d26a840800dfeeb6a65",
+        "regression_test_run": "gate-all-7a83bea7f5794037b6a8337661e62883",
+        "commands": [
+          "scripts/test-version.ps1 -Version v0.0.1 -RunId gate-version-v0.0.1-1aed1e9e877e4d26a840800dfeeb6a65",
+          "scripts/test-all.ps1 -Version v0.0.1 -RunId gate-all-7a83bea7f5794037b6a8337661e62883"
+        ],
+        "logs": [
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-version-v0.0.1-1aed1e9e877e4d26a840800dfeeb6a65\\version-tests.log",
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-all-7a83bea7f5794037b6a8337661e62883\\all-tests.log"
+        ],
+        "summaries": [
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-version-v0.0.1-1aed1e9e877e4d26a840800dfeeb6a65\\version-tests.json",
+          "H:\\科学麻将\\mahjong-screen-helper\\.local-test-data\\runs\\gate-all-7a83bea7f5794037b6a8337661e62883\\all-tests.json"
+        ],
+        "fixture_hashes": [],
+        "environment": {
+          "os": "Microsoft Windows NT 10.0.26200.0",
+          "architecture": "X64"
+        },
+        "completed_at": "2026-10-27T09:19:26.4897370Z"
+      }
     },
     {
       "id": "V001-003",
