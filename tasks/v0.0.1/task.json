@@ -635,6 +635,45 @@
           "exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
           "completed_at": "2026-10-27T22:52:32.3601518Z"
         }
+      ],
+      "ci_validation_history": [
+        {
+          "source_sha": "3e444ced49c6511742d95167b251d11b91e20e54",
+          "checkout_sha": "38d51cce5238c9b625a26d9393cfe0b3511649ca",
+          "run_id": 40598298229,
+          "url": "https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40598298229",
+          "checks": [
+            "task-schema",
+            "version-tests",
+            "regression-tests",
+            "build-smoke",
+            "package-smoke"
+          ],
+          "passed": true,
+          "observed_at": "2026-10-27T23:02:11.6657218Z",
+          "local_native_resolution": false
+        }
+      ],
+      "cross_host_history": [
+        {
+          "source_sha": "3e444ced49c6511742d95167b251d11b91e20e54",
+          "checkout_sha": "38d51cce5238c9b625a26d9393cfe0b3511649ca",
+          "ci_run_id": 40598298281,
+          "ci_url": "https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40598298281",
+          "exe_sha256": "1f1e6355caf7d92cd987ce5c8d9380cd5b1f9346c26ca760e8ade4f932ce162c",
+          "environments": [
+            "Windows Server 2022 AMD EPYC 7763 / 4 logical CPUs",
+            "Windows Server 2025 AMD EPYC 7763 / 4 logical CPUs",
+            "Windows 11 i7-13700K / 24 logical CPUs"
+          ],
+          "attempts_per_environment": 20,
+          "failed": 0,
+          "timed_out": 0,
+          "acceptance_verified": false,
+          "reproduces_original_failing_binary": false,
+          "summary": ".local-test-data/runs/ci-rule-comparison-b313b784a409408fb2262a51dd646bf0/three-host-comparison.json",
+          "document": "docs/native-rule-comparison.md"
+        }
       ]
     },
     {
@@ -1759,6 +1798,24 @@
       ],
       "targeted_test_logs": [
         ".local-test-data/separate-public-all-regions-20261028.log"
+      ],
+      "ci_validation_history": [
+        {
+          "source_sha": "3e444ced49c6511742d95167b251d11b91e20e54",
+          "checkout_sha": "38d51cce5238c9b625a26d9393cfe0b3511649ca",
+          "run_id": 40598298229,
+          "url": "https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40598298229",
+          "checks": [
+            "task-schema",
+            "version-tests",
+            "regression-tests",
+            "build-smoke",
+            "package-smoke"
+          ],
+          "passed": true,
+          "observed_at": "2026-10-27T23:02:11.6657218Z",
+          "local_native_resolution": false
+        }
       ]
     },
     {
@@ -1820,6 +1877,24 @@
           "exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
           "completed_at": "2026-10-27T22:52:32.3601518Z"
         }
+      ],
+      "ci_validation_history": [
+        {
+          "source_sha": "3e444ced49c6511742d95167b251d11b91e20e54",
+          "checkout_sha": "38d51cce5238c9b625a26d9393cfe0b3511649ca",
+          "run_id": 40598298229,
+          "url": "https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40598298229",
+          "checks": [
+            "task-schema",
+            "version-tests",
+            "regression-tests",
+            "build-smoke",
+            "package-smoke"
+          ],
+          "passed": true,
+          "observed_at": "2026-10-27T23:02:11.6657218Z",
+          "local_native_resolution": false
+        }
       ]
     },
     {
@@ -1853,7 +1928,10 @@
       "targeted_test_logs": [
         ".local-test-data/rule-diagnostic-contract-red-20261028.log",
         ".local-test-data/rule-diagnostic-contract-green-20261028.log",
-        ".local-test-data/rule-diagnostic-contract-fixed-20261028.log"
+        ".local-test-data/rule-diagnostic-contract-fixed-20261028.log",
+        ".local-test-data/package-rule-probe-dirty-control-20261028.log",
+        ".local-test-data/package-rule-probe-clean-20261028.log",
+        ".local-test-data/actionlint-host-comparison-20261028.log"
       ],
       "failure_history": [
         {
@@ -1866,6 +1944,45 @@
           "diagnostic": "Native scoped worker panicked at riichi-core/src/lib.rs:167: attempt to subtract with overflow; ten other version checks passed",
           "exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
           "completed_at": "2026-10-27T22:52:32.3601518Z"
+        }
+      ],
+      "ci_validation_history": [
+        {
+          "source_sha": "3e444ced49c6511742d95167b251d11b91e20e54",
+          "checkout_sha": "38d51cce5238c9b625a26d9393cfe0b3511649ca",
+          "run_id": 40598298229,
+          "url": "https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40598298229",
+          "checks": [
+            "task-schema",
+            "version-tests",
+            "regression-tests",
+            "build-smoke",
+            "package-smoke"
+          ],
+          "passed": true,
+          "observed_at": "2026-10-27T23:02:11.6657218Z",
+          "local_native_resolution": false
+        }
+      ],
+      "cross_host_history": [
+        {
+          "source_sha": "3e444ced49c6511742d95167b251d11b91e20e54",
+          "checkout_sha": "38d51cce5238c9b625a26d9393cfe0b3511649ca",
+          "ci_run_id": 40598298281,
+          "ci_url": "https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40598298281",
+          "exe_sha256": "1f1e6355caf7d92cd987ce5c8d9380cd5b1f9346c26ca760e8ade4f932ce162c",
+          "environments": [
+            "Windows Server 2022 AMD EPYC 7763 / 4 logical CPUs",
+            "Windows Server 2025 AMD EPYC 7763 / 4 logical CPUs",
+            "Windows 11 i7-13700K / 24 logical CPUs"
+          ],
+          "attempts_per_environment": 20,
+          "failed": 0,
+          "timed_out": 0,
+          "acceptance_verified": false,
+          "reproduces_original_failing_binary": false,
+          "summary": ".local-test-data/runs/ci-rule-comparison-b313b784a409408fb2262a51dd646bf0/three-host-comparison.json",
+          "document": "docs/native-rule-comparison.md"
         }
       ]
     }
