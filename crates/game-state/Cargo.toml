@@ -3,6 +3,7 @@ name = "game-state"
 version = "0.0.1"
 edition = "2024"
 description = "Observed hand state and conservative riichi action advice"
+license = "MIT"
 
 [dependencies]
 riichi-core = { path = "../riichi-core" }

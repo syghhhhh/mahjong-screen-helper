@@ -6,6 +6,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Release packaging failed' }
 $exe = Join-Path $output 'RiichiScreenHelper.exe'
 if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) { throw 'Portable executable missing' }
 if (-not (Test-Path -LiteralPath "$output.zip" -PathType Leaf)) { throw 'Portable zip missing' }
+if (-not (Test-Path -LiteralPath (Join-Path $output 'LICENSE') -PathType Leaf)) { throw 'Project MIT license missing' }
 if (-not (Test-Path -LiteralPath (Join-Path $output 'licenses\README.md') -PathType Leaf)) { throw 'License inventory missing' }
 $inventoryPath = Join-Path $output 'licenses\DEPENDENCIES.json'
 if (-not (Test-Path -LiteralPath $inventoryPath -PathType Leaf)) { throw 'Dependency license inventory missing' }

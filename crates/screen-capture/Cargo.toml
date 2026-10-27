@@ -3,6 +3,7 @@ name = "screen-capture"
 version = "0.0.1"
 edition = "2024"
 description = "Read-only Windows client-area capture and calibrated regions"
+license = "MIT"
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }

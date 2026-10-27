@@ -24,6 +24,7 @@ New-Item -ItemType Directory -Path (Join-Path $output 'config') -Force | Out-Nul
 New-Item -ItemType Directory -Path (Join-Path $output 'models\template-pack') -Force | Out-Null
 New-Item -ItemType Directory -Path (Join-Path $output 'licenses') -Force | Out-Null
 Copy-Item -LiteralPath $exe -Destination (Join-Path $output 'RiichiScreenHelper.exe')
+Copy-Item -LiteralPath (Join-Path $repoRoot 'LICENSE') -Destination (Join-Path $output 'LICENSE')
 Copy-Item -LiteralPath (Join-Path $repoRoot 'README.md') -Destination (Join-Path $output 'README.md')
 Copy-Item -LiteralPath (Join-Path $repoRoot 'docs\third-party-licenses.md') -Destination (Join-Path $output 'licenses\README.md')
 Copy-Item -LiteralPath (Join-Path $repoRoot 'Cargo.lock') -Destination (Join-Path $output 'licenses\Cargo.lock')
