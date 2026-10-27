@@ -462,8 +462,24 @@
           "observed_at": "2026-10-27T21:03:34.1615523Z"
         }
       ],
-      "last_verified_stage": "self_tested",
-      "blocked_reason": "Logging-specific tests passed and full-run logs are strict UTF-8, but the full regression failed in rule concurrency and runtime integration. V001-009 must resolve the native failures before the success gate can complete this task.",
+      "last_verified_stage": "regression_tested",
+      "validation_history": [
+        {
+          "source_sha": "6dd27fe7cba190e499007191afc0bdd4789d4c6a",
+          "source_dirty": false,
+          "version_test_run": "version-v0.0.1-ffbdf54bb7214b0f8ad453462de657bb",
+          "regression_test_run": "all-2ac6a027e96049ca9b45de40d614561a",
+          "passed": true,
+          "checks": 10,
+          "failed": 0,
+          "skipped": 0,
+          "summary": ".local-test-data/runs/all-2ac6a027e96049ca9b45de40d614561a/all-tests.json",
+          "log": ".local-test-data/runs/all-2ac6a027e96049ca9b45de40d614561a/all-tests.log",
+          "completed_at": "2026-10-27T21:08:36.2739114Z",
+          "limitations": "New source fixes logging code pages. This passing run does not resolve or replace prior native failures; declared dependency V001-009 still fails and no success gate was run."
+        }
+      ],
+      "blocked_reason": "CP437 logging contracts, the version suite and all 10 full-regression checks passed at 6dd27fe. Prior intermittent native failures remain unexplained and declared dependency V001-009 is still failed, so the success gate has not run.",
       "blocking_run": "all-add896cdaad741b38996799197b1cbf7"
     }
   ],
