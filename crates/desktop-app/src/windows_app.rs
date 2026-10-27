@@ -786,13 +786,17 @@ impl AppState {
         if self.manual_override || self.runtime.is_none() {
             return;
         }
+        let mut fresh_frame = false;
         let Some(stream) = self.hand_stream.as_mut() else {
             return;
         };
         match stream.next_frame(Duration::from_millis(10)) {
             Ok(frame) => {
                 match RgbImage::from_bgra(frame.size.width, frame.size.height, &frame.bgra) {
-                    Ok(image) => self.last_hand = Some(image),
+                    Ok(image) => {
+                        self.last_hand = Some(image);
+                        fresh_frame = true;
+                    }
                     Err(_) => {
                         self.status = "采集画面格式错误".into();
                         self.runtime = None;
@@ -813,7 +817,10 @@ impl AppState {
             match action_stream.next_frame(Duration::from_millis(10)) {
                 Ok(frame) => {
                     match RgbImage::from_bgra(frame.size.width, frame.size.height, &frame.bgra) {
-                        Ok(image) => self.last_action = Some(image),
+                        Ok(image) => {
+                            self.last_action = Some(image);
+                            fresh_frame = true;
+                        }
                         Err(_) => {
                             self.status = "按钮区域画面格式错误".into();
                             self.runtime = None;
@@ -829,6 +836,9 @@ impl AppState {
                     return;
                 }
             }
+        }
+        if !fresh_frame {
+            return;
         }
         let Some(image) = self.last_hand.as_ref() else {
             return;
