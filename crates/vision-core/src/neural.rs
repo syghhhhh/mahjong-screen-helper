@@ -5,13 +5,14 @@
 use std::{io::Read, marker::PhantomData, os::windows::ffi::OsStrExt, path::Path, rc::Rc};
 use windows::{
     AI::MachineLearning::{
-        ILearningModelFeatureDescriptor, LearningModel, LearningModelBinding, LearningModelDevice,
-        LearningModelDeviceKind, LearningModelFeatureKind, LearningModelSession,
+        ILearningModelFeatureDescriptor, LearningModelFeatureKind, LearningModelSession,
         TensorFeatureDescriptor, TensorFloat, TensorKind,
     },
     Win32::System::WinRT::{RO_INIT_MULTITHREADED, RoInitialize, RoUninitialize},
     core::{HSTRING, Interface},
 };
+
+mod activation;
 
 pub const INPUT_FLOATS: usize = 3 * 48 * 32;
 pub const OUTPUT_CLASSES: usize = 37;
@@ -100,8 +101,7 @@ impl WinMlTileSession {
         let absolute = std::path::absolute(path).map_err(|_| NeuralError::InvalidModel)?;
         let path = HSTRING::from_wide(&absolute.as_os_str().encode_wide().collect::<Vec<_>>());
         let apartment = Apartment::initialize()?;
-        let model =
-            LearningModel::LoadFromFilePath(&path).map_err(|_| NeuralError::InvalidModel)?;
+        let model = activation::load_model(&path).map_err(|_| NeuralError::InvalidModel)?;
         let inputs = model
             .InputFeatures()
             .map_err(|_| NeuralError::UnsupportedModel)?;
@@ -121,10 +121,8 @@ impl WinMlTileSession {
         validate_feature(&output, &[1, OUTPUT_CLASSES as i64])?;
         let input_name = input.Name().map_err(|_| NeuralError::UnsupportedModel)?;
         let output_name = output.Name().map_err(|_| NeuralError::UnsupportedModel)?;
-        let device = LearningModelDevice::Create(LearningModelDeviceKind::Cpu)
-            .map_err(|_| NeuralError::BackendUnavailable)?;
-        let session = LearningModelSession::CreateFromModelOnDevice(&model, &device)
-            .map_err(|_| NeuralError::BackendUnavailable)?;
+        let session =
+            activation::cpu_session(&model).map_err(|_| NeuralError::BackendUnavailable)?;
         Ok(Self {
             session,
             input_name,
@@ -143,10 +141,9 @@ impl WinMlTileSession {
         {
             return Err(NeuralError::InvalidInput);
         }
-        let tensor = TensorFloat::CreateFromShapeArrayAndDataArray(&[1, 3, 48, 32], input)
-            .map_err(|_| NeuralError::InferenceFailed)?;
-        let binding = LearningModelBinding::CreateFromSession(&self.session)
-            .map_err(|_| NeuralError::InferenceFailed)?;
+        let tensor = activation::input_tensor(input).map_err(|_| NeuralError::InferenceFailed)?;
+        let binding =
+            activation::binding(&self.session).map_err(|_| NeuralError::InferenceFailed)?;
         binding
             .Bind(&self.input_name, &tensor)
             .map_err(|_| NeuralError::InferenceFailed)?;

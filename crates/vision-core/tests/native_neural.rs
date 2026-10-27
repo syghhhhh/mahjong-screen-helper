@@ -96,3 +96,54 @@ fn preserves_the_callers_sta_apartment() {
         RoUninitialize();
     }
 }
+
+#[test]
+fn sequential_sessions_survive_an_idle_native_runtime() {
+    const CHILD: &str = "MSH_NEURAL_LIFETIME_CHILD";
+    if std::env::var_os(CHILD).is_some() {
+        for _ in 0..3 {
+            for name in ["wrong-channels.onnx", "wrong-classes.onnx"] {
+                assert!(matches!(
+                    WinMlTileSession::load(&fixture(name)),
+                    Err(NeuralError::UnsupportedModel)
+                ));
+            }
+            let session = WinMlTileSession::load(&fixture("affine-37.onnx")).unwrap();
+            session.evaluate(&vec![0.0; INPUT_FLOATS]).unwrap();
+        }
+        return;
+    }
+    // A separate process ensures another parallel test cannot keep its MTA
+    // alive and accidentally hide a stale activation-factory pointer.
+    let mut child = std::process::Command::new(std::env::current_exe().unwrap())
+        .args([
+            "--exact",
+            "sequential_sessions_survive_an_idle_native_runtime",
+            "--nocapture",
+            "--test-threads=1",
+        ])
+        .env(CHILD, "1")
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .unwrap();
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(15);
+    loop {
+        if child.try_wait().unwrap().is_some() {
+            let output = child.wait_with_output().unwrap();
+            assert!(
+                output.status.success(),
+                "isolated native lifetime test failed: {}\n{}",
+                output.status,
+                String::from_utf8_lossy(&output.stderr)
+            );
+            break;
+        }
+        if std::time::Instant::now() >= deadline {
+            child.kill().unwrap();
+            let _ = child.wait();
+            panic!("isolated native lifetime test exceeded 15 seconds");
+        }
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+}

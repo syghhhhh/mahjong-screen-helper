@@ -31,7 +31,7 @@
 - WinRT 初始化与释放留在创建线程；已有 STA 调用者可使用此同步接口，后端不会释放调用者的初始化。
 - 该模块尚未接到浮窗的模板匹配回退，旧识别行为保持原状。
 
-`tests/fixtures/synthetic/neural/` 中的四个原创微型 ONNX 图没有牌图或训练权重。五个原生测试检查独立算术参考、非法输入、错误维度、非有限输出及 STA 生命周期；版本和回归脚本通过 `vision-core --all-targets` 包含它们。可选的 fixture 再生成脚本需要开发机的 `onnx==1.19.1` 和 NumPy，CI 和便携包使用者不需要 Python。
+`tests/fixtures/synthetic/neural/` 中的四个原创微型 ONNX 图没有牌图或训练权重。六个原生测试检查独立算术参考、非法输入、错误维度、非有限输出、STA 生命周期及隔离进程中的连续加载/释放；版本和回归脚本通过 `vision-core --all-targets` 包含它们。可选的 fixture 再生成脚本需要开发机的 `onnx==1.19.1` 和 NumPy，CI 和便携包使用者不需要 Python。
 
 本机诊断命令：
 
@@ -53,4 +53,12 @@ tensor 文件为 1–256 个连续的 little-endian `[1,3,48,32]` float32 输入
 
 人工放大复核三张图中的所有五牌后，第三张图第 6 张更正为 `0s`。统一真值和 ROI 哈希保存在 `tests/fixtures/manifests/public-hands-v1.json`，不包含原始截图。旧训练、模板、34 类模型及原生对照摘要保持原样；复算记录为 `.local-test-data/runs/truth-reassessment-2ca62fea9f904283bf5e6816b02a6d7c/summary.json`，保留每个旧摘要的 SHA-256，并分别报告 34 类基础匹配和 37 类精确匹配。原生输出与 PyTorch 的数值对照不受标注更正影响，旧摘要中的 39/41 应按更正记录解释为 40/41。
 
-提交 `f2507e5` 的 CI 运行 `40513099578` 中，版本测试通过，回归测试的非法模型用例出现一次 `0xc0000005 / STATUS_ACCESS_VIOLATION`，日志保留在 `.local-test-data/runs/ci-f2507e5-regression-failure/native.log`。不能用本机成功或其他 CI 检查通过覆盖该失败。后续增加扩展名、最小长度及标准 IR 头预检，使 README 和伪装成 `.onnx` 的文本在进入系统解析器前被拒绝；这只是格式预检，不是完整 protobuf 校验。修复后本机五个原生用例连续运行 20 轮均通过，服务器结果仍须以修复提交的 CI 为准。
+提交 `f2507e5` 的 CI 运行 `40513099578` 中，版本测试通过，回归测试的非法模型用例出现一次 `0xc0000005 / STATUS_ACCESS_VIOLATION`，日志保留在 `.local-test-data/runs/ci-f2507e5-regression-failure/native.log`。不能用本机成功或其他 CI 检查通过覆盖该失败。后续增加扩展名、最小长度及标准 IR 头预检，使 README 和伪装成 `.onnx` 的文本在进入系统解析器前被拒绝；这只是格式预检，不是完整 protobuf 校验。本机五个原生用例连续并行运行 20 轮通过，但 `81b2fa4` 的 CI 运行 `40515530047` 再次失败，日志保存在 `.local-test-data/runs/ci-81b2fa4-regression-failure/native.log`，说明预检不足以解决崩溃。
+
+将非法模型测试单独以 `--test-threads=1` 运行后，本机也复现了崩溃：连续加载、拒绝、释放模型使最后一个 MTA 被释放，投影的进程级工厂缓存随后引用过期工厂。增加的隔离子进程测试在修复前稳定失败，记录在 `.local-test-data/runs/native-lifetime-tdd-81b2fa4/initial-failure.log`；子进程有 15 秒超时，不会被其他并行用例的 MTA 意外保活。后端改用公共 `windows::core::factory` API 获取有作用域的工厂，并在所属 apartment 之前释放，避免复用跨生命周期的缓存；不泄漏进程级 MTA 使用计数。修复后的六个原生用例已在本机单线程、并行及隔离模式通过，服务器仍以新提交的 required checks 为准。
+
+## 增加授权明确的合成画风
+
+后续本机实验只增加自行生成的字形和鸟形变化，没有加入游戏截图训练。字体为 [Noto CJK](https://github.com/notofonts/noto-cjk) 提交 `f8d157532fbfaeda587e826d4cd5b21a49186f7c` 的简体 Sans/Serif Regular，许可证 OFL-1.1；字体文件仅用于本机生成合成图片。[OFL FAQ](https://openfontlicense.org/ofl-faq/)说明字体生成的图形不因此受字体本身的分发许可约束。
+
+实验 `.local-test-data/runs/local-permissive-cnn-c4085215b2ce49558fcbffba9bbc4392/` 保持同一小网络，用修订后的统一真值检查三张已知手牌，最高类别为 41/41；第二张图最低分仍只有约 0.275。这不是通过真实识牌验收，权重仍未打包、未启用，尚需独立画风、未知输入、行动按钮、公共牌和置信度测试。训练输入为 `[37,40,3,48,32]`，压缩文件 SHA-256 为 `d012bcedc8fb842059c7cdcce98973830009a09370d33c41ecd5cf1b90f47468`，生成脚本、字体来源与哈希均保存在本机 `models/permissive-synthetic-v1/`。
