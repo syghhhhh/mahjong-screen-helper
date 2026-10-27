@@ -147,3 +147,13 @@ V001-012 已由 `task-gate.ps1` 在源提交 `41beb28eef807a6487adb55999ac46164f
 新增跨主机诊断脚本后的版本运行 `version-host-comparison-20261028-01` 为 10/11 检查通过。相同哈希的规则契约工作线程在 `lib.rs:167` 自然减法溢出，外层报告 scoped thread panic，进程退出 101；本轮没有附加调试器、改变环境或亲和性。二进制/PDB 和失败 JSON 保存在该运行 `native-failure/`。新增脚本的五种控制测试通过，不能覆盖规则失败；V001-015 保持 failed。下一项证据由[同一二进制的跨主机比较](../native-rule-comparison.md)提供，不以再次碰到一次绿色完整运行代替根因调查。
 
 首轮对照现已完成：云端构建文件 `1f1e…162c` 在两个 GitHub Windows VM 和本机各二十次通过，源提交 `3e444ce` 的主 CI 五项也通过。但该文件不是上述失败的 `7dd9…5aa4`；相同 Rust 编译器标识下，代码段原始字节和长度均有差异，尚未解释。完整报告、身份检查、环境与结论边界见[三环境结果](../native-rule-comparison.md#首次三环境对照结果)。本轮只增加了可复核对照证据，没有解决或删除既有故障。
+
+## 777d293 的干净回归：新的堆损坏退出
+
+行动字形决策代码提交 `777d293c99e2d2af6dec12fac34f61d84e47bfaf`、工作区干净时运行 `scripts/test-all.ps1 -Version v0.0.1 -RunId all-action-word-decisions-20261028-01`。完整版本和十个其他检查通过；全回归共 12 项、11 通过、1 失败、零跳过，于 `2026-10-27T23:37:13.7227677Z` 结束。失败来自 `overlay-integration` 的 `runtime-core/tests/neural_pipeline.rs`，进程自然退出 `0xc0000374 STATUS_HEAP_CORRUPTION`。
+
+十项测试只输出八项完成，不能从输出顺序确定哪个线程或测试先破坏内存。该测试使用合成图像和模拟分类器，没有安装候选识牌权重。Windows Application Error 事件 130282 的 XML 时间为 `2026-10-27T23:36:35.9469707Z`，报告 ntdll.dll 10.0.26100.9711、偏移 `0x118095`；这是检测到异常的位置，不证明 ntdll 是破坏源头，也未证明与先前访问异常/溢出同因。
+
+证据目录 `.local-test-data/runs/neural-pipeline-heap-corruption-77db08def7314f73ad519c287001c213/` 保留 exe、PDB、测试源码、完整控制台、原摘要及事件 XML。exe SHA-256 为 `3388681aa65ab317d017fb59058f970987ffe894df867ca4b2c4d7a32ea9107c`，PDB 为 `82de14be726c93f82e2ef977dfe827af7cc13dc8e4b86afe935a1ecca7a0611d`。事件首次时间窗查询未命中，期间还暴露 PowerShell 7 自动日期转换的派生查询问题；前两次空查询与原派生摘要保留。最终以 provider 查询、明确 UTC 比较及 XML SystemTime 交叉确认该事件，见 `event-evidence-final.json`，原测试摘要与控制台未改写。
+
+V001-016 改为 failed，保留 self_tested 阶段；V001-006/009 追加这次独立失败，不调用成功门禁，不用重跑绿色结果覆盖。六个新字形契约测试及视觉回归通过，不能替代项目级失败的完整回归。

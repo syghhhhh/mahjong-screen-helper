@@ -366,6 +366,28 @@
           },
           "root_cause": "unresolved",
           "completed_at": "2026-10-27T19:59:49.8367807Z"
+        },
+        {
+          "source_sha": "777d293c99e2d2af6dec12fac34f61d84e47bfaf",
+          "source_dirty": false,
+          "regression_test_run": "all-action-word-decisions-20261028-01",
+          "summary": ".local-test-data/runs/all-action-word-decisions-20261028-01/all-tests.json",
+          "failure_folder": ".local-test-data/runs/neural-pipeline-heap-corruption-77db08def7314f73ad519c287001c213",
+          "failed_test": "tests/regression/overlay-integration.test.ps1",
+          "target": "runtime-core/tests/neural_pipeline.rs",
+          "process_exit_code_hex": "0xc0000374",
+          "exe_sha256": "3388681aa65ab317d017fb59058f970987ffe894df867ca4b2c4d7a32ea9107c",
+          "pdb_sha256": "82de14be726c93f82e2ef977dfe827af7cc13dc8e4b86afe935a1ecca7a0611d",
+          "checks": 12,
+          "failed": 1,
+          "skipped": 0,
+          "completed_at": "2026-10-27T23:37:13.7227677Z",
+          "application_event_count": 1,
+          "faulting_module": "ntdll.dll",
+          "faulting_offset": "0x118095",
+          "same_cause_as_prior_failures_verified": false,
+          "note": "Eight neural pipeline tests completed before natural heap-corruption termination. Uses synthetic images and mocked face classifiers; actual corrupting write and responsible test are unknown. No success gate was run.",
+          "event_query_correction": ".local-test-data/runs/neural-pipeline-heap-corruption-77db08def7314f73ad519c287001c213/event-evidence-final.json"
         }
       ],
       "diagnostic_history": [
@@ -659,6 +681,28 @@
           "diagnostic": "Native scoped worker panicked at riichi-core/src/lib.rs:167: attempt to subtract with overflow; ten other version checks passed",
           "exe_sha256": "7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4",
           "completed_at": "2026-10-27T22:52:32.3601518Z"
+        },
+        {
+          "source_sha": "777d293c99e2d2af6dec12fac34f61d84e47bfaf",
+          "source_dirty": false,
+          "regression_test_run": "all-action-word-decisions-20261028-01",
+          "summary": ".local-test-data/runs/all-action-word-decisions-20261028-01/all-tests.json",
+          "failure_folder": ".local-test-data/runs/neural-pipeline-heap-corruption-77db08def7314f73ad519c287001c213",
+          "failed_test": "tests/regression/overlay-integration.test.ps1",
+          "target": "runtime-core/tests/neural_pipeline.rs",
+          "process_exit_code_hex": "0xc0000374",
+          "exe_sha256": "3388681aa65ab317d017fb59058f970987ffe894df867ca4b2c4d7a32ea9107c",
+          "pdb_sha256": "82de14be726c93f82e2ef977dfe827af7cc13dc8e4b86afe935a1ecca7a0611d",
+          "checks": 12,
+          "failed": 1,
+          "skipped": 0,
+          "completed_at": "2026-10-27T23:37:13.7227677Z",
+          "application_event_count": 1,
+          "faulting_module": "ntdll.dll",
+          "faulting_offset": "0x118095",
+          "same_cause_as_prior_failures_verified": false,
+          "note": "Eight neural pipeline tests completed before natural heap-corruption termination. Uses synthetic images and mocked face classifiers; actual corrupting write and responsible test are unknown. No success gate was run.",
+          "event_query_correction": ".local-test-data/runs/neural-pipeline-heap-corruption-77db08def7314f73ad519c287001c213/event-evidence-final.json"
         }
       ],
       "ci_validation_history": [
@@ -2034,7 +2078,7 @@
     {
       "id": "V001-016",
       "title": "行动字形模型的类型化候选与拒识决策",
-      "status": "self_tested",
+      "status": "failed",
       "depends_on": [
         "V001-001"
       ],
@@ -2076,8 +2120,44 @@
           "passed": true,
           "checks": 11,
           "completed_at": "2026-10-27T23:32:44.7031766Z"
+        },
+        {
+          "source_sha": "777d293c99e2d2af6dec12fac34f61d84e47bfaf",
+          "source_dirty": false,
+          "regression_test_run": "all-action-word-decisions-20261028-01",
+          "summary": ".local-test-data/runs/all-action-word-decisions-20261028-01/all-tests.json",
+          "passed": false,
+          "checks": 12,
+          "failed": 1,
+          "skipped": 0,
+          "completed_at": "2026-10-27T23:37:13.7227677Z"
         }
-      ]
+      ],
+      "failure_history": [
+        {
+          "source_sha": "777d293c99e2d2af6dec12fac34f61d84e47bfaf",
+          "source_dirty": false,
+          "regression_test_run": "all-action-word-decisions-20261028-01",
+          "summary": ".local-test-data/runs/all-action-word-decisions-20261028-01/all-tests.json",
+          "failure_folder": ".local-test-data/runs/neural-pipeline-heap-corruption-77db08def7314f73ad519c287001c213",
+          "failed_test": "tests/regression/overlay-integration.test.ps1",
+          "target": "runtime-core/tests/neural_pipeline.rs",
+          "process_exit_code_hex": "0xc0000374",
+          "exe_sha256": "3388681aa65ab317d017fb59058f970987ffe894df867ca4b2c4d7a32ea9107c",
+          "pdb_sha256": "82de14be726c93f82e2ef977dfe827af7cc13dc8e4b86afe935a1ecca7a0611d",
+          "checks": 12,
+          "failed": 1,
+          "skipped": 0,
+          "completed_at": "2026-10-27T23:37:13.7227677Z",
+          "application_event_count": 1,
+          "faulting_module": "ntdll.dll",
+          "faulting_offset": "0x118095",
+          "same_cause_as_prior_failures_verified": false,
+          "note": "Eight neural pipeline tests completed before natural heap-corruption termination. Uses synthetic images and mocked face classifiers; actual corrupting write and responsible test are unknown. No success gate was run.",
+          "event_query_correction": ".local-test-data/runs/neural-pipeline-heap-corruption-77db08def7314f73ad519c287001c213/event-evidence-final.json"
+        }
+      ],
+      "last_verified_stage": "self_tested"
     }
   ],
   "release_gate": {
