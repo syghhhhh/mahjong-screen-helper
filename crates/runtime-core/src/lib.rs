@@ -135,7 +135,7 @@ impl RuntimeEngine {
                     self.cached_discards = None;
                     return PipelineOutput::Uncertain;
                 }
-                let discards = if let Some((cached_hand, cached)) = &self.cached_discards {
+                let mut discards = if let Some((cached_hand, cached)) = &self.cached_discards {
                     if *cached_hand == snapshot.hand {
                         cached.clone()
                     } else {
@@ -144,6 +144,9 @@ impl RuntimeEngine {
                 } else {
                     self.compute_discards(&snapshot.hand)
                 };
+                for recommendation in &mut discards {
+                    recommendation.confidence = snapshot.confidence;
+                }
                 let mut actions = Vec::new();
                 for action in snapshot.actions {
                     let (offered, source) = if action == ActionLabel::Riichi {

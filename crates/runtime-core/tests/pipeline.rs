@@ -205,10 +205,24 @@ fn unchanged_frames_reuse_discard_advice_until_inputs_change() {
         PipelineOutput::Ready { .. }
     ));
     assert_eq!(engine.recommendation_calculations(), 1);
-    assert!(matches!(
-        engine.process(2, &image, Some(&actions)),
-        PipelineOutput::Ready { .. }
-    ));
+    let mut slightly_changed = image.clone();
+    let altered_pixel = (((7 + 2) * image.width() + (3 + 2)) * 3) as usize;
+    slightly_changed.pixels_mut()[altered_pixel..altered_pixel + 3].fill(240);
+    match engine.process(2, &slightly_changed, Some(&actions)) {
+        PipelineOutput::Ready {
+            confidence,
+            discards,
+            ..
+        } => {
+            assert!(confidence < 1.0);
+            assert!(
+                discards
+                    .iter()
+                    .all(|advice| (advice.confidence - confidence).abs() < f32::EPSILON)
+            );
+        }
+        _ => panic!("expected a ready recommendation"),
+    }
     assert_eq!(engine.recommendation_calculations(), 1);
 
     engine
