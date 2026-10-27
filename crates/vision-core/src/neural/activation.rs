@@ -65,9 +65,8 @@ pub(super) fn cpu_session(model: &LearningModel) -> Result<LearningModelSession>
     }
 }
 
-pub(super) fn input_tensor(input: &[f32]) -> Result<TensorFloat> {
+pub(super) fn input_tensor(input: &[f32], shape: &[i64; 4]) -> Result<TensorFloat> {
     let factory = factory::<TensorFloat, ITensorFloatStatics2>()?;
-    let shape = [1i64, 3, 48, 32];
     unsafe {
         let mut result = null_mut();
         let code = (factory.vtable().CreateFromShapeArrayAndDataArray)(

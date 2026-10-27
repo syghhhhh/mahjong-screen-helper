@@ -23,6 +23,7 @@ Windows x64 MSVC 构建使用静态 CRT，打包前检查实际 exe 的 DLL 导�
 - [本机视觉模板包格式](docs/vision-template-pack.md)
 - [轻量模型与原生 ONNX 实验](docs/vision-model-research.md)
 - [本机模型安装与拒识契约](docs/model-manifest.md)
+- [行动按钮输入与原生后端](docs/action-recognition.md)
 
 在 Windows PowerShell 中运行：
 

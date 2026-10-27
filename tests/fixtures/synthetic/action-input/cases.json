@@ -1,0 +1,147 @@
+[
+  {
+    "name": "narrow",
+    "kind": "prepared",
+    "bounds": [
+      40,
+      20,
+      8,
+      16
+    ],
+    "foreground_pixels": 128
+  },
+  {
+    "name": "wide",
+    "kind": "prepared",
+    "bounds": [
+      20,
+      20,
+      96,
+      20
+    ],
+    "foreground_pixels": 1920
+  },
+  {
+    "name": "half-up",
+    "kind": "prepared",
+    "bounds": [
+      25,
+      15,
+      9,
+      16
+    ],
+    "foreground_pixels": 144
+  },
+  {
+    "name": "half-down",
+    "kind": "prepared",
+    "bounds": [
+      25,
+      15,
+      7,
+      16
+    ],
+    "foreground_pixels": 112
+  },
+  {
+    "name": "odd-margin",
+    "kind": "prepared",
+    "bounds": [
+      40,
+      8,
+      32,
+      48
+    ],
+    "foreground_pixels": 1536
+  },
+  {
+    "name": "pattern",
+    "kind": "prepared",
+    "bounds": [
+      30,
+      20,
+      60,
+      40
+    ],
+    "foreground_pixels": 1432
+  },
+  {
+    "name": "inner-mark",
+    "kind": "prepared",
+    "bounds": [
+      20,
+      12,
+      48,
+      40
+    ],
+    "foreground_pixels": 644
+  },
+  {
+    "name": "large",
+    "kind": "prepared",
+    "bounds": [
+      200,
+      140,
+      70,
+      150
+    ],
+    "foreground_pixels": 10500
+  },
+  {
+    "name": "color-boundary",
+    "kind": "prepared",
+    "bounds": [
+      30,
+      10,
+      40,
+      40
+    ],
+    "foreground_pixels": 1600
+  },
+  {
+    "name": "nearest-row-boundary",
+    "kind": "prepared",
+    "bounds": [
+      60,
+      20,
+      79,
+      64
+    ],
+    "foreground_pixels": 2056
+  },
+  {
+    "name": "nearest-column-boundary",
+    "kind": "prepared",
+    "bounds": [
+      60,
+      20,
+      76,
+      74
+    ],
+    "foreground_pixels": 2264
+  },
+  {
+    "name": "empty",
+    "kind": "empty",
+    "bounds": null,
+    "foreground_pixels": 0
+  },
+  {
+    "name": "low-channel",
+    "kind": "empty",
+    "bounds": null,
+    "foreground_pixels": 0
+  },
+  {
+    "name": "low-maximum",
+    "kind": "empty",
+    "bounds": null,
+    "foreground_pixels": 0
+  },
+  {
+    "name": "fragment",
+    "kind": "unlocalized",
+    "bounds": null,
+    "foreground_pixels": 0
+  }
+]

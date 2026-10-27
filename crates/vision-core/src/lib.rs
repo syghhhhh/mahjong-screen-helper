@@ -7,6 +7,7 @@ use std::fs::File;
 use std::io::{BufReader, BufWriter};
 use std::path::Path;
 
+pub mod action_input;
 mod board;
 pub mod classifier;
 mod hybrid;

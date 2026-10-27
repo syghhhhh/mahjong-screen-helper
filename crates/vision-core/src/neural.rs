@@ -16,6 +16,8 @@ mod activation;
 
 pub use crate::neural_input::INPUT_FLOATS;
 pub const OUTPUT_CLASSES: usize = 37;
+pub const ACTION_INPUT_FLOATS: usize = crate::action_input::INPUT_FLOATS;
+pub const ACTION_OUTPUT_CLASSES: usize = 7;
 const MAX_MODEL_BYTES: u64 = 16 * 1024 * 1024;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -67,16 +69,43 @@ impl Drop for Apartment {
 
 /// CPU-only ONNX session with one float32 NCHW [1,3,48,32] input and one
 /// float32 [1,37] logits output. No Python or third-party inference DLL is used.
-pub struct WinMlTileSession {
+pub struct WinMlTileSession(TensorSession<OUTPUT_CLASSES>);
+
+impl WinMlTileSession {
+    pub fn load(path: &Path) -> Result<Self, NeuralError> {
+        TensorSession::load(path, [1, 3, 48, 32]).map(Self)
+    }
+    pub fn evaluate(&self, input: &[f32]) -> Result<[f32; OUTPUT_CLASSES], NeuralError> {
+        self.0.evaluate(input)
+    }
+}
+
+/// Separate action-word tensor contract. This returns raw logits only; it
+/// neither locates buttons nor validates their labels, context or confidence.
+pub struct WinMlActionSession(TensorSession<ACTION_OUTPUT_CLASSES>);
+
+impl WinMlActionSession {
+    pub fn load(path: &Path) -> Result<Self, NeuralError> {
+        TensorSession::load(path, [1, 1, 64, 128]).map(Self)
+    }
+    pub fn evaluate(&self, input: &[f32]) -> Result<[f32; ACTION_OUTPUT_CLASSES], NeuralError> {
+        self.0.evaluate(input)
+    }
+}
+
+// Only the two public, fixed contracts above can create this backend. No
+// manifest or caller can supply an arbitrary tensor shape or output count.
+struct TensorSession<const CLASSES: usize> {
     session: LearningModelSession,
     input_name: HSTRING,
     output_name: HSTRING,
+    input_shape: [i64; 4],
     // Rust drops fields in declaration order, so COM objects go first.
     _apartment: Apartment,
 }
 
-impl WinMlTileSession {
-    pub fn load(path: &Path) -> Result<Self, NeuralError> {
+impl<const CLASSES: usize> TensorSession<CLASSES> {
+    fn load(path: &Path, input_shape: [i64; 4]) -> Result<Self, NeuralError> {
         // Reject obvious non-model files before entering the system parser.
         // This is a format sanity check, not a full ONNX protobuf validator.
         if !path
@@ -130,8 +159,8 @@ impl WinMlTileSession {
         let output = outputs
             .GetAt(0)
             .map_err(|_| NeuralError::UnsupportedModel)?;
-        validate_feature(&input, &[1, 3, 48, 32])?;
-        validate_feature(&output, &[1, OUTPUT_CLASSES as i64])?;
+        validate_feature(&input, &input_shape)?;
+        validate_feature(&output, &[1, CLASSES as i64])?;
         let input_name = input.Name().map_err(|_| NeuralError::UnsupportedModel)?;
         let output_name = output.Name().map_err(|_| NeuralError::UnsupportedModel)?;
         let session =
@@ -140,21 +169,28 @@ impl WinMlTileSession {
             session,
             input_name,
             output_name,
+            input_shape,
             _apartment: apartment,
         })
     }
 
     /// Return finite raw logits. A successful inference says nothing about a
     /// model's real-game accuracy and never changes a task's acceptance state.
-    pub fn evaluate(&self, input: &[f32]) -> Result<[f32; OUTPUT_CLASSES], NeuralError> {
-        if input.len() != INPUT_FLOATS
+    fn evaluate(&self, input: &[f32]) -> Result<[f32; CLASSES], NeuralError> {
+        if input.len()
+            != self
+                .input_shape
+                .iter()
+                .map(|&d| d as usize)
+                .product::<usize>()
             || input
                 .iter()
                 .any(|value| !value.is_finite() || !(0.0..=1.0).contains(value))
         {
             return Err(NeuralError::InvalidInput);
         }
-        let tensor = activation::input_tensor(input).map_err(|_| NeuralError::InferenceFailed)?;
+        let tensor = activation::input_tensor(input, &self.input_shape)
+            .map_err(|_| NeuralError::InferenceFailed)?;
         let binding =
             activation::binding(&self.session).map_err(|_| NeuralError::InferenceFailed)?;
         binding
@@ -172,17 +208,17 @@ impl WinMlTileSession {
         let shape = tensor.Shape().map_err(|_| NeuralError::InvalidOutput)?;
         if shape.Size().map_err(|_| NeuralError::InvalidOutput)? != 2
             || shape.GetAt(0).map_err(|_| NeuralError::InvalidOutput)? != 1
-            || shape.GetAt(1).map_err(|_| NeuralError::InvalidOutput)? != OUTPUT_CLASSES as i64
+            || shape.GetAt(1).map_err(|_| NeuralError::InvalidOutput)? != CLASSES as i64
         {
             return Err(NeuralError::InvalidOutput);
         }
         let values = tensor
             .GetAsVectorView()
             .map_err(|_| NeuralError::InvalidOutput)?;
-        if values.Size().map_err(|_| NeuralError::InvalidOutput)? != OUTPUT_CLASSES as u32 {
+        if values.Size().map_err(|_| NeuralError::InvalidOutput)? != CLASSES as u32 {
             return Err(NeuralError::InvalidOutput);
         }
-        let mut logits = [0.0; OUTPUT_CLASSES];
+        let mut logits = [0.0; CLASSES];
         for (index, value) in logits.iter_mut().enumerate() {
             *value = values
                 .GetAt(index as u32)
@@ -195,7 +231,7 @@ impl WinMlTileSession {
     }
 }
 
-impl Drop for WinMlTileSession {
+impl<const CLASSES: usize> Drop for TensorSession<CLASSES> {
     fn drop(&mut self) {
         let _ = self.session.Close();
     }
