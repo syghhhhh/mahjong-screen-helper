@@ -5,6 +5,9 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+# Keep native child emission and the PowerShell pipe decoder on UTF-8 too.
+[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
+$OutputEncoding = [Console]::OutputEncoding
 $env:CARGO_BUILD_JOBS = '1'
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $runRoot = Join-Path $repoRoot ('.local-test-data\runs\{0}' -f $RunId)

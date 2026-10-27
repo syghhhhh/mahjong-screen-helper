@@ -14,7 +14,16 @@ function Write-Fixture([string]$Relative, [string]$Text) {
     [IO.File]::WriteAllText((Join-Path $fixtureRoot $Relative), $Text.Replace('__UNICODE__', $unicode), $utf8Bom)
 }
 Write-Fixture 'scripts\validate-task.ps1' "Write-Output 'fixture validator passed'"
+Write-Fixture 'bootstrap.ps1' @'
+param([string]$Runner, [string]$RunId)
+$ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [Text.Encoding]::GetEncoding(437)
+$OutputEncoding = [Console]::OutputEncoding
+& (Join-Path $PSScriptRoot "scripts\$Runner") -Version v0.0.1 -RunId $RunId
+exit $LASTEXITCODE
+'@
 Write-Fixture 'tests\version\v0.0.1\a-fails.test.ps1' @'
+Write-Output ('encoding-' + [Console]::OutputEncoding.CodePage)
 Write-Output 'stdout-__UNICODE__'
 [Console]::Error.WriteLine('stderr-__UNICODE__')
 exit 7
@@ -29,7 +38,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Cannot stage local logging fixture' }
 if ($LASTEXITCODE -ne 0) { throw 'Cannot commit local logging fixture' }
 
 function Invoke-Runner([string]$Script, [string]$RunId) {
-    $arguments = @('-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', ('"{0}"' -f (Join-Path $fixtureRoot "scripts\$Script")), '-Version', 'v0.0.1', '-RunId', $RunId)
+    $arguments = @('-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', ('"{0}"' -f (Join-Path $fixtureRoot 'bootstrap.ps1')), '-Runner', $Script, '-RunId', $RunId)
     $process = Start-Process -FilePath powershell.exe -ArgumentList $arguments -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $fixtureRoot "$RunId-console.log") -RedirectStandardError (Join-Path $fixtureRoot "$RunId-error.log")
     # Cache the handle before exit; Windows PowerShell 5 can otherwise expose
     # a null ExitCode after Start-Process has released its process handle.
@@ -52,13 +61,13 @@ function Assert-Log([string]$Relative, [string[]]$Expected) {
 }
 
 Invoke-Runner 'test-version.ps1' 'version-logging'
-Assert-Log '.local-test-data\runs\version-logging\version-tests.log' @('RUN powershell.exe', "stdout-$unicode", "stderr-$unicode", 'later-pass')
+Assert-Log '.local-test-data\runs\version-logging\version-tests.log' @('RUN powershell.exe', 'encoding-65001', "stdout-$unicode", "stderr-$unicode", 'later-pass')
 $version = Get-Content -LiteralPath (Join-Path $fixtureRoot '.local-test-data\runs\version-logging\version-tests.json') -Raw -Encoding utf8 | ConvertFrom-Json
 if ($version.passed -ne $false -or @($version.results).Count -ne 3 -or $version.results[1].exit_code -ne 7 -or $version.results[2].exit_code -ne 0) {
     throw 'Version runner did not retain failure and later success separately'
 }
 Invoke-Runner 'test-all.ps1' 'all-logging'
-Assert-Log '.local-test-data\runs\all-logging\all-tests.log' @('RUN powershell.exe', "stdout-$unicode", "stderr-$unicode", 'later-pass', 'regression-pass')
+Assert-Log '.local-test-data\runs\all-logging\all-tests.log' @('RUN powershell.exe', 'encoding-65001', "stdout-$unicode", "stderr-$unicode", 'later-pass', 'regression-pass')
 $all = Get-Content -LiteralPath (Join-Path $fixtureRoot '.local-test-data\runs\all-logging\all-tests.json') -Raw -Encoding utf8 | ConvertFrom-Json
 if ($all.passed -ne $false -or @($all.results).Count -ne 3 -or $all.results[1].exit_code -ne 1 -or $all.results[2].exit_code -ne 0) {
     throw 'All runner did not retain nested version failure and successful regression separately'

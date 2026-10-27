@@ -5,6 +5,10 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+# Native PowerShell children otherwise inherit an OEM console code page on
+# English Windows and can lose Unicode before UTF-8 log persistence.
+[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
+$OutputEncoding = [Console]::OutputEncoding
 $env:CARGO_BUILD_JOBS = '1'
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $runRoot = Join-Path $repoRoot ('.local-test-data\runs\{0}' -f $RunId)

@@ -95,3 +95,21 @@ cargo test -p runtime-core --test pipeline --locked --no-run --target-dir .local
 - 两个日志契约脚本通过。完整日志 46,697 字节，严格 UTF-8 解码成功，NUL 字节数为 0，可直接检索到两处失败；日志修正有效，原生问题未修复。
 
 本机 `concurrency-natural-failure-541a286eb6b44cab876631f7a94c35bc` 保存两个 exe/PDB、完整控制台及失败 JSON。规则契约 exe SHA-256 为 `7dd9e0b20ff52fbdaaa4220cdaa2adb46b44ff0dbae9987041a8f7b9706c5aa4`，PDB 为 `e13dc703c17f03ee86fc45e92005e5fab9a95d0cf775b27fe4fd51e065082d0b`。V001-009 保持 `failed` 并追加本次失败；V001-010 保留 `self_tested` 阶段信息，状态为依赖 V001-009 的 `blocked`，完整回归未通过前不执行成功门禁。不再重复运行本提交以取得一次绿色结果。
+
+## 断言诊断、环境线索与同一二进制对照
+
+后续在本机副本增加递归前后牌数恢复断言、独立 while 查找首张非零牌与 `find` 的比较。该副本正常运行 10 次及调试运行 10 次暂未复现，分别保存在 `rule-invariant-probe-2d18f21e1d7d463790eaef23cdc9db73` 和 `rule-invariant-debug-e6a3ac90874c48bf8567a54234c321b4`。原十线程规则二进制的无调试器 30 次检查也暂未复现，保存在 `original-rule-native-3c843c2cb020430a91f1c627b359f872`。不含项目代码的普通递归、七参数递归及通用分支数组探针各做了正常/调试对照，均暂未触发，目录为 `generic-recursion-c361c255a53c44c3b09734730870c611`、`generic-stack-args-b98c6fdc29ee4122ba52c881407f999f`、`generic-branching-9c762e4bd7ee4064888cbf16ebad3527`。这些副本和探针改变代码、栈或时序，均不能当作修复，也未修改生产算法。
+
+只读 CIM/注册表查询得到：处理器 i7-13700K，整机厂商 THUNDEROBOT，主板标识 `PRO Z790-A WIFI DDR4 (MS-7E07)`，BIOS 1.11、日期 2022-09-19。Windows `Update Revision` 是四字节 `0B-01-00-00`，按小端整数为 `0x10B`；这不是直接读取处理器 MSR 的结果。最近三天 WHEA 查询返回无匹配事件，不足以排除硬件因素。
+
+[Intel 官方当前说明](https://www.intel.com/content/www/us/en/support/articles/000102331/processors.html)（2026-07-21 复核）建议相关 13/14 代桌面处理器遵循 Intel 默认设置，使用含 `0x12F` 或更高微码的最新 BIOS。本机报告的固件信息因此成为待排除的环境线索，**尚未证实本次故障来自硬件、固件或编译器**。若处理固件，须由整机厂商核对匹配该整机的更新；本次检查仅收集信息。
+
+已将同一个自然失败规则契约 exe 制成独立对照包，SHA 保持 `7dd9…c5aa4`，约 404 KiB，可解压双击运行，运行前验证哈希；最多 10 次、每次 30 秒，遇首次失败停止。报告只记录规则输出、退出码与选定环境字段，不包含截图或序列号。包位于 `.local-test-data/diagnostics/rule-runtime-probe-beb769087501415bb74bf450d2d938e7.zip`，ZIP SHA-256 为 `7a1dcc95d4b547c77f1c9a9e9c5c6d210c93db0d855da1c430352b0426859f33`。
+
+该包在本机单次验证于 `2026-10-27T21:02:20.4775693Z` 结束，仍自然退出 `0xC0000005`，未超时；报告及 stderr 保存在同名目录的 `results-20261028-050214-2ad2ece23bfc4ae59f518a0359582fe3`。报告类型为 `independent-host-rule-reproduction`，明确不能充当 `native-parallel-resolution`。另一台 Windows 上的同一二进制对照仍待完成。
+
+## CI 编码边界失败
+
+提交 `964828b` 的 [CI 40581870231](https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40581870231) 中，版本和回归检查因日志契约失败，其他三项通过。下载的 Windows Server 2022 日志显示 `stdout-中文Ω` 已在原生子进程边界丢失；统一文件写入编码尚未覆盖英文系统的默认 OEM 控制台编码。这一 CI 失败不是原生访问异常的证据。
+
+新增 CP437 启动基线先在本机复现编码失败，再让两个入口显式设置原生输出/管道解码为 UTF-8。测试还验证子进程实际报告 `encoding-65001`，中文/非 ASCII stdout 与 stderr 均保留，故意失败及只读日志负例仍失败。此修正继续由 V001-010 记录，原生计算任务仍未通过。

@@ -375,6 +375,20 @@
           "frame_pointer_panic_summary": ".local-test-data/runs/pipeline-frame-panic-513edf103f3a4c05bfd6effa5945bf3c/debug-results.json",
           "limitations": "First-AV diagnostic captures intentionally terminate the child. Independent compiler, CRT and C++ controls change code and timing; they do not establish a root cause.",
           "record": "docs/failures/2026-10-28-pipeline-access-violation.md"
+        },
+        {
+          "source_sha": "964828b335e342ddce42c613481a10663a10e113",
+          "kind": "invariant-controls-and-independent-host-probe-preparation",
+          "status": "unresolved",
+          "instrumented_source_run": ".local-test-data/runs/rule-invariant-probe-2d18f21e1d7d463790eaef23cdc9db73/normal-results.json",
+          "instrumented_debug_run": ".local-test-data/runs/rule-invariant-debug-e6a3ac90874c48bf8567a54234c321b4/debug-results.json",
+          "original_binary_native_run": ".local-test-data/runs/original-rule-native-3c843c2cb020430a91f1c627b359f872/normal-results.json",
+          "standalone_same_binary_failure": ".local-test-data/diagnostics/rule-runtime-probe-beb769087501415bb74bf450d2d938e7/results-20261028-050214-2ad2ece23bfc4ae59f518a0359582fe3/report.json",
+          "standalone_native_exit_code": "0xc0000005",
+          "diagnostic_zip_sha256": "7a1dcc95d4b547c77f1c9a9e9c5c6d210c93db0d855da1c430352b0426859f33",
+          "environment_clue": { "processor": "i7-13700K", "bios": "1.11", "bios_date": "2022-09-19", "microcode_registry_u32_le": "0x10B" },
+          "limitations": "Read-only environment clues and finite passing controls do not establish a hardware or compiler cause. Independent-host diagnostic is not success-gate evidence. Same preserved rule contract still fails naturally on this host.",
+          "record": "docs/failures/2026-10-28-pipeline-access-violation.md"
         }
       ],
       "failure_history": [
@@ -424,6 +438,7 @@
       "scope": ["process", "testing"],
       "acceptance_criteria": [
         "版本及全项目测试日志统一写入 UTF-8，保留中文和非 ASCII 字符",
+        "即使从 CP437 启动，也统一原生子进程输出与 PowerShell 解码为 UTF-8",
         "stdout、stderr、命令行和后续测试输出均可直接检索，无 UTF-16 NUL 混入",
         "故意失败的退出码保持失败，后续成功项不覆盖前面的失败",
         "两个入口在日志写入失败时均返回失败，不能保存成功摘要",
@@ -435,6 +450,18 @@
       "regression_profile": "full",
       "local_evidence_required": [],
       "evidence": null,
+      "failure_history": [
+        {
+          "source_sha": "964828b335e342ddce42c613481a10663a10e113",
+          "ci_run": 40581870231,
+          "url": "https://github.com/syghhhhh/mahjong-screen-helper/actions/runs/40581870231",
+          "failed_checks": ["version-tests", "regression-tests"],
+          "reason": "English Windows native PowerShell child lost Unicode before UTF-8 file persistence; logging contract could not find stdout-中文Ω.",
+          "logs": [".local-test-data/runs/ci-failure-bc290ca40f374d43a5891c04e6f518bd/version-tests.log", ".local-test-data/runs/ci-failure-bc290ca40f374d43a5891c04e6f518bd/regression-tests.log"],
+          "environment": { "os": "Windows Server 2022 10.0.20348", "architecture": "x64" },
+          "observed_at": "2026-10-27T21:03:34.1615523Z"
+        }
+      ],
       "last_verified_stage": "self_tested",
       "blocked_reason": "Logging-specific tests passed and full-run logs are strict UTF-8, but the full regression failed in rule concurrency and runtime integration. V001-009 must resolve the native failures before the success gate can complete this task.",
       "blocking_run": "all-add896cdaad741b38996799197b1cbf7"
