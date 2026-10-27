@@ -3,13 +3,13 @@ use riichi_core::Tile;
 use runtime_core::{PipelineOutput, RuntimeEngine};
 use screen_capture::{
     CalibrationProfile, CaptureError, CaptureStream, RegionKind, WindowInfo, calibrate_window,
-    find_windows,
+    capture_region, find_windows, select_region,
 };
 use std::cell::RefCell;
 use std::ffi::c_void;
 use std::path::PathBuf;
 use std::time::Duration;
-use vision_core::{MatchConfig, RgbImage, TemplateBank};
+use vision_core::{MatchConfig, RgbImage, TemplateBank, save_labeled_hand};
 
 #[repr(C)]
 #[derive(Default, Clone, Copy)]
@@ -181,6 +181,7 @@ enum AppAction {
     Start,
     Pause,
     Correct,
+    Learn,
     Refresh,
     Hide,
     Quit,
@@ -449,6 +450,9 @@ unsafe extern "system" fn window_proc(
 }
 
 fn click_action(x: i32, y: i32) -> Option<AppAction> {
+    if (370..458).contains(&x) && (128..153).contains(&y) {
+        return Some(AppAction::Learn);
+    }
     let row = if (48..82).contains(&y) {
         0
     } else if (88..122).contains(&y) {
@@ -502,6 +506,7 @@ fn run_action(action: AppAction) {
                 state.correct_hand();
             }
         }),
+        AppAction::Learn => learn_template(),
         AppAction::Refresh => APP.with(|cell| {
             if let Some(state) = cell.borrow_mut().as_mut() {
                 state.refresh();
@@ -591,6 +596,94 @@ fn calibrate_target() {
                 Err(CaptureError::Cancelled) => state.status = "校准已取消".into(),
                 Err(error) => state.status = format!("校准失败：{error}"),
             }
+        }
+    });
+}
+
+fn learn_template() {
+    let values = APP.with(|cell| {
+        cell.borrow().as_ref().and_then(|state| {
+            state.selected.as_ref().map(|target| {
+                (
+                    target.handle,
+                    state
+                        .profile
+                        .as_ref()
+                        .and_then(|profile| profile.region(RegionKind::Hand)),
+                    state.pack_path.clone(),
+                    state.edit,
+                    state.window,
+                )
+            })
+        })
+    });
+    let Some((target, hand_region, pack_path, edit, overlay)) = values else {
+        APP.with(|cell| {
+            if let Some(state) = cell.borrow_mut().as_mut() {
+                state.status = "请先找窗口，再学习本机模板".into();
+            }
+        });
+        return;
+    };
+    let mut buffer = [0u16; 256];
+    let count = unsafe { GetWindowTextW(edit, buffer.as_mut_ptr(), buffer.len() as i32) };
+    let input = String::from_utf16_lossy(&buffer[..count.max(0) as usize]);
+    if input.trim().is_empty() {
+        APP.with(|cell| {
+            if let Some(state) = cell.borrow_mut().as_mut() {
+                state.status = "输入当前手牌牌码，或 @chi/@pon/@kan/@riichi/@none".into();
+            }
+        });
+        return;
+    }
+    unsafe {
+        ShowWindow(overlay, SW_HIDE);
+    }
+    let result: Result<String, String> = (|| {
+        if let Some(label) = input.trim().strip_prefix('@') {
+            let label = label.to_ascii_lowercase();
+            let label = match label.as_str() {
+                "none" | "chi" | "pon" | "kan" | "riichi" => label,
+                _ => return Err("按钮标签应为 @chi/@pon/@kan/@riichi/@none".into()),
+            };
+            let prompt = format!("框选 {label} 按钮；@none 请框选无按钮背景");
+            let region = select_region(target, &prompt).map_err(|error| error.to_string())?;
+            let frame = capture_region(target, region).map_err(|error| error.to_string())?;
+            let image = RgbImage::from_bgra(frame.size.width, frame.size.height, &frame.bgra)
+                .map_err(|error| error.to_string())?;
+            let directory = pack_path.join("actions");
+            std::fs::create_dir_all(&directory).map_err(|error| error.to_string())?;
+            let path = directory.join(format!("{label}.png"));
+            if path.exists() {
+                return Err(format!("{label} 模板已存在；不会覆盖，请先核对本机文件"));
+            }
+            image.write_png(&path).map_err(|error| error.to_string())?;
+            Ok(format!("已保存本机 {label} 按钮模板"))
+        } else {
+            let region = hand_region.ok_or("请先校准手牌区域")?;
+            let tiles = input
+                .split_whitespace()
+                .map(Tile::from_code)
+                .collect::<Result<Vec<_>, _>>()
+                .map_err(|_| "牌码无效，请输入当前 13 或 14 张手牌")?;
+            let frame = capture_region(target, region).map_err(|error| error.to_string())?;
+            let image = RgbImage::from_bgra(frame.size.width, frame.size.height, &frame.bgra)
+                .map_err(|error| error.to_string())?;
+            let saved = save_labeled_hand(&image, &tiles, &pack_path)
+                .map_err(|error| format!("手牌样本未保存：{error}"))?;
+            Ok(format!("已保存 {saved} 张新牌图；已有模板不会覆盖"))
+        }
+    })();
+    unsafe {
+        ShowWindow(overlay, SW_SHOW);
+        InvalidateRect(overlay, std::ptr::null(), 0);
+    }
+    APP.with(|cell| {
+        if let Some(state) = cell.borrow_mut().as_mut() {
+            state.status = match result {
+                Ok(message) => message,
+                Err(message) => format!("学习模板：{message}"),
+            };
         }
     });
 }
@@ -897,6 +990,17 @@ fn paint(window: isize) {
         );
         draw_text(dc, left + 14, top + 8, label, color(231, 239, 248));
     }
+    fill(
+        dc,
+        Rect {
+            left: 370,
+            top: 128,
+            right: 458,
+            bottom: 153,
+        },
+        color(43, 63, 88),
+    );
+    draw_text(dc, 383, 132, "学习模板", color(231, 239, 248));
     APP.with(|cell| {
         let borrow = cell.borrow();
         let Some(state) = borrow.as_ref() else {

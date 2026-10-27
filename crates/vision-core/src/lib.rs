@@ -4,7 +4,7 @@
 use riichi_core::Tile;
 use std::fmt;
 use std::fs::File;
-use std::io::BufReader;
+use std::io::{BufReader, BufWriter};
 use std::path::Path;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -142,6 +142,69 @@ impl RgbImage {
         };
         Self::new(output.width, output.height, rgb)
     }
+
+    pub fn write_png(&self, path: &Path) -> Result<(), VisionError> {
+        if self.width > 1024 || self.height > 1024 {
+            return Err(VisionError::InvalidTemplate);
+        }
+        let file = File::create_new(path).map_err(|_| VisionError::TemplateIo)?;
+        let mut encoder = png::Encoder::new(BufWriter::new(file), self.width, self.height);
+        encoder.set_color(png::ColorType::Rgb);
+        encoder.set_depth(png::BitDepth::Eight);
+        encoder
+            .write_header()
+            .and_then(|mut writer| writer.write_image_data(&self.rgb))
+            .map_err(|_| VisionError::TemplateIo)
+    }
+}
+
+/// Save tile faces from a user-labeled, calibrated 13- or 14-tile hand.
+/// Existing local templates are never replaced. The caller owns the image and destination.
+pub fn save_labeled_hand(
+    image: &RgbImage,
+    tiles: &[Tile],
+    pack_dir: &Path,
+) -> Result<usize, VisionError> {
+    let slots = detect_hand_slots(image);
+    if !matches!(tiles.len(), 13 | 14) || slots.len() != tiles.len() {
+        return Err(VisionError::InvalidRegion);
+    }
+    let mut counts = [0u8; 34];
+    for tile in tiles {
+        let count = &mut counts[tile.index() as usize];
+        *count += 1;
+        if *count > 4 {
+            return Err(VisionError::InvalidRegion);
+        }
+    }
+    let tile_dir = pack_dir.join("tiles");
+    std::fs::create_dir_all(&tile_dir).map_err(|_| VisionError::TemplateIo)?;
+    let mut saved = 0;
+    for (&tile, &slot) in tiles.iter().zip(&slots) {
+        let name = tile_code(tile);
+        let path = tile_dir.join(format!("{name}.png"));
+        if path.exists() {
+            continue;
+        }
+        let crop = image.crop(slot)?;
+        crop.write_png(&path)?;
+        saved += 1;
+    }
+    Ok(saved)
+}
+
+fn tile_code(tile: Tile) -> String {
+    let index = tile.index();
+    let (number, suit) = if index < 9 {
+        (index + 1, 'm')
+    } else if index < 18 {
+        (index - 8, 'p')
+    } else if index < 27 {
+        (index - 17, 's')
+    } else {
+        (index - 26, 'z')
+    };
+    format!("{}{}", if tile.is_red() { 0 } else { number }, suit)
 }
 
 /// Detect pale, upright tile faces inside a tightly calibrated hand region.

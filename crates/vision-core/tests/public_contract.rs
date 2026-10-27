@@ -3,7 +3,7 @@ use std::fs::{self, File};
 use std::io::BufWriter;
 use vision_core::{
     ActionLabel, FilterDecision, MatchConfig, Rect, RgbImage, StabilityFilter, TemplateBank,
-    VisionSnapshot, detect_hand_slots,
+    VisionSnapshot, detect_hand_slots, save_labeled_hand,
 };
 
 const W: u32 = 16;
@@ -366,5 +366,24 @@ fn loads_only_a_complete_local_template_pack() {
     );
     fs::remove_file(root.join("actions").join("kan.png")).unwrap();
     assert!(TemplateBank::load_dir(&root).is_err());
+    fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn saves_labeled_hand_templates_locally_without_overwriting() {
+    let root = std::env::temp_dir().join(format!("mahjong-vision-learning-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&root);
+    let (image, slots, hand) = hand_scene(3);
+    assert_eq!(save_labeled_hand(&image, &hand, &root).unwrap(), 5);
+    let expected = image.crop(slots[0]).unwrap();
+    assert_eq!(
+        RgbImage::read_png(&root.join("tiles/1m.png")).unwrap(),
+        expected
+    );
+    assert_eq!(save_labeled_hand(&image, &hand, &root).unwrap(), 0);
+    let mut illegal = hand.clone();
+    illegal[0] = Tile::from_code("5m").unwrap();
+    assert!(save_labeled_hand(&image, &illegal, &root).is_err());
+    assert_eq!(fs::read_dir(root.join("tiles")).unwrap().count(), 5);
     fs::remove_dir_all(root).unwrap();
 }
