@@ -48,3 +48,6 @@ if ($totalBytes -gt 100MB) { throw "Portable package exceeds lightweight size ta
 $process = Start-Process -FilePath $exe -ArgumentList '--smoke' -WorkingDirectory $output -WindowStyle Hidden -PassThru -Wait
 if ($process.ExitCode -ne 0) { throw 'Portable executable smoke failed' }
 Write-Output "Version portable package smoke passed: $totalBytes bytes"
+# GitHub's pwsh wrapper propagates LASTEXITCODE. The rejected control leaves 1;
+# all assertions and the actual executable smoke must finish before success.
+exit 0

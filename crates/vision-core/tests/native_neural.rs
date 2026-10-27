@@ -52,10 +52,12 @@ fn rejects_invalid_input_without_returning_logits() {
 #[test]
 fn rejects_wrong_tensor_shapes_and_non_models() {
     for name in ["wrong-channels.onnx", "wrong-classes.onnx"] {
-        assert!(matches!(
-            WinMlTileSession::load(&fixture(name)),
-            Err(NeuralError::UnsupportedModel)
-        ));
+        let result = WinMlTileSession::load(&fixture(name));
+        assert!(
+            matches!(result, Err(NeuralError::UnsupportedModel)),
+            "{name}: expected UnsupportedModel, got {:?}",
+            result.err()
+        );
     }
     assert!(matches!(
         WinMlTileSession::load(&fixture("missing.onnx")),
@@ -103,10 +105,12 @@ fn sequential_sessions_survive_an_idle_native_runtime() {
     if std::env::var_os(CHILD).is_some() {
         for _ in 0..3 {
             for name in ["wrong-channels.onnx", "wrong-classes.onnx"] {
-                assert!(matches!(
-                    WinMlTileSession::load(&fixture(name)),
-                    Err(NeuralError::UnsupportedModel)
-                ));
+                let result = WinMlTileSession::load(&fixture(name));
+                assert!(
+                    matches!(result, Err(NeuralError::UnsupportedModel)),
+                    "{name}: expected UnsupportedModel, got {:?}",
+                    result.err()
+                );
             }
             let session = WinMlTileSession::load(&fixture("affine-37.onnx")).unwrap();
             session.evaluate(&vec![0.0; INPUT_FLOATS]).unwrap();
